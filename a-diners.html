@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Diners i canvi — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Diners i canvi (adaptat)</title>
+
+    <!--
+    ============================================================
+    FITXER: a-diners.html
+    ROL: Activitat adaptada de càlcul amb diners per a alumnes amb
+         NEE (retard d'aprenentatge, discapacitat intel·lectual lleu,
+         TDAH).
+
+    DIFERÈNCIES RESPECTE A una futura versió estàndard (diners.html):
+      · Nombres petits, operacions senzilles.
+      · Textos molt curts i directes (baixa exigència lectora).
+      · Ajuda visual: metàfora + monedes SVG (~50%).
+      · Resposta correcta visible si s'esgoten els intents.
+      · Paleta verda (coherent amb a-enters i a-equacions).
+      · Botó Tutorial.
+
+    NIVELLS (tots treballen amb decimals):
+      Nivell 1: 1 producte, preu = enter + UNA sola moneda (0,10 / 0,20 / 0,50).
+                Ex: 2,50 €, 3,10 €, 1,20 €. Bitllet de 5 €.
+      Nivell 2: 1 producte, cèntims variats (múltiples de 0,10).
+                Ex: 1,30 €, 2,70 €, 4,40 €. Bitllet de 5 € o 10 €.
+      Nivell 3: 2 productes, cèntims variats, bitllet de 10 €.
+                Dos passos: suma decimals → canvi decimals.
+
+    PARÀMETRES URL ESPECÍFICS:
+      ?nivell=1|2|3       (default 1)
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?maxenllocmitjana=  (default 1)
+
+    EXEMPLE:
+      a-diners.html?nivell=2&totaloperations=6&maxintents=5
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5,
+            defaultEnllocMitjana: 1
+        };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+
+    <link rel="stylesheet" href="css/shared.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── BOTIGA: productes + bitllet ─────────────────────── */
+        .shop-display {
+            padding: 24px 20px 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .products-row {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .product-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 18px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            min-width: 100px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .product-emoji { font-size: 2.8em; line-height: 1; }
+        .product-name  { font-size: 1em; color: #475569; font-weight: 600; }
+        .product-price {
+            font-size: 1.5em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .products-plus {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #94a3b8;
+            line-height: 1;
+            align-self: center;
+        }
+
+        .bill-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #f0fdf4;
+            border: 2px solid #bbf7d0;
+            border-radius: 12px;
+            font-size: 1.15em;
+            font-weight: 700;
+            color: #166534;
+        }
+        .bill-emoji { font-size: 1.6em; }
+
+        /* ── PANELL DE RESOLUCIÓ ────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step-prompt {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type="text"]#value-input {
+            width: 130px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .answer-unit {
+            color: #475569;
+            font-size: 0.8em;
+        }
+
+        /* ── BOTONS: OK + Ajuda ──────────────────────────────── */
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #btn-submit-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0;
+            width: 2.4rem;
+            height: 2.4rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* ── AJUDA TEXT ───────────────────────────────────────── */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 1.05em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            width: fit-content;
+            max-width: min(860px, 95%);
+            white-space: nowrap;
+            line-height: 1.4;
+            animation: fadeIn 0.25s ease;
+        }
+        @media (max-width: 640px) {
+            .help-text { white-space: normal; max-width: 95%; }
+        }
+        .help-text.visible { display: block; }
+
+        /* ── SVG MONEDES (hint visual) ────────────────────────── */
+        .coin-hint {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        .coin-hint.visible { display: flex; }
+
+        /* ── RESPOSTA CORRECTA ────────────────────────────────── */
+        .answer-reveal {
+            display: none;
+            font-size: 1.05em;
+            color: #b91c1c;
+            font-weight: 600;
+            text-align: center;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 10px;
+            padding: 12px 24px;
+            animation: fadeIn 0.35s ease;
+            max-width: 320px;
+        }
+        .answer-reveal.visible { display: block; }
+        .answer-reveal .ans-val {
+            font-size: 1.5em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: block;
+            margin-top: 4px;
+            color: var(--primary);
+        }
+
+        /* ── NIVELL A LA CAPÇALERA ────────────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── BOTÓ TUTORIAL ────────────────────────────────────── */
+        .btn-tutorial {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-tutorial:hover  { background: #d4d9a8; }
+        .btn-tutorial:active { transform: scale(0.96); }
+
+        .tut-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #dc2626;
+            flex-shrink: 0;
+            animation: tutDotPulse 0.8s ease-in-out 5;
+            animation-fill-mode: forwards;
+        }
+        @keyframes tutDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%      { opacity: 0.2; transform: scale(0.65); }
+        }
+
+        #fade-overlay {
+            position: fixed; inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .shop-display     { padding: 16px 12px 12px; gap: 10px; }
+            .product-card     { padding: 10px 14px; min-width: 85px; }
+            .product-emoji    { font-size: 2.2em; }
+            .product-price    { font-size: 1.3em; }
+            .answer-row       { font-size: 1.6em; }
+            input[type="text"]#value-input { width: 110px; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text        { font-size: 0.97em; padding: 12px 14px; }
+            .step-prompt      { font-size: 1.05em; }
+        }
+        @media (max-width: 350px) {
+            .product-emoji { font-size: 1.8em; }
+            .product-card  { min-width: 75px; padding: 8px 10px; }
+        }
+
+        /* ── ANIMACIÓ INTENTS ────────────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol + botó Tutorial -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Diners i canvi</h1>
+    <button class="btn-tutorial" id="btn-tutorial" aria-label="Veure tutorial">
+        <span class="tut-dot" aria-hidden="true"></span>
+        Tutorial
+    </button>
+</div>
+
+<!-- Fade overlay per a la transició al tutorial -->
+<div id="fade-overlay"></div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display">Compra 1 de 4</div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text"  id="score-display">Punts: 0</div>
+            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+        </div>
+
+        <!-- Botiga: productes + bitllet -->
+        <div class="shop-display" id="shop-display"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Indicador pas 1 completat (nivell 3) -->
+            <div class="step-done" id="step-done" style="display:none;"></div>
+
+            <!-- Pregunta activa -->
+            <div class="step-prompt" id="step-prompt"></div>
+
+            <!-- Fila input: [____] € -->
+            <div class="answer-row" id="answer-row">
+                <input type="text" id="value-input" autocomplete="off"
+                       aria-label="Escriu la resposta">
+                <span class="answer-unit">€</span>
+            </div>
+
+            <!-- Botons OK + Ajuda -->
+            <div class="action-row">
+                <button class="btn-submit" id="btn-submit-val"
+                        onclick="checkValue()">OK</button>
+                <button class="btn-ajuda"
+                        onclick="toggleHelp()">💡 Ajuda</button>
+            </div>
+
+            <!-- Frase d'ajuda -->
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+
+            <!-- SVG monedes (hint visual, ~50%) -->
+            <div class="coin-hint" id="coin-hint" aria-live="polite">
+                <div id="coin-hint-svg"></div>
+            </div>
+
+            <!-- Resposta correcta si s'esgoten els intents -->
+            <div class="answer-reveal" id="answer-reveal" aria-live="assertive">
+                Era:
+                <span class="ans-val" id="answer-correct-val"></span>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script src="js/game-core.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// PARÀMETRES URL ESPECÍFICS
+// ============================================================
+
+const _aParams = new URLSearchParams(window.location.search);
+
+/**
+ * ?nivell=1  1 producte, preu = enter + 1 moneda (0,10/0,20/0,50), bitllet 5 €
+ * ?nivell=2  1 producte, cèntims variats (×0,10), bitllet 5 € o 10 €  (default)
+ * ?nivell=3  2 productes, cèntims variats, bitllet 10 €, dos passos
+ */
+const NIVELL = getIntParam(_aParams, 'nivell', 1, 1, 3);
+
+// ============================================================
+// ELEMENTS DOM
+// ============================================================
+
+const els = {
+    body:             document.body,
+    gameScreen:       document.getElementById('game-screen'),
+    sessionDisplay:   document.getElementById('session-display'),
+    lvlDisplay:       document.getElementById('lvl-display'),
+    nivellDisplay:    document.getElementById('nivell-display'),
+    scoreDisplay:     document.getElementById('score-display'),
+    attemptsDisplay:  document.getElementById('attempts-display'),
+    shopDisplay:      document.getElementById('shop-display'),
+    resolutionPanel:  document.getElementById('resolution-panel'),
+    stepDone:         document.getElementById('step-done'),
+    stepPrompt:       document.getElementById('step-prompt'),
+    valueInput:       document.getElementById('value-input'),
+    btnSubmitVal:     document.getElementById('btn-submit-val'),
+    helpText:         document.getElementById('help-text'),
+    coinHint:         document.getElementById('coin-hint'),
+    coinHintSvg:      document.getElementById('coin-hint-svg'),
+    answerReveal:     document.getElementById('answer-reveal'),
+    answerCorrectVal: document.getElementById('answer-correct-val'),
+};
+
+// ============================================================
+// ESTAT LOCAL
+// ============================================================
+
+let isPenalizing    = false;
+let currentProblem  = null;   // { products[], bill, total, change }
+let expectedAnswer  = 0;
+let currentStep     = 1;      // 1 o 2 (nivell 3 té dos passos)
+let _helpVisible    = false;
+
+// ============================================================
+// PRODUCTES
+// ============================================================
+
+const PRODUCTS = [
+    { emoji: '🍞', nom: 'Pa' },
+    { emoji: '🥛', nom: 'Llet' },
+    { emoji: '🍎', nom: 'Poma' },
+    { emoji: '✏️', nom: 'Llapis' },
+    { emoji: '📓', nom: 'Llibreta' },
+    { emoji: '🍫', nom: 'Xocolata' },
+    { emoji: '💧', nom: 'Aigua' },
+    { emoji: '🧃', nom: 'Suc' },
+    { emoji: '🥐', nom: 'Croissant' },
+    { emoji: '🍌', nom: 'Plàtan' },
+    { emoji: '🍪', nom: 'Galetes' },
+    { emoji: '🥪', nom: 'Entrepà' },
+    { emoji: '🍕', nom: 'Pizza' },
+    { emoji: '🥤', nom: 'Refresc' },
+    { emoji: '🖊️', nom: 'Boli' },
+];
+
+// ============================================================
+// GENERACIÓ DEL PROBLEMA
+// ============================================================
+
+function pickProduct() {
+    return { ...pick(PRODUCTS) };
+}
+
+function pickTwoDifferent() {
+    const p1 = pickProduct();
+    let p2 = pickProduct();
+    while (p2.nom === p1.nom) p2 = pickProduct();
+    return [p1, p2];
+}
+
+function generateProblem() {
+    if (NIVELL === 1) {
+        // 1 producte, preu = enter [1..4] + UNA sola moneda (0,10 / 0,20 / 0,50)
+        // Ex: 1,50 €, 2,10 €, 3,20 €.  Bitllet 5 €.
+        const prod  = pickProduct();
+        const euros = randInt(1, 4);
+        const cents = pick([0.10, 0.20, 0.50]);
+        prod.price  = Math.round((euros + cents) * 100) / 100;
+        const bill   = 5;
+        const change = Math.round((bill - prod.price) * 100) / 100;
+        return { products: [prod], bill, total: prod.price, change };
+    }
+
+    if (NIVELL === 2) {
+        // 1 producte, cèntims variats (múltiples de 0,10): 1,10 – 4,90 €
+        // Bitllet 5 € o 10 € (10 € si el preu > 4,50)
+        const prod  = pickProduct();
+        const total10 = randInt(11, 49);               // 11..49 dècimes → 1,10..4,90
+        prod.price  = Math.round(total10 * 10) / 100;  // ex: 23 → 2,30
+        const bill   = prod.price > 4.50 ? 10 : 5;
+        const change = Math.round((bill - prod.price) * 100) / 100;
+        return { products: [prod], bill, total: prod.price, change };
+    }
+
+    // Nivell 3: 2 productes, cèntims variats (×0,10), bitllet 10 €
+    // Total sempre < 10 € perquè el canvi sigui positiu
+    const [p1, p2] = pickTwoDifferent();
+    p1.price = Math.round(randInt(11, 40) * 10) / 100;  // 1,10..4,00
+    p2.price = Math.round(randInt(11, 40) * 10) / 100;  // 1,10..4,00
+    const total  = Math.round((p1.price + p2.price) * 100) / 100;
+    const bill   = 10;
+    const change = Math.round((bill - total) * 100) / 100;
+    return { products: [p1, p2], bill, total, change };
+}
+
+// ============================================================
+// FORMAT I PARSEIG DE DINERS
+// ============================================================
+
+/**
+ * Formata un import amb cèntims.
+ *   fmtMoney(3)    → "3,00 €"
+ *   fmtMoney(2.5)  → "2,50 €"
+ *   fmtMoney(1.1)  → "1,10 €"
+ */
+function fmtMoney(n) {
+    return n.toFixed(2).replace('.', ',') + ' €';
+}
+
+/** Formata per mostrar dins la targeta de producte. */
+function fmtPrice(n) {
+    return fmtMoney(n);
+}
+
+/**
+ * Parseja l'input de l'alumne com a import monetari.
+ * Accepta: "3", "2,50", "2.50", "2,5".
+ * Retorna NaN si el format és invàlid.
+ */
+function parseMoneyInput(str) {
+    str = String(str).trim().replace('€', '').trim();
+    str = str.replace(',', '.');
+    if (!/^\d+(\.\d{1,2})?$/.test(str)) return NaN;
+    return Math.round(parseFloat(str) * 100) / 100;
+}
+
+function moneyEquals(a, b) {
+    return Math.round(a * 100) === Math.round(b * 100);
+}
+
+// ============================================================
+// RENDERITZACIÓ DE LA BOTIGA
+// ============================================================
+
+function renderShop(problem) {
+    let html = '<div class="products-row">';
+    problem.products.forEach((p, i) => {
+        if (i > 0) html += '<span class="products-plus">+</span>';
+        html += `<div class="product-card">
+            <span class="product-emoji">${p.emoji}</span>
+            <span class="product-name">${p.nom}</span>
+            <span class="product-price">${fmtPrice(p.price)}</span>
+        </div>`;
+    });
+    html += '</div>';
+    html += `<div class="bill-display">
+        <span class="bill-emoji">💵</span>
+        Pagues amb ${problem.bill} €
+    </div>`;
+    return html;
+}
+
+// ============================================================
+// SVG MONEDES (hint visual, només imports enters)
+// ============================================================
+
+/**
+ * Dibuixa 'bill' monedes d'1 €. Les primeres 'spent' apareixen
+ * en gris amb una X vermella. Les restants, en groc brillant.
+ * L'alumne compta les monedes brillants → la resposta.
+ */
+function buildCoinSVG(bill, spent) {
+    const R    = 20;
+    const D    = R * 2;
+    const GAP  = 6;
+    const COLS = Math.min(bill, 5);
+    const ROWS = Math.ceil(bill / COLS);
+    const PAD  = 10;
+    const W    = COLS * (D + GAP) - GAP + PAD * 2;
+    const H    = ROWS * (D + GAP) - GAP + PAD * 2;
+
+    const s = [];
+    s.push(`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+             style="max-width:${Math.min(W, 320)}px;width:100%;height:auto;">`);
+
+    for (let i = 0; i < bill; i++) {
+        const col = i % COLS;
+        const row = Math.floor(i / COLS);
+        const cx  = PAD + R + col * (D + GAP);
+        const cy  = PAD + R + row * (D + GAP);
+        const out = i < spent;   // moneda gastada
+
+        // Cercle de la moneda
+        s.push(`<circle cx="${cx}" cy="${cy}" r="${R}"
+                 fill="${out ? '#f1f5f9' : '#fef3c7'}"
+                 stroke="${out ? '#cbd5e1' : '#f59e0b'}"
+                 stroke-width="2.5"/>`);
+
+        // Text "1€"
+        s.push(`<text x="${cx}" y="${cy + 5}" text-anchor="middle"
+                 font-family="'Courier New',monospace" font-size="13"
+                 font-weight="bold"
+                 fill="${out ? '#cbd5e1' : '#92400e'}">1€</text>`);
+
+        // Creu vermella a les monedes gastades
+        if (out) {
+            const d = R - 6;
+            s.push(`<line x1="${cx-d}" y1="${cy-d}" x2="${cx+d}" y2="${cy+d}"
+                     stroke="#ef4444" stroke-width="2.5"
+                     stroke-linecap="round" opacity="0.7"/>`);
+            s.push(`<line x1="${cx+d}" y1="${cy-d}" x2="${cx-d}" y2="${cy+d}"
+                     stroke="#ef4444" stroke-width="2.5"
+                     stroke-linecap="round" opacity="0.7"/>`);
+        }
+    }
+
+    s.push('</svg>');
+    return s.join('');
+}
+
+/**
+ * Nota: l'SVG de monedes enteres s'ha desactivat perquè tots els nivells
+ * treballen amb decimals. Es manté buildCoinSVG() per si es vol reactivar
+ * en una futura ampliació amb monedes fraccionàries.
+ */
+function canShowCoinSVG() {
+    return false;
+}
+
+// ============================================================
+// AJUDA CONTEXTUAL — textos curts i directes
+// ============================================================
+
+function getHelpText() {
+    const p = currentProblem;
+
+    // Nivell 3, pas 1: suma de preus
+    if (NIVELL === 3 && currentStep === 1) {
+        return `🪙 ${p.products[0].nom}: ${fmtMoney(p.products[0].price)}. `
+             + `${p.products[1].nom}: ${fmtMoney(p.products[1].price)}. `
+             + `Quant és tot junt?`;
+    }
+
+    // Canvi (tots els nivells, i pas 2 del nivell 3)
+    return `🪙 Tens ${fmtMoney(p.bill)}. Gastes ${fmtMoney(p.total)}. Quant et queda?`;
+}
+
+function toggleHelp() {
+    _helpVisible = !_helpVisible;
+    if (_helpVisible) {
+        els.helpText.textContent = getHelpText();
+        els.helpText.classList.add('visible');
+
+        // SVG de monedes: ~50% de les vegades, si aplica
+        if (canShowCoinSVG() && Math.random() < 0.5) {
+            const spent = (NIVELL === 3) ? currentProblem.total : currentProblem.total;
+            els.coinHintSvg.innerHTML = buildCoinSVG(currentProblem.bill, spent);
+            els.coinHint.classList.add('visible');
+        }
+    } else {
+        els.helpText.classList.remove('visible');
+        els.coinHint.classList.remove('visible');
+    }
+}
+
+function resetHelp() {
+    _helpVisible = false;
+    els.helpText.classList.remove('visible');
+    els.helpText.textContent = '';
+    els.coinHint.classList.remove('visible');
+}
+
+// ============================================================
+// UPDATE CAPÇALERA
+// ============================================================
+
+function updateHeader() {
+    els.sessionDisplay.innerText  = `Sessió ${currentSession + 1} de ${TOTAL_SESSIONS}`;
+    els.lvlDisplay.innerText      = `Compra ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
+    els.nivellDisplay.innerText   = `· Nivell ${NIVELL}`;
+    els.scoreDisplay.innerText    = `Punts: ${sessionScore}`;
+    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
+    els.attemptsDisplay.className = 'attempts-counter' +
+        (attemptsLeft <= 2 ? ' danger' : '');
+}
+
+// ============================================================
+// LÒGICA PRINCIPAL
+// ============================================================
+
+/** Cridat per game-core.js via startSession(). */
+function buildLevel() {
+    attemptsLeft    = MAX_INTENTS;
+    isPenalizing    = false;
+    isTransitioning = false;
+    currentStep     = 1;
+
+    currentProblem = generateProblem();
+
+    // Pas 1: nivell 3 demana el total; nivells 1–2 demanen el canvi
+    expectedAnswer = (NIVELL === 3) ? currentProblem.total : currentProblem.change;
+
+    els.body.style.backgroundColor =
+        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
+
+    resetHelp();
+    els.stepDone.style.display = 'none';
+    els.answerReveal.classList.remove('visible');
+    els.valueInput.value              = '';
+    els.resolutionPanel.style.display = 'none';
+
+    updateHeader();
+
+    // Renderitzar la botiga
+    els.shopDisplay.innerHTML = renderShop(currentProblem);
+
+    // Pregunta
+    els.stepPrompt.textContent = (NIVELL === 3) ? 'Quant pagues en total?' : 'Quant et torna?';
+
+    // Obrir panell
+    els.resolutionPanel.style.display = 'flex';
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+/**
+ * Transició de pas 1 → pas 2 (només nivell 3).
+ * Es manté el comptador d'intents (no es reinicia).
+ */
+function advanceToStep2() {
+    currentStep    = 2;
+    expectedAnswer = currentProblem.change;
+
+    // Indicador del pas 1 completat
+    els.stepDone.textContent    = `✅ Total: ${fmtMoney(currentProblem.total)}`;
+    els.stepDone.style.display  = 'block';
+
+    // Nova pregunta
+    els.stepPrompt.textContent = 'Quant et torna?';
+
+    // Netejar input i ajuda
+    resetHelp();
+    els.valueInput.value = '';
+    els.answerReveal.classList.remove('visible');
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+function checkValue() {
+    if (isTransitioning || isPenalizing) return;
+    const raw = els.valueInput.value.trim();
+    if (raw === '') return;
+
+    const userAnswer = parseMoneyInput(raw);
+    if (isNaN(userAnswer)) { shakeInput(); penalize(); return; }
+
+    // Construir el text de la pregunta per a l'historial
+    const question = buildQuestionText();
+
+    if (!moneyEquals(userAnswer, expectedAnswer)) {
+        shakeInput();
+        recordAnswerToHistory(question, raw, false);
+        penalize();
+        if (isTouchDevice()) kbMarkForOverwrite(els.valueInput);
+        else { els.valueInput.value = ''; els.valueInput.focus(); }
+        return;
+    }
+
+    // Correcte!
+    recordAnswerToHistory(question, raw, true);
+
+    // Nivell 3, pas 1 → avançar al pas 2 (sense punts encara)
+    if (NIVELL === 3 && currentStep === 1) {
+        advanceToStep2();
+        return;
+    }
+
+    hideCustomKeyboard();
+    finishOperation(true);
+}
+
+/** Text de pregunta per a l'historial (escapeHtml el farà game-core). */
+function buildQuestionText() {
+    const p = currentProblem;
+    if (NIVELL === 3 && currentStep === 1) {
+        return `${p.products[0].emoji} ${fmtPrice(p.products[0].price)} + `
+             + `${p.products[1].emoji} ${fmtPrice(p.products[1].price)}`;
+    }
+    if (NIVELL === 3 && currentStep === 2) {
+        return `Canvi: ${p.bill} € − ${p.total} €`;
+    }
+    // Nivells 1–2
+    return `${p.products[0].emoji} ${p.products[0].nom} ${fmtPrice(p.products[0].price)} — Bitllet ${p.bill} €`;
+}
+
+function shakeInput() {
+    els.btnSubmitVal.classList.add('error-shake');
+    setTimeout(() => els.btnSubmitVal.classList.remove('error-shake'), 200);
+}
+
+function penalize() {
+    if (isPenalizing || isTransitioning) return;
+    isPenalizing = true;
+    els.attemptsDisplay.classList.add('blink');
+
+    setTimeout(() => {
+        els.attemptsDisplay.classList.remove('blink');
+        attemptsLeft--;
+        updateHeader();
+
+        if (attemptsLeft <= 0) {
+            isTransitioning = true;
+            hideCustomKeyboard();
+            const fmtAns = fmtMoney(expectedAnswer);
+            els.answerCorrectVal.textContent = fmtAns;
+            els.answerReveal.classList.add('visible');
+            setTimeout(() => finishOperation(false), 2400);
+        }
+
+        isPenalizing = false;
+    }, 700);
+}
+
+function finishOperation(success) {
+    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
+    const fails       = MAX_INTENTS - attemptsLeft;
+    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
+    sessionScore += levelPoints;
+
+    const waitTime = showMiniOverlay(levelPoints, {
+        successColor: 'var(--primary-dark)',
+        pointsColor:  'var(--primary)'
+    });
+
+    setTimeout(() => {
+        hideMiniOverlay();
+        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
+            endSession();
+        } else {
+            currentOperation++;
+            buildLevel();
+        }
+    }, waitTime);
+}
+
+// ── Teclat físic ────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (els.gameScreen.style.display   === 'none') return;
+    if (els.resolutionPanel.style.display === 'none') return;
+    e.preventDefault();
+    if (!isTransitioning) checkValue();
+});
+
+/** Requerit per game-core.js (botó → del teclat custom). */
+function checkCurrentCell() { checkValue(); }
+
+// ── Botó Tutorial: fade-out i navega ────────────────────────
+document.getElementById('btn-tutorial').addEventListener('click', () => {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-diners-tutorial.html'; }, 800);
+});
+
+// ============================================================
+// INICI
+// ============================================================
+
+injectSharedHTML();
+validateConfig();
+
+// Tots els nivells treballen amb decimals → el teclat custom
+// necessita una tecla de coma. Aprofitem l'espai del botó '−'
+// (que no cal per a diners) transformant-lo en una tecla ','.
+initCustomKeyboard({ allowNegative: true });   // mantenim el botó visible
+const minusBtn = document.querySelector('.kb-btn.kb-minus');
+if (minusBtn) {
+    minusBtn.dataset.key = ',';
+    minusBtn.textContent = ',';
+    minusBtn.classList.remove('kb-minus');
+}
+
+startGame();
+</script>
+</body>
+</html>

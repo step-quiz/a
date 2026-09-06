@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Llegir el rellotge d'agulles — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Llegir el rellotge (adaptat)</title>
+
+    <!--
+    ============================================================
+    FITXER: a/a-rellotge.html
+    ROL: Versió adaptada per llegir el rellotge d'agulles.
+         Pensada per a alumnes amb necessitats específiques,
+         retard d'aprenentatge o dificultats de concentració.
+
+    CARACTERÍSTIQUES:
+      · Rellotge SVG amb animació d'agulles (0.6s) en cada nova pregunta.
+      · Dos inputs separats: hores [1–12] i minuts [00–59].
+      · 3 nivells progressius (quarts d'hora → intervals 5 min → qualsevol minut).
+      · ?numeros=1 afegeix els números 1–12 al rellotge (scaffold visual).
+      · Botó "Ajuda" amb frase contextual adaptada al nivell.
+      · Si s'esgoten els intents, es mostra la resposta correcta.
+
+    PARÀMETRES URL ESPECÍFICS:
+      ?nivell=1   Quarts d'hora (agulla llarga al 12, 3, 6 o 9) — default
+      ?nivell=2   Intervals de 5 min (tots els números del rellotge)
+      ?nivell=3   Qualsevol minut (0–59)
+      ?numeros=1  Mostra els números 1–12 al rellotge (default 0)
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 6)
+      ?maxintents=N       (default 5)
+      ?maxenllocmitjana=  (default 1)
+
+    EXEMPLE:
+      a-rellotge.html?nivell=2&totaloperations=8&numeros=1
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    6,
+            defaultIntents:       5,
+            defaultEnllocMitjana: 1
+        };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+
+    <link rel="stylesheet" href="css/shared.css">
+
+    <style>
+        /* ── PALETA VERDA ────────────────────────────────────────── */
+        :root {
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+
+        /* ── RESOLUTION PANEL ────────────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 20px 14px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        /* ── RELLOTGE SVG ─────────────────────────────────────────── */
+        .clock-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+        }
+        #clock-svg {
+            filter: drop-shadow(0 4px 12px rgba(90,106,30,0.18));
+            display: block;
+        }
+
+        /* ── INPUTS H:MM ──────────────────────────────────────────── */
+        .inputs-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 2.4em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .inputs-wrap input[type="text"] {
+            width: 72px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px 6px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            background: white;
+            color: #1e293b;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .inputs-wrap input[type="text"]:focus {
+            border-color: #5a6a1e;
+            background: #eceee0;
+        }
+        .inputs-wrap input[type="text"].kb-active-input {
+            border-color: #5a6a1e;
+            background: #eceee0;
+        }
+        .colon-sep {
+            color: #475569;
+            font-size: 1em;
+            user-select: none;
+            padding: 0 2px;
+            line-height: 1;
+        }
+
+        /* ── BOTÓ OK ──────────────────────────────────────────────── */
+        #btn-submit-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0;
+            width:  2.4rem;
+            height: 2.4rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: #5a6a1e;
+                border-color:     #3d4a14;
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color:     var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ AJUDA ───────────────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* ── FILA BOTONS ──────────────────────────────────────────── */
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* ── TEXT AJUDA ───────────────────────────────────────────── */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 1.0em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            width: fit-content;
+            max-width: min(820px, 95%);
+            line-height: 1.5;
+            animation: fadeIn 0.25s ease;
+        }
+        @media (max-width: 640px) { .help-text { max-width: 95%; } }
+        .help-text.visible { display: block; }
+
+        /* ── RESPOSTA CORRECTA QUAN S'ESGOTEN INTENTS ─────────────── */
+        .answer-reveal {
+            display: none;
+            font-size: 1.05em;
+            color: #b91c1c;
+            font-weight: 600;
+            text-align: center;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 10px;
+            padding: 12px 24px;
+            animation: fadeIn 0.35s ease;
+            max-width: 340px;
+        }
+        .answer-reveal.visible { display: block; }
+        .answer-reveal .ans-val {
+            font-size: 1.6em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: block;
+            margin-top: 4px;
+            color: #b91c1c;
+        }
+
+        /* ── NIVELL BADGE ─────────────────────────────────────────── */
+        .level-row {
+            display: flex; align-items: baseline; gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em; color: var(--text-muted); font-weight: 600;
+        }
+
+        /* ── BOTÓ  ────────────────────────────────────────── 
+        .btn- {
+            display: flex; align-items: center; gap: 7px;
+            padding: 7px 16px; font-size: 0.9em; font-weight: 700;
+            color: var(--primary); background: var(--primary-light);
+            border: 2px solid var(--primary); border-radius: 20px;
+            cursor: pointer; text-decoration: none; white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-:hover  { background: #d4d9a8; }
+        .btn-:active { transform: scale(0.96); }
+        .tut-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: #dc2626; flex-shrink: 0;
+            animation: tutDotPulse 0.8s ease-in-out 5;
+            animation-fill-mode: forwards;
+        }
+        @keyframes tutDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%       { opacity: 0.2; transform: scale(0.65); }
+        }
+*/
+        /* ── FADE OVERLAY ─────────────────────────────────────────── */
+        #fade-overlay {
+            position: fixed; inset: 0; background: #000;
+            opacity: 0; pointer-events: none; z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ── MINI VICTORY OVERLAY (sempre visible al viewport) ────── */
+        #mini-victory-overlay {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            min-width: 200px;
+            max-width: 90vw;
+            border: 2px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            background: var(--bg-color);
+            padding: 20px 32px;
+            z-index: 500;
+            animation: popUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes popUp {
+            from { transform: translateX(-50%) scale(0.7); opacity: 0; }
+            to   { transform: translateX(-50%) scale(1);   opacity: 1; }
+        }
+
+        /* ── ANIMACIÓ INTENTS ─────────────────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── SELECTOR DE NIVELL (top-left del panell del rellotge) ── */
+        .btn-nivells {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-nivell {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: white;
+            border: 1.5px solid var(--primary);
+            border-radius: 20px;
+            padding: 4px 9px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            user-select: none;
+            line-height: 1.3;
+        }
+        .btn-nivell:hover  { background: var(--primary-light); }
+        .btn-nivell:active { transform: scale(0.96); }
+        .btn-nivell.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ── TOGGLE MOSTRAR NOMBRES ───────────────────────────────── */
+        .clock-panel-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding-top: 28px;
+        }
+        .btn-toggle-nombres {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1.5px solid var(--primary);
+            border-radius: 20px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            user-select: none;
+            line-height: 1.3;
+        }
+        .btn-toggle-nombres:hover  { background: #d4d9a8; }
+        .btn-toggle-nombres:active { transform: scale(0.96); }
+        .btn-toggle-nombres .toggle-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #94a3b8;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-toggle-nombres.active .toggle-dot { background: var(--primary); }
+
+        /* ── RESPONSIVE ───────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .inputs-wrap        { font-size: 2em; }
+            .inputs-wrap input  { width: 62px; }
+            .resolution-panel   { padding: 10px 14px 12px; gap: 8px; }
+            .help-text          { font-size: 0.95em; padding: 10px 12px; }
+        }
+        @media (max-width: 350px) {
+            .inputs-wrap { font-size: 1.7em; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol + botó Tutorial -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Llegir el súper rellotge</h1>
+ <!--    
+    <button class="btn-tutorial" id="btn-tutorial" aria-label="Veure tutorial">
+        <span class="tut-dot" aria-hidden="true"></span>
+        Tutorial
+    </button>
+-->
+</div>
+
+<!-- Fade overlay -->
+<div id="fade-overlay"></div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | Operació · Nivell | Punts | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="level-row">
+                    <div class="level-text" id="lvl-display">Activitat 1 de 6</div>
+                </div>
+            </div>
+            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+        </div>
+
+        <!-- Panell de resposta -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Rellotge SVG + toggle nombres + selector de nivell -->
+            <div class="clock-panel-wrap">
+                <!-- Selector de nivell (top-left) -->
+                <div class="btn-nivells" id="btn-nivells" aria-label="Seleccionar nivell"></div>
+
+                <button class="btn-toggle-nombres" id="btn-toggle-nombres"
+                        onclick="toggleNombres()" aria-pressed="false">
+                    <span class="toggle-dot" aria-hidden="true"></span>
+                    Mostrar nombres
+                </button>
+                <div class="clock-wrap">
+                    <svg id="clock-svg" viewBox="0 0 200 200" width="228" height="228"
+                         xmlns="http://www.w3.org/2000/svg" aria-label="Rellotge">
+                        <!-- Fons del rellotge -->
+                        <circle cx="100" cy="100" r="88" fill="white"
+                                stroke="#5a6a1e" stroke-width="3.5"/>
+                        <!-- Marques de les hores (generades per JS) -->
+                        <g id="clock-ticks"></g>
+                        <!-- Números (generades per JS si ?numeros=1) -->
+                        <g id="clock-numbers"></g>
+                        <!-- Agulles (centrades a 100,100) -->
+                        <g transform="translate(100,100)">
+                            <!-- Agulla dels minuts (prima, llarga, negra) -->
+                            <g id="min-hand"
+                               style="transform-origin:0 0;transition:transform 0.6s ease;">
+                                <line x1="0" y1="6" x2="0" y2="-63"
+                                      stroke="#1e293b" stroke-width="3.5"
+                                      stroke-linecap="round"/>
+                            </g>
+                            <!-- Agulla de les hores (grossa, curta, fosc) -->
+                            <g id="hour-hand"
+                               style="transform-origin:0 0;transition:transform 0.6s ease;">
+                                <line x1="0" y1="8" x2="0" y2="-50"
+                                      stroke="#1e293b" stroke-width="6"
+                                      stroke-linecap="round"/>
+                            </g>
+                        </g>
+                        <!-- Punt central -->
+                        <circle cx="100" cy="100" r="5.5" fill="#1e293b"/>
+                        <circle cx="100" cy="100" r="2.5" fill="#5a6a1e"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Inputs H:MM -->
+            <div class="inputs-wrap" id="inputs-wrap" aria-live="polite">
+                <input type="text" id="input-hores"
+                       inputmode="numeric" maxlength="2"
+                       placeholder="H" aria-label="Escriu les hores"
+                       autocomplete="off">
+                <span class="colon-sep">:</span>
+                <input type="text" id="input-minuts"
+                       inputmode="numeric" maxlength="2"
+                       placeholder="MM" aria-label="Escriu els minuts"
+                       autocomplete="off">
+            </div>
+
+            <!-- Botons OK i Ajuda -->
+            <div class="action-row" id="action-row">
+                <button class="btn-submit" id="btn-submit-val"
+                        onclick="checkAnswer()">OK</button>
+                <button class="btn-ajuda" onclick="toggleHelp()">💡 Ajuda</button>
+            </div>
+
+            <!-- Frase d'ajuda contextual -->
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+
+            <!-- Resposta correcta quan s'esgoten els intents -->
+            <div class="answer-reveal" id="answer-reveal" aria-live="assertive">
+                La resposta correcta era:
+                <span class="ans-val" id="answer-correct-val"></span>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script src="js/game-core.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// PARÀMETRES URL ESPECÍFICS
+// ============================================================
+
+const _rParams = new URLSearchParams(window.location.search);
+
+/**
+ * ?nivell=1  Quarts d'hora (agulla al 12, 3, 6 o 9)    → 2:15, 5:45…
+ * ?nivell=2  Intervals de 5 min (tots els números)       → 4:25, 11:40…
+ * ?nivell=3  Qualsevol minut                             → 3:07, 9:53…
+ */
+const NIVELL = getIntParam(_rParams, 'nivell', 1, 1, 3);
+
+/**
+ * ?numeros=1  Afegeix els números 1–12 al rellotge (scaffold visual).
+ *             Permet que l'alumne llegeixi directament sense comptar.
+ *             També es pot activar/desactivar amb el botó "Mostrar nombres".
+ */
+let SHOW_NUMBERS = parseInt(_rParams.get('numeros') || '0', 10) === 1;
+
+// ============================================================
+// ELEMENTS DOM
+// ============================================================
+
+const els = {
+    body:             document.body,
+    gameScreen:       document.getElementById('game-screen'),
+    sessionDisplay:   document.getElementById('session-display'),
+    lvlDisplay:       document.getElementById('lvl-display'),
+    attemptsDisplay:  document.getElementById('attempts-display'),
+    resolutionPanel:  document.getElementById('resolution-panel'),
+    helpText:         document.getElementById('help-text'),
+    answerReveal:     document.getElementById('answer-reveal'),
+    answerCorrectVal: document.getElementById('answer-correct-val'),
+    btnNivells:       document.getElementById('btn-nivells'),
+    get inputHores()  { return document.getElementById('input-hores'); },
+    get inputMinuts() { return document.getElementById('input-minuts'); },
+    get btnSubmit()   { return document.getElementById('btn-submit-val'); },
+};
+
+// ============================================================
+// ESTAT LOCAL
+// ============================================================
+
+let isPenalizing    = false;
+let currentHours    = 3;
+let currentMinutes  = 0;
+let _helpVisible    = false;
+
+// ============================================================
+// INICIALITZACIÓ DE LA CARA DEL RELLOTGE
+// ============================================================
+
+function renderClockNumbers() {
+    const numbersEl = document.getElementById('clock-numbers');
+    let nums = '';
+    if (SHOW_NUMBERS) {
+        for (let i = 1; i <= 12; i++) {
+            const angle = i * 30 * Math.PI / 180;
+            const numR  = 62;
+            const nx    = (100 + numR * Math.sin(angle)).toFixed(2);
+            const ny    = (100 - numR * Math.cos(angle) + 5).toFixed(2);
+            nums += `<text x="${nx}" y="${ny}" text-anchor="middle"
+                        font-family="'Segoe UI',sans-serif"
+                        font-size="13" font-weight="700"
+                        fill="#334155">${i}</text>`;
+        }
+    }
+    numbersEl.innerHTML = nums;
+}
+
+function toggleNombres() {
+    SHOW_NUMBERS = !SHOW_NUMBERS;
+    renderClockNumbers();
+    const btn = document.getElementById('btn-toggle-nombres');
+    if (btn) {
+        btn.classList.toggle('active', SHOW_NUMBERS);
+        btn.setAttribute('aria-pressed', SHOW_NUMBERS ? 'true' : 'false');
+    }
+}
+
+function initClockFace() {
+    const ticksEl = document.getElementById('clock-ticks');
+    let ticks = '';
+
+    // Si és nivell 3, afegir les 48 subdivisions de minut (les que no coincideixen amb les 12 hores)
+    if (NIVELL === 3) {
+        for (let i = 0; i < 60; i++) {
+            if (i % 5 === 0) continue; // les marques d'hora ja es dibuixen a sota
+            const angle  = i * 6 * Math.PI / 180;
+            const sinA   = Math.sin(angle);
+            const cosA   = Math.cos(angle);
+            const outerR = 86;
+            const innerR = 81;
+
+            const x1 = (100 + innerR * sinA).toFixed(2);
+            const y1 = (100 - innerR * cosA).toFixed(2);
+            const x2 = (100 + outerR * sinA).toFixed(2);
+            const y2 = (100 - outerR * cosA).toFixed(2);
+
+            ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+                        stroke="#94a3b8" stroke-width="1"
+                        stroke-linecap="round"/>`;
+        }
+    }
+
+    for (let i = 1; i <= 12; i++) {
+        const angle  = i * 30 * Math.PI / 180;
+        const sinA   = Math.sin(angle);
+        const cosA   = Math.cos(angle);
+        const isMain = (i % 3 === 0);
+        const outerR = 86;
+        const innerR = isMain ? 73 : 80;
+
+        const x1 = (100 + innerR * sinA).toFixed(2);
+        const y1 = (100 - innerR * cosA).toFixed(2);
+        const x2 = (100 + outerR * sinA).toFixed(2);
+        const y2 = (100 - outerR * cosA).toFixed(2);
+
+        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+                    stroke="#475569" stroke-width="${isMain ? 2.5 : 1.5}"
+                    stroke-linecap="round"/>`;
+    }
+
+    ticksEl.innerHTML = ticks;
+    renderClockNumbers();
+
+    // Inicialitzar l'estat visual del botó
+    const btn = document.getElementById('btn-toggle-nombres');
+    if (btn) {
+        btn.classList.toggle('active', SHOW_NUMBERS);
+        btn.setAttribute('aria-pressed', SHOW_NUMBERS ? 'true' : 'false');
+    }
+}
+
+// ============================================================
+// DIBUIXAR LES AGULLES (amb animació de 0.6s)
+// ============================================================
+
+/**
+ * Actualitza les agulles del rellotge SVG amb una transició CSS.
+ * Primer reseteja a 12:00 sense transició, llavors anima a la posició nova.
+ */
+function drawClock(h, m) {
+    const hourDeg = ((h % 12) * 30 + m * 0.5);
+    const minDeg  = m * 6;
+
+    const hHand = document.getElementById('hour-hand');
+    const mHand = document.getElementById('min-hand');
+
+    // Pas 1: reset sense transició
+    hHand.style.transition = 'none';
+    mHand.style.transition = 'none';
+    hHand.style.transform  = 'rotate(0deg)';
+    mHand.style.transform  = 'rotate(0deg)';
+
+    // Pas 2: forçar reflow i animar cap a la posició correcta
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            hHand.style.transition = 'transform 0.6s ease';
+            mHand.style.transition = 'transform 0.6s ease';
+            hHand.style.transform  = `rotate(${hourDeg}deg)`;
+            mHand.style.transform  = `rotate(${minDeg}deg)`;
+        });
+    });
+}
+
+// ============================================================
+// GENERACIÓ DEL TEMPS (filtrada per nivell)
+// ============================================================
+
+/**
+ * Retorna { hours, minutes } d'acord amb el nivell actiu.
+ *
+ *  Nivell 1: minutes ∈ {0, 15, 30, 45}  (quarts d'hora)
+ *  Nivell 2: minutes = k×5, k ∈ [0..11] (intervals de 5 min)
+ *  Nivell 3: minutes ∈ [0..59]           (qualsevol minut)
+ */
+function generateClock() {
+    const hours = randInt(1, 12);
+    let minutes;
+
+    if (NIVELL === 1) {
+        const opts = [0, 15, 30, 45];
+        minutes = opts[randInt(0, 3)];
+    } else if (NIVELL === 2) {
+        // Tots els múltiples de 5
+        minutes = randInt(0, 11) * 5;
+    } else {
+        // Nivell 3: qualsevol minut
+        minutes = randInt(0, 59);
+    }
+
+    return { hours, minutes };
+}
+
+// ============================================================
+// TEXT D'AJUDA CONTEXTUAL
+// ============================================================
+
+function buildHelpText() {
+    if (NIVELL === 1) {
+        return '🕐 L\'agulla llarga apunta al 12 (en punt), al 3 (i quart), al 6 (i mitja) o al 9 (menys quart). Els minuts seran 0, 15, 30 o 45.';
+    }
+    if (NIVELL === 2) {
+        return '🕑 Cada número del rellotge val 5 minuts. Compta de 5 en 5 des del 12.';
+    }
+    // Nivell 3
+    return '🕒 Mira on apunta l\'agulla llarga. Compta el número gran més proper i afegeix els minutets extra que sobren.';
+}
+
+function toggleHelp() {
+    _helpVisible = !_helpVisible;
+    if (_helpVisible) {
+        els.helpText.textContent = buildHelpText();
+        els.helpText.classList.add('visible');
+    } else {
+        els.helpText.classList.remove('visible');
+        els.helpText.textContent = '';
+    }
+}
+
+function resetHelp() {
+    _helpVisible = false;
+    els.helpText.classList.remove('visible');
+    els.helpText.textContent = '';
+}
+
+// ============================================================
+// CAPÇALERA
+// ============================================================
+
+function updateHeader() {
+    els.sessionDisplay.innerText  = `Sessió ${currentSession + 1}/${TOTAL_SESSIONS}`;
+    els.lvlDisplay.innerText      = `Activitat ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
+    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
+    els.attemptsDisplay.className = 'attempts-counter' +
+        (attemptsLeft <= 2 ? ' danger' : '');
+}
+
+// ============================================================
+// LÒGICA PRINCIPAL
+// ============================================================
+
+/** Cridat per game-core.js via startSession(). */
+function buildLevel() {
+    attemptsLeft    = MAX_INTENTS;
+    isPenalizing    = false;
+    isTransitioning = false;
+
+    const { hours, minutes } = generateClock();
+    currentHours   = hours;
+    currentMinutes = minutes;
+
+    els.body.style.backgroundColor =
+        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
+
+    resetHelp();
+    els.answerReveal.classList.remove('visible');
+
+    // Netejar inputs
+    els.inputHores.value  = '';
+    els.inputMinuts.value = '';
+
+    updateHeader();
+    drawClock(currentHours, currentMinutes);
+    activateOperation();
+}
+
+function activateOperation() {
+    if (isTransitioning) return;
+
+    els.resolutionPanel.style.display = 'flex';
+    els.answerReveal.classList.remove('visible');
+
+    // Focus al primer input (o teclat virtual)
+    if (isTouchDevice()) {
+        showCustomKeyboard(els.inputHores);
+    } else {
+        els.inputHores.focus();
+    }
+
+    // Tab: quan s'omple el camp d'hores, saltar als minuts
+    els.inputHores.onkeydown = (e) => {
+        if (e.key === ':' || e.key === 'Tab') {
+            e.preventDefault();
+            if (isTouchDevice()) showCustomKeyboard(els.inputMinuts);
+            else els.inputMinuts.focus();
+        }
+        if (e.key === 'Enter') { e.preventDefault(); checkAnswer(); }
+    };
+    els.inputMinuts.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); checkAnswer(); }
+    };
+
+    // Touch: canviar input actiu
+    els.inputHores.addEventListener('pointerdown', function onPD(e) {
+        if (!isTouchDevice()) return;
+        e.preventDefault();
+        showCustomKeyboard(els.inputHores);
+    }, { once: true });
+    els.inputMinuts.addEventListener('pointerdown', function onPD(e) {
+        if (!isTouchDevice()) return;
+        e.preventDefault();
+        showCustomKeyboard(els.inputMinuts);
+    }, { once: true });
+}
+
+// ============================================================
+// VALIDACIÓ DE LA RESPOSTA
+// ============================================================
+
+function checkAnswer() {
+    if (isTransitioning || isPenalizing) return;
+
+    const hRaw = (els.inputHores.value  || '').trim();
+    const mRaw = (els.inputMinuts.value || '').trim();
+
+    if (hRaw === '' || mRaw === '') return;   // no enviar si algun camp és buit
+
+    let hVal = parseInt(hRaw, 10);
+    const mVal = parseInt(mRaw, 10);
+
+    // Acceptar format 24h: 13→1, 14→2, ... 23→11
+    if (!isNaN(hVal) && hVal >= 13 && hVal <= 23) hVal = hVal - 12;
+
+    if (isNaN(hVal) || isNaN(mVal)
+        || hVal < 1 || hVal > 12
+        || mVal < 0 || mVal > 59) {
+        shakeBtn();
+        penalize();
+        return;
+    }
+
+    const question = `${currentHours}:${String(currentMinutes).padStart(2,'0')}`;
+    const answer   = `${hVal}:${String(mVal).padStart(2,'0')}`;
+
+    if (hVal !== currentHours || mVal !== currentMinutes) {
+        shakeBtn();
+        recordAnswerToHistory(question, answer, false);
+        penalize();
+        // Netejar l'input incorrecte
+        if (isTouchDevice()) {
+            kbMarkForOverwrite(els.inputHores);
+            kbMarkForOverwrite(els.inputMinuts);
+        } else {
+            els.inputHores.value  = '';
+            els.inputMinuts.value = '';
+            els.inputHores.focus();
+        }
+        return;
+    }
+
+    recordAnswerToHistory(question, answer, true);
+    hideCustomKeyboard();
+    finishOperation(true);
+}
+
+function shakeBtn() {
+    els.btnSubmit.classList.add('error-shake');
+    setTimeout(() => els.btnSubmit.classList.remove('error-shake'), 250);
+}
+
+function penalize() {
+    if (isPenalizing || isTransitioning) return;
+    isPenalizing = true;
+    els.attemptsDisplay.classList.add('blink');
+
+    setTimeout(() => {
+        els.attemptsDisplay.classList.remove('blink');
+        attemptsLeft--;
+        updateHeader();
+
+        if (attemptsLeft <= 0) {
+            isTransitioning = true;
+            hideCustomKeyboard();
+            const label = `${currentHours}:${String(currentMinutes).padStart(2,'0')}`;
+            els.answerCorrectVal.textContent = label;
+            els.answerReveal.classList.add('visible');
+            setTimeout(() => finishOperation(false), 2400);
+        }
+
+        isPenalizing = false;
+    }, 700);
+}
+
+function finishOperation(success) {
+    isTransitioning = true;   // [FIX] evita doble crida durant l'overlay
+    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
+    const fails       = MAX_INTENTS - attemptsLeft;
+    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
+    sessionScore += levelPoints;
+
+    const waitTime = showMiniOverlay(levelPoints);
+    setTimeout(() => {
+        hideMiniOverlay();
+        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
+            endSession();
+        } else {
+            currentOperation++;
+            buildLevel();
+        }
+    }, waitTime);
+}
+
+// ── Teclat físic global ──────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (els.gameScreen.style.display   === 'none') return;
+    if (els.resolutionPanel.style.display === 'none') return;
+    e.preventDefault();
+    if (!isTransitioning) checkAnswer();
+});
+
+function checkCurrentCell() { checkAnswer(); }
+
+// ============================================================
+// BOTONS DE NIVELL
+// ============================================================
+
+function initLevelButtons() {
+    const container = els.btnNivells;
+    if (!container) return;
+
+    [1, 2, 3].forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-nivell' + (n === NIVELL ? ' active' : '');
+        btn.textContent = `Nivell ${n}`;
+        btn.setAttribute('aria-pressed', n === NIVELL ? 'true' : 'false');
+        btn.addEventListener('click', () => {
+            const params = new URLSearchParams(window.location.search);
+            params.set('nivell', n);
+            window.location.search = params.toString();
+        });
+        container.appendChild(btn);
+    });
+}
+
+// ============================================================
+// INICI
+// ============================================================
+
+injectSharedHTML();
+initLevelButtons();
+initClockFace();
+validateConfig();
+initCustomKeyboard({ allowNegative: false });
+startGame();
+
+// ── Botó Tutorial: fade-out i navega ────────────────────────
+document.getElementById('btn-tutorial').addEventListener('click', () => {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    const params = window.location.search;
+    setTimeout(() => { window.location.href = 'a-rellotge-tutorial.html' + params; }, 800);
+});
+</script>
+</body>
+</html>

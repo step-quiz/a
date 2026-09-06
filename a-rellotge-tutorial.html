@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial — Llegir el rellotge</title>
+  <style>
+    /* ── VARIABLES ─────────────────────────────────────────────── */
+    :root {
+      --primary:       #5a6a1e;
+      --primary-light: #e5e8c8;
+      --primary-dark:  #1c1f0e;
+      --bg:            #f3f5e8;
+      --panel:         #ffffff;
+      --text:          #1e293b;
+      --muted:         #64748b;
+      --border:        #e2e8f0;
+      --radius:        10px;
+      --hand-hour:     #1e293b;
+      --hand-min:      #5a6a1e;
+      --clock-border:  #5a6a1e;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px 8px;
+    }
+
+    /* ── CAPÇALERA PÀGINA ─────────────────────────────────────── */
+    .title-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+      width: 100%; max-width: 880px;
+      justify-content: center;
+    }
+    .title-row h1 {
+      font-size: 1.4em; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--primary-dark);
+    }
+    .home-icon-link {
+      width: 38px; height: 38px; opacity: 0.7;
+      transition: opacity 0.2s; display: block; flex-shrink: 0;
+    }
+    .home-icon-link:hover { opacity: 1; }
+    .home-icon-link img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* ── PANELL ───────────────────────────────────────────────── */
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--primary);
+      width: 100%; max-width: 880px;
+      overflow: hidden;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* ── CAPÇALERA TUTORIAL ───────────────────────────────────── */
+    .tut-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .step-counter {
+      font-size: 0.85em; font-weight: 700;
+      background: rgba(255,255,255,0.15);
+      padding: 3px 10px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .chip-label {
+      font-size: 0.82em; font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1 1 0; min-width: 0;
+    }
+    .header-spacer { flex: 0 0 auto; }
+    .btn-pause {
+      background: white;
+      border: 2px solid #ea580c;
+      color: #ea580c; font-size: 1em; font-weight: 800;
+      width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s; flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
+    }
+    .btn-pause:hover { background: #fff7ed; }
+    .btn-next {
+      padding: 5px 16px;
+      background: white; color: var(--primary-dark);
+      font-family: inherit; font-size: 1em; font-weight: 700;
+      border: none; border-radius: 7px; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-next:hover  { background: #e2e8f0; }
+    .btn-next:active { transform: scale(0.97); }
+    .btn-next.btn-finish       { background: #d1fae5; color: #065f46; }
+    .btn-next.btn-finish:hover { background: #a7f3d0; }
+
+    /* ── BARRA TIMER ──────────────────────────────────────────── */
+    .timer-track { height: 5px; background: rgba(0,0,0,0.08); flex-shrink: 0; }
+    .timer-fill  {
+      height: 100%;
+      background: linear-gradient(90deg, #84a924, #5a6a1e);
+      width: 0%;
+      transition: width 0.06s linear;
+    }
+
+    /* ── COS PRINCIPAL ────────────────────────────────────────── */
+    .game-body {
+      display: flex; flex-direction: row;
+      flex: 1 1 0; min-height: 0;
+      transition: opacity 0.22s ease;
+    }
+    .game-body.fading { opacity: 0; pointer-events: none; }
+
+    /* ── PANELL ESQUERRE: rellotge + mock resposta ────────────── */
+    .game-left {
+      width: 44%; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 18px 16px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto; min-height: 0;
+      gap: 20px;
+    }
+
+    /* Rellotge SVG */
+    #tut-clock-wrap { display: flex; justify-content: center; }
+    #tut-clock-svg  { display: block; filter: drop-shadow(0 4px 14px rgba(90,106,30,0.22)); }
+
+    /* Highlight per agulles */
+    .hand-highlight line { filter: drop-shadow(0 0 6px #f59e0b); }
+
+    /* Mock resposta (imita el joc) */
+    .mock-answer-wrap {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 2.2em;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+    }
+    .mock-input {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 68px; height: 52px;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.88em;
+      font-weight: bold;
+      color: var(--text);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .mock-input.filled {
+      background: #f0fdf4;
+      border-color: #5a6a1e;
+      color: #1e293b;
+    }
+    .mock-input.empty {
+      color: #94a3b8;
+      font-size: 0.7em;
+    }
+    .mock-colon {
+      color: #475569; user-select: none; padding: 0 2px;
+    }
+
+    /* Etiqueta sota el rellotge */
+    .clock-label {
+      font-size: 0.82em; color: var(--muted); font-weight: 600;
+      text-align: center; padding: 0 8px;
+    }
+
+    /* ── PANELL DRET: narrador + ajuda visual ─────────────────── */
+    .game-right {
+      width: 56%; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 18px 20px 14px;
+      overflow-y: auto; min-height: 0;
+      gap: 16px;
+    }
+
+    /* Narrador */
+    .narration-box {
+      width: 100%;
+      background: white;
+      border: 2px solid var(--primary);
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+      box-shadow: 0 2px 10px rgba(90,106,30,0.12);
+      flex-shrink: 0;
+      opacity: 0;
+    }
+    .narration-icon { font-size: 1.5em; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+    .narration-text { font-size: 1.05em; line-height: 1.6; color: var(--text); }
+    .narration-text b { color: var(--primary-dark); }
+    .narration-text .hour-clr { color: #1e293b; font-weight: 700; }
+    .narration-text .min-clr  { color: #5a6a1e; font-weight: 700; }
+
+    /* Llegenda visual */
+    .legend-box {
+      width: 100%;
+      background: #fafaf7;
+      border: 1.5px solid var(--primary-light);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 9px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.95em; font-weight: 600; color: var(--text);
+    }
+    .legend-dot {
+      width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+    }
+    .legend-line {
+      display: inline-flex; align-items: center; flex-shrink: 0;
+    }
+    .legend-line svg { display: block; }
+
+    /* ── ANIMACIÓ FADE ─────────────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media (max-width: 680px) {
+      body { overflow: auto; height: auto; padding: 8px; }
+      .panel { flex: none; min-height: 520px; }
+      .game-body { flex-direction: column; }
+      .game-left, .game-right { width: 100%; border-right: none; }
+      .game-left  { border-bottom: 1px solid var(--border); padding: 14px; }
+      .game-right { padding: 12px; }
+    }
+    @media (max-width: 440px) {
+      .title-row h1 { font-size: 1.05em; }
+    }
+  </style>
+  <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<div class="title-row">
+  <a href="a-rellotge.html" class="home-icon-link"
+     title="Tornar al joc" aria-label="Tornar al joc">
+    <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+  </a>
+  <h1>Tutorial — Llegir el rellotge</h1>
+</div>
+
+<div class="panel">
+
+  <div class="tut-header">
+    <span class="step-counter" id="step-counter">Completat: 0%</span>
+    <span class="chip-label"   id="chip-label"></span>
+    <button class="btn-pause"  id="btn-pause" aria-label="Pausa/Repren">⏸</button>
+    <button class="btn-next"   id="btn-next">Següent →</button>
+  </div>
+
+  <div class="timer-track">
+    <div class="timer-fill" id="timer-fill"></div>
+  </div>
+
+  <div class="game-body" id="game-body">
+
+    <!-- Esquerra: rellotge + mock resposta -->
+    <div class="game-left" id="game-left">
+      <div id="tut-clock-wrap">
+        <!-- SVG generat per JS -->
+      </div>
+      <div class="clock-label" id="clock-label"></div>
+      <div class="mock-answer-wrap" id="mock-answer" style="display:none;">
+        <div class="mock-input" id="mock-h">H</div>
+        <span class="mock-colon">:</span>
+        <div class="mock-input" id="mock-m">MM</div>
+      </div>
+    </div>
+
+    <!-- Dreta: narrador + llegenda -->
+    <div class="game-right">
+      <div class="narration-box">
+        <span class="narration-icon" id="narration-icon">👀</span>
+        <div  class="narration-text" id="narration-text"></div>
+      </div>
+      <div id="legend-area"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Fade overlay per tornar al joc -->
+<div id="fade-overlay"
+     style="position:fixed;inset:0;background:#000;opacity:0;
+            pointer-events:none;z-index:9999;transition:opacity 1.2s ease;"></div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   GENERADOR DEL RELLOTGE SVG
+   buildClockSVG(h, m, highlight)
+     h, m:      hora i minuts
+     highlight: null | 'hour' | 'minute' | 'both'
+   ================================================================ */
+function buildClockSVG(h, m, highlight) {
+  const cx = 100, cy = 100;
+
+  // Angles (en graus, des del 12 en sentit horari)
+  const hourDeg = ((h % 12) * 30 + m * 0.5);
+  const minDeg  = m * 6;
+  const hourRad = hourDeg * Math.PI / 180;
+  const minRad  = minDeg  * Math.PI / 180;
+
+  const sinH = Math.sin(hourRad), cosH = Math.cos(hourRad);
+  const sinM = Math.sin(minRad),  cosM = Math.cos(minRad);
+
+  // Punts finals de les agulles
+  const hx  = (cx + 50 * sinH).toFixed(2);
+  const hy  = (cy - 50 * cosH).toFixed(2);
+  const hbx = (cx -  8 * sinH).toFixed(2);  // cua curta
+  const hby = (cy +  8 * cosH).toFixed(2);
+  const mx  = (cx + 70 * sinM).toFixed(2);
+  const my  = (cy - 70 * cosM).toFixed(2);
+  const mbx = (cx -  6 * sinM).toFixed(2);
+  const mby = (cy +  6 * cosM).toFixed(2);
+
+  const hlHour = (highlight === 'hour'   || highlight === 'both');
+  const hlMin  = (highlight === 'minute' || highlight === 'both');
+
+  // Colors i gruixos
+  const hourStroke = hlHour ? '#f59e0b' : '#1e293b';
+  const minStroke  = hlMin  ? '#f59e0b' : '#5a6a1e';
+  const hourW = 6.5;
+  const minW  = 3.5;
+
+  // Marques de les hores
+  let ticks = '';
+  for (let i = 1; i <= 12; i++) {
+    const a    = i * 30 * Math.PI / 180;
+    const s    = Math.sin(a), c = Math.cos(a);
+    const main = (i % 3 === 0);
+    const iR   = main ? 73 : 80;
+    const oR   = 86;
+    ticks += `<line x1="${(cx + iR*s).toFixed(2)}" y1="${(cy - iR*c).toFixed(2)}"
+                    x2="${(cx + oR*s).toFixed(2)}" y2="${(cy - oR*c).toFixed(2)}"
+                    stroke="#475569" stroke-width="${main ? 2.5 : 1.5}"
+                    stroke-linecap="round"/>`;
+    // Números 1-12
+    const nR = 62;
+    const nx = (cx + nR*s).toFixed(2);
+    const ny = (cy - nR*c + 5).toFixed(2);
+    ticks += `<text x="${nx}" y="${ny}" text-anchor="middle"
+                    font-family="'Segoe UI',sans-serif"
+                    font-size="12" font-weight="700" fill="#475569">${i}</text>`;
+  }
+
+  // Glow per a l'agulla ressaltada
+  const defs = (hlHour || hlMin) ? `
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>` : '';
+
+  const hourFilter = hlHour ? 'filter="url(#glow)"' : '';
+  const minFilter  = hlMin  ? 'filter="url(#glow)"' : '';
+
+  return `<svg id="tut-clock-svg" viewBox="0 0 200 200" width="170" height="170"
+               xmlns="http://www.w3.org/2000/svg">
+    ${defs}
+    <!-- Cara del rellotge -->
+    <circle cx="${cx}" cy="${cy}" r="88" fill="white"
+            stroke="#5a6a1e" stroke-width="3.5"/>
+    <!-- Marques i números -->
+    ${ticks}
+    <!-- Agulla dels minuts (prima, llarga) -->
+    <line x1="${mbx}" y1="${mby}" x2="${mx}" y2="${my}"
+          stroke="${minStroke}" stroke-width="${minW}"
+          stroke-linecap="round" ${minFilter}/>
+    <!-- Agulla de les hores (grossa, curta) -->
+    <line x1="${hbx}" y1="${hby}" x2="${hx}" y2="${hy}"
+          stroke="${hourStroke}" stroke-width="${hourW}"
+          stroke-linecap="round" ${hourFilter}/>
+    <!-- Punt central -->
+    <circle cx="${cx}" cy="${cy}" r="5.5" fill="#1e293b"/>
+    <circle cx="${cx}" cy="${cy}" r="2.5" fill="#5a6a1e"/>
+  </svg>`;
+}
+
+/* ================================================================
+   DADES DEL TUTORIAL — 3 exemples, 9 passos totals
+   ================================================================ */
+const TUTORIAL = [
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 0 — Les dues agulles
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Introducció · Les dues agulles',
+    steps: [
+      {
+        icon:      '🕐',
+        narration: 'Un rellotge d\'agulles té <b>dues agulles</b> que giren per indicar l\'hora.<br>Aprèn a llegir-les pas a pas!',
+        time:      { h: 12, m: 0 },
+        highlight: null,
+        label:     'Rellotge en punt (12:00)',
+        showMock:  false,
+        legend:    null,
+      },
+      {
+        icon:      '🔵',
+        narration: 'L\'<b class="hour-clr">agulla curta</b> (la grossa i més petita) indica les <b>hores</b>.<br>Ara apunta al <b>3</b> → les <b>3 hores</b>.',
+        time:      { h: 3, m: 0 },
+        highlight: 'hour',
+        label:     'Agulla curta = HORES (taronja)',
+        showMock:  false,
+        legend: {
+          items: [
+            { color: '#f59e0b', label: 'Agulla curta (grossa) → Hores' },
+          ],
+        },
+      },
+      {
+        icon:      '🟢',
+        narration: 'L\'<b class="min-clr">agulla llarga</b> (la prima i més llarga) indica els <b>minuts</b>.<br>Quan apunta al 12 → <b>0 minuts</b> (en punt).',
+        time:      { h: 3, m: 0 },
+        highlight: 'minute',
+        label:     'Agulla llarga = MINUTS (taronja)',
+        showMock:  false,
+        legend: {
+          items: [
+            { color: '#f59e0b', label: 'Agulla llarga (prima) → Minuts' },
+          ],
+        },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 1 — Hora en punt: 3:00
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Exemple 1 · Les 3:00 en punt',
+    steps: [
+      {
+        icon:      '📖',
+        narration: 'Mira el rellotge: <b class="min-clr">l\'agulla llarga apunta al 12</b>.<br>Sempre que apunta al 12, els minuts són <b>0</b> (en punt).',
+        time:      { h: 3, m: 0 },
+        highlight: 'minute',
+        label:     'Agulla llarga al 12 → 0 minuts',
+        showMock:  true,
+        mockH:     null,
+        mockM:     '00',
+        legend: {
+          items: [
+            { color: '#5a6a1e', label: 'Agulla llarga al 12 = 0 minuts' },
+          ],
+        },
+      },
+      {
+        icon:      '💡',
+        narration: 'Ara fixa\'t en l\'<b class="hour-clr">agulla curta</b>: apunta just al número <b>3</b>.<br>Les hores s\'escriuen: <b>3</b>.',
+        time:      { h: 3, m: 0 },
+        highlight: 'hour',
+        label:     'Agulla curta al 3 → 3 hores',
+        showMock:  true,
+        mockH:     '3',
+        mockM:     '00',
+        legend: {
+          items: [
+            { color: '#1e293b', label: 'Agulla curta al 3 = 3 hores' },
+          ],
+        },
+      },
+      {
+        icon:      '✅',
+        narration: 'La resposta és <b>3 : 00</b>.<br><br>Hores: <b>3</b>, Minuts: <b>00</b> → <b>les tres en punt!</b>',
+        time:      { h: 3, m: 0 },
+        highlight: null,
+        label:     'Resposta correcta: 3:00',
+        showMock:  true,
+        mockH:     '3',
+        mockM:     '00',
+        legend:    null,
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 2 — Mitja hora: 7:30
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Exemple 2 · Les 7:30 (i mitja)',
+    steps: [
+      {
+        icon:      '📖',
+        narration: 'Quan <b class="min-clr">l\'agulla llarga apunta al 6</b>, han passat <b>30 minuts</b> (és "i mitja").',
+        time:      { h: 7, m: 30 },
+        highlight: 'minute',
+        label:     'Agulla llarga al 6 → 30 minuts',
+        showMock:  true,
+        mockH:     null,
+        mockM:     '30',
+        legend: {
+          items: [
+            { color: '#5a6a1e', label: 'Agulla llarga al 6 = 30 minuts' },
+          ],
+        },
+      },
+      {
+        icon:      '💡',
+        narration: 'L\'<b class="hour-clr">agulla curta</b> és entre el 7 i el 8 (a mig camí).<br>Llegim l\'<b>últim número que ha passat</b>: el <b>7</b>.',
+        time:      { h: 7, m: 30 },
+        highlight: 'hour',
+        label:     'Agulla curta passant el 7 → 7 hores',
+        showMock:  true,
+        mockH:     '7',
+        mockM:     '30',
+        legend: {
+          items: [
+            { color: '#1e293b', label: 'Agulla curta entre 7 i 8 → llegim 7' },
+          ],
+        },
+      },
+      {
+        icon:      '✅',
+        narration: 'La resposta és <b>7 : 30</b>.<br><br>Hores: <b>7</b>, Minuts: <b>30</b> → <b>les set i mitja!</b>',
+        time:      { h: 7, m: 30 },
+        highlight: null,
+        label:     'Resposta correcta: 7:30',
+        showMock:  true,
+        mockH:     '7',
+        mockM:     '30',
+        legend:    null,
+      },
+    ],
+  },
+
+];
+
+const TOTAL_STEPS = TUTORIAL.reduce((n, ex) => n + ex.steps.length, 0);
+
+function stepPct(gStep) {
+  if (gStep >= TOTAL_STEPS - 1) return 100;
+  return Math.round((gStep + 1) / TOTAL_STEPS * 100);
+}
+
+/* ================================================================
+   ESTAT
+   ================================================================ */
+let exIdx   = 0;
+let stepIdx = 0;
+
+/* ================================================================
+   TIMER
+   ================================================================ */
+const STEP_MS    = 11000;
+let timerElapsed = 0;
+let timerLastMs  = null;
+let timerIntv    = null;
+let isPaused     = false;
+
+function startTimer() {
+  clearInterval(timerIntv);
+  timerElapsed = 0;
+  timerLastMs  = Date.now();
+  isPaused     = false;
+  _setPauseIcon();
+  _setFill(0);
+  timerIntv = setInterval(_tick, 60);
+}
+
+function _tick() {
+  if (isPaused) return;
+  const now = Date.now();
+  timerElapsed += now - timerLastMs;
+  timerLastMs   = now;
+  _setFill(Math.min(100, timerElapsed / STEP_MS * 100));
+  if (timerElapsed >= STEP_MS) { clearInterval(timerIntv); _advance(); }
+}
+
+function _setFill(pct) {
+  document.getElementById('timer-fill').style.width = pct + '%';
+}
+
+function togglePause() {
+  if (isPaused) {
+    isPaused    = false;
+    timerLastMs = Date.now();
+  } else {
+    isPaused = true;
+  }
+  _setPauseIcon();
+}
+
+function _setPauseIcon() {
+  document.getElementById('btn-pause').textContent = isPaused ? '▶' : '⏸';
+}
+
+/* ================================================================
+   NAVEGACIÓ
+   ================================================================ */
+function _globalStep() {
+  let n = 0;
+  for (let i = 0; i < exIdx; i++) n += TUTORIAL[i].steps.length;
+  return n + stepIdx;
+}
+
+function _advance() {
+  clearInterval(timerIntv);
+  const ex         = TUTORIAL[exIdx];
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+
+  if (isLastStep && isLastEx) {
+    // Fade-out → torna al joc
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    const params = window.location.search;
+    setTimeout(() => { window.location.href = 'a-rellotge.html' + params; }, 1200);
+    return;
+  }
+
+  if (isLastStep) { exIdx++; stepIdx = 0; }
+  else            { stepIdx++; }
+  _transition();
+}
+
+function _transition() {
+  const body = document.getElementById('game-body');
+  body.classList.add('fading');
+  setTimeout(() => {
+    render();
+    body.classList.remove('fading');
+    setTimeout(() => {
+      _showNarration();
+      startTimer();
+    }, 600);
+  }, 220);
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function render() {
+  const ex   = TUTORIAL[exIdx];
+  const step = ex.steps[stepIdx];
+  const gs   = _globalStep();
+
+  // Capçalera
+  document.getElementById('step-counter').textContent = `Completat: ${stepPct(gs)}%`;
+  document.getElementById('chip-label').textContent   = ex.chip;
+
+  // Rellotge SVG
+  document.getElementById('tut-clock-wrap').innerHTML =
+    buildClockSVG(step.time.h, step.time.m, step.highlight);
+
+  // Etiqueta del rellotge
+  document.getElementById('clock-label').textContent = step.label || '';
+
+  // Mock resposta
+  const mockWrap = document.getElementById('mock-answer');
+  if (step.showMock) {
+    mockWrap.style.display = 'flex';
+    const mockH = document.getElementById('mock-h');
+    const mockM = document.getElementById('mock-m');
+
+    if (step.mockH) {
+      mockH.textContent = step.mockH;
+      mockH.className   = 'mock-input filled';
+    } else {
+      mockH.textContent = 'H';
+      mockH.className   = 'mock-input empty';
+    }
+
+    if (step.mockM !== null && step.mockM !== undefined) {
+      mockM.textContent = step.mockM;
+      mockM.className   = 'mock-input filled';
+    } else {
+      mockM.textContent = 'MM';
+      mockM.className   = 'mock-input empty';
+    }
+  } else {
+    mockWrap.style.display = 'none';
+  }
+
+  // Narrador (invisible, s'anima després)
+  const narBox = document.querySelector('.narration-box');
+  narBox.style.transition = 'none';
+  narBox.style.opacity    = '0';
+  document.getElementById('narration-icon').textContent = step.icon;
+  document.getElementById('narration-text').innerHTML   = step.narration;
+
+  // Llegenda
+  const legendArea = document.getElementById('legend-area');
+  if (step.legend && step.legend.items.length > 0) {
+    let html = '<div class="legend-box">';
+    for (const item of step.legend.items) {
+      html += `<div class="legend-item">
+        <span class="legend-dot" style="background:${item.color};"></span>
+        <span>${item.label}</span>
+      </div>`;
+    }
+    html += '</div>';
+    legendArea.innerHTML = html;
+  } else {
+    legendArea.innerHTML = '';
+  }
+
+  // Botó Següent / Finalitzar
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+  const btn = document.getElementById('btn-next');
+  if (isLastStep && isLastEx) {
+    btn.textContent = '🎮 Ves a jugar!';
+    btn.className   = 'btn-next btn-finish';
+  } else {
+    btn.textContent = 'Següent →';
+    btn.className   = 'btn-next';
+  }
+  btn.blur();
+}
+
+function _showNarration() {
+  const box = document.querySelector('.narration-box');
+  box.style.transition = 'opacity 0.45s ease';
+  box.style.opacity    = '1';
+}
+
+/* ================================================================
+   EVENTS
+   ================================================================ */
+document.getElementById('btn-next').addEventListener('click', () => {
+  clearInterval(timerIntv);
+  _advance();
+});
+document.getElementById('btn-pause').addEventListener('click', togglePause);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    togglePause();
+  }
+  if (e.code === 'ArrowRight') {
+    clearInterval(timerIntv);
+    _advance();
+  }
+});
+
+/* ================================================================
+   ARRENCADA
+   ================================================================ */
+render();
+setTimeout(() => {
+  _showNarration();
+  startTimer();
+}, 600);
+</script>
+
+</body>
+</html>

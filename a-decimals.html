@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Diners i canvi — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Diners i canvi (adaptat)</title>
+
+    <!--
+    ============================================================
+    FITXER: a/a-decimals-v2.html
+    ROL: Activitat adaptada de càlcul amb diners per a alumnes amb
+         NEE (retard d'aprenentatge, discapacitat intel·lectual lleu,
+         TDAH).
+
+    Escrit des de zero basant-se en la versió final de diners.html,
+    incorporant totes les millores i adaptant-les al perfil NEE.
+
+    DIFERÈNCIES RESPECTE A diners.html:
+      · Paleta verda (coherent amb a-enters i a-equacions).
+      · Icona verda (icon-green.png).
+      · Botó Tutorial amb puntet pulsant → a-decimals-tutorial.html.
+      · Nivells simplificats (3 en lloc de 4): preus en passos de 0,10€.
+      · Botó "💡 Ajuda" amb pista textual curta i directa.
+      · Animació blink al comptador d'intents (feedback visual extra).
+      · Nivell-badge a la capçalera (· Nivell X).
+      · Més intents per defecte (5 en lloc de 3).
+      · Menys operacions per defecte (4 en lloc de 6).
+      · Textos de pregunta més curts i directes.
+      · Botó "Passar al nivell X" fins a N2 (N3 és el màxim amb botó).
+
+    MILLORES DE diners.html INCORPORADES:
+      · products-diners.js → rangs de preus versemblants per producte.
+      · diners-feedback.js → missatges pedagògics específics per error.
+      · Feedback inline ⭐/❌ al costat del botó OK (no mini-overlay).
+      · Resposta correcta dins la box en verd quan s'esgoten els intents.
+      · Anti-repetició de canvis (_usedChanges) per sessió.
+      · fmtMoney sense decimals per imports enters (5€, no 5,00€).
+      · parseMoneyInput accepta >2 decimals (arrodoneix).
+      · Detecció de punt decimal → avís sense penalització.
+      · Detecció de >2 decimals correctes → avís temporal 1,5s.
+      · showErrorInInput: text incorrecte en vermell + text seleccionat.
+      · Listener 'input' per netejar error-val quan l'alumne corregeix.
+      · El bitllet s'amaga al pas 'total' (N3) i apareix en avançar.
+      · Input + € + OK + feedback en una sola fila (sense scroll vertical).
+      · #step-hint per missatges pedagògics d'error.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: 1 producte. Preu = enter [1..4] + moneda gran (0,10/0,20/0,50).
+                Ex: 2,50€, 3,10€. Sempre es paga amb 5€. Un pas: canvi.
+      Nivell 2: 1 producte. Preu en passos de 0,10€ dins del rang del catàleg.
+                Bitllet 5€ o 10€. Un pas: canvi.  (default)
+      Nivell 3: 2 productes. Preus en passos de 0,10€. Bitllet 10€.
+                Dos passos: total → canvi.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?maxenllocmitjana=  (default 1)
+
+    DEPENDÈNCIES: js/utils.js → js/config.js → js/game-core.js
+                  js/products-diners.js → js/diners-feedback.js
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5,
+            defaultEnllocMitjana: 1
+        };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/decimals/products-diners.js"></script>
+    <script src="js/decimals/diners-feedback.js"></script>
+    <link rel="stylesheet" href="css/shared.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── BOTIGA: productes + bitllet ─────────────────────── */
+        .shop-display {
+            padding: 24px 20px 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .products-row {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .product-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 18px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            min-width: 100px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        /* Emojis i text lleugerament més grans que diners.html per accessibilitat */
+        .product-emoji { font-size: 2.8em; line-height: 1; }
+        .product-name  { font-size: 1em;   color: #475569; font-weight: 600; }
+        .product-price {
+            font-size: 1.5em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .products-plus {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #94a3b8;
+            align-self: center;
+        }
+
+        .bill-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #f0fdf4;
+            border: 2px solid #bbf7d0;
+            border-radius: 12px;
+            font-size: 1.15em;
+            font-weight: 700;
+            color: #166534;
+        }
+        .bill-emoji { font-size: 1.6em; }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Pregunta més gran per facilitar la lectura (NEE) */
+        .step-prompt {
+            font-size: 1.25em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+
+        /* ── PAS: INPUT NUMÈRIC ──────────────────────────────── */
+        .step-container { display: none; flex-direction: column; align-items: center; width: 100%; gap: 12px; animation: fadeIn 0.3s; }
+        .step-container.active { display: flex; }
+
+        /* Input + € + OK + feedback en una sola fila (sense scroll vertical) */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type="text"]#value-input {
+            width: 130px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        /* Estat error-val: text incorrecte visible en vermell mentre
+           l'alumne llegeix el missatge pedagògic. */
+        input[type="text"]#value-input.error-val {
+            border-color: var(--danger) !important;
+            background: #fef2f2 !important;
+            color: var(--danger);
+        }
+
+        .answer-unit {
+            color: #475569;
+            font-size: 0.8em;
+        }
+
+        /* ── BOTÓ OK (adaptat NEE: compact, neutre) ──────────── */
+        #btn-submit-val {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* Frase d'ajuda contextual (pista curta i directa, NEE) */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.5;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+
+        /* ── MISSATGE PEDAGÒGIC D'ERROR (diners-feedback.js) ────
+         * Apareix sota l'input quan hi ha un patró d'error reconegut.
+         * Es neteja en cada nova operació o en avançar al pas següent. */
+        #step-hint {
+            min-height: 1.4em;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #92400e;
+            background: #fffbeb;
+            border: 1.5px solid #fde68a;
+            border-radius: 8px;
+            padding: 6px 14px;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        #step-hint.visible { display: block; }
+
+        /* ── FEEDBACK INLINE (dins answer-row, a la dreta del botó OK) ──
+         * Substitueix el mini-overlay de game-core (fora del viewport). */
+        #inline-feedback {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.5em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            white-space: nowrap;
+            animation: fadeIn 0.2s ease;
+        }
+        #inline-feedback.visible { display: flex; }
+        #inline-feedback.success { color: var(--primary-dark); }
+        #inline-feedback.failure { color: var(--danger); }
+
+        /* ── ANIMACIÓ BLINK INTENTS (NEE: feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── BOTÓ TUTORIAL ────────────────────────────────────── */
+        .btn-tutorial {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-tutorial:hover  { background: #d4d9a8; }
+        .btn-tutorial:active { transform: scale(0.96); }
+
+        .tut-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #dc2626;
+            flex-shrink: 0;
+            animation: tutDotPulse 0.8s ease-in-out 5;
+            animation-fill-mode: forwards;
+        }
+        @keyframes tutDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%      { opacity: 0.2; transform: scale(0.65); }
+        }
+
+        /* Overlay de transició cap al tutorial */
+        #fade-overlay {
+            position: fixed; inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ── BOTÓ "PASSAR AL NIVELL X" ───────────────────────────
+         * Igual que diners.html però amb paleta verda.
+         * Màxim fins al N2 (N3 és el màxim per a NEE). */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .shop-display     { padding: 16px 12px 12px; gap: 10px; }
+            .product-card     { padding: 10px 14px; min-width: 85px; }
+            .product-emoji    { font-size: 2.2em; }
+            .product-price    { font-size: 1.3em; }
+            .answer-row       { font-size: 1.6em; }
+            input[type="text"]#value-input { width: 110px; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .step-prompt      { font-size: 1.1em; }
+            .help-text        { font-size: 0.97em; padding: 10px 14px; }
+        }
+        @media (max-width: 350px) {
+            .product-emoji { font-size: 1.8em; }
+            .product-card  { min-width: 75px; padding: 8px 10px; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol + botó Tutorial -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Diners i canvi</h1>
+    <button class="btn-tutorial" id="btn-tutorial" aria-label="Veure tutorial">
+        <span class="tut-dot" aria-hidden="true"></span>
+        Tutorial
+    </button>
+</div>
+
+<!-- Overlay de transició cap al tutorial -->
+<div id="fade-overlay"></div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display">Compra 1 de 4</div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display">Punts: 0</div>
+            <!-- Botó per pujar de nivell (mai baixar). Fins a N2 (N3 és el màxim). -->
+            <button id="btn-next-level" aria-label="Passar al nivell següent"></button>
+            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+        </div>
+
+        <!-- Botiga -->
+        <div class="shop-display" id="shop-display"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Indicadors de passos completats -->
+            <div id="steps-done"></div>
+
+            <!-- Pas actiu -->
+            <div class="step-container active" id="step-active">
+                <div class="step-prompt" id="step-prompt"></div>
+
+                <!-- Input + € + OK + Ajuda + feedback en una sola fila -->
+                <div class="answer-row" id="answer-row">
+                    <input type="text" id="value-input" autocomplete="off"
+                           aria-label="Escriu la resposta">
+                    <span class="answer-unit">€</span>
+                    <button class="btn-submit" id="btn-submit-val" onclick="checkValue()">OK</button>
+                    <!-- Botó Ajuda: exclusiu de la versió NEE -->
+                    <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Veure pista">💡</button>
+                    <div id="inline-feedback" aria-live="assertive"></div>
+                </div>
+
+                <!-- Frase d'ajuda contextual (NEE) -->
+                <div class="help-text" id="help-text" aria-live="polite"></div>
+
+                <!-- Missatge pedagògic d'error (diners-feedback.js) -->
+                <div id="step-hint" aria-live="polite"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="js/game-core.js"></script>
+
+<script>
+'use strict';
+
+// ============================================================
+// PARÀMETRES URL
+// ============================================================
+
+const _urlParams = new URLSearchParams(window.location.search);
+
+/**
+ * Nivell 1: 1 producte, preu enter+moneda gran, paga amb 5€. (default)
+ * Nivell 2: 1 producte, cèntims múltiples de 0,10, bitllet 5€ o 10€.
+ * Nivell 3: 2 productes, cèntims múltiples de 0,10, bitllet 10€, dos passos.
+ */
+const NIVELL = getIntParam(_urlParams, 'nivell', 1, 1, 3);
+
+// ============================================================
+// ELEMENTS DOM
+// ============================================================
+
+const els = {
+    body:            document.body,
+    gameScreen:      document.getElementById('game-screen'),
+    sessionDisplay:  document.getElementById('session-display'),
+    lvlDisplay:      document.getElementById('lvl-display'),
+    nivellDisplay:   document.getElementById('nivell-display'),
+    scoreDisplay:    document.getElementById('score-display'),
+    attemptsDisplay: document.getElementById('attempts-display'),
+    shopDisplay:     document.getElementById('shop-display'),
+    resolutionPanel: document.getElementById('resolution-panel'),
+    stepsDone:       document.getElementById('steps-done'),
+    stepActive:      document.getElementById('step-active'),
+    stepPrompt:      document.getElementById('step-prompt'),
+    answerRow:       document.getElementById('answer-row'),
+    valueInput:      document.getElementById('value-input'),
+    btnSubmitVal:    document.getElementById('btn-submit-val'),
+    helpText:        document.getElementById('help-text'),
+    // Feedback inline (substitueix el mini-overlay de game-core)
+    inlineFeedback:  document.getElementById('inline-feedback'),
+    // Botó per pujar de nivell
+    btnNextLevel:    document.getElementById('btn-next-level'),
+    // Missatge pedagògic d'error (diners-feedback.js)
+    stepHint:        document.getElementById('step-hint'),
+};
+
+// ============================================================
+// ESTAT LOCAL
+// ============================================================
+
+let isPenalizing   = false;
+let currentProblem = null;
+let expectedAnswer = 0;
+let currentStep    = 1;       // 1 o 2 (N3 té dos passos)
+let stepsDoneList  = [];
+let _helpVisible   = false;
+
+// ============================================================
+// PRODUCTES
+// ============================================================
+
+// Catàleg carregat des de js/products-diners.js (PRODUCTS_DINERS global)
+const PRODUCTS = PRODUCTS_DINERS;
+
+// ============================================================
+// UTILITATS
+// ============================================================
+
+function pickProduct() {
+    return { ...pick(PRODUCTS) };
+}
+
+function pickTwoDifferent() {
+    const p1 = pickProduct();
+    let p2 = pickProduct();
+    while (p2.nom === p1.nom) p2 = pickProduct();
+    return [p1, p2];
+}
+
+// ============================================================
+// CUA ANTI-REPETICIÓ DE CANVIS
+// ============================================================
+
+// Evitem repetir el mateix valor de canvi dins d'una sessió.
+// N1: 3 valors únics (les 3 monedes grans). N2–N3: 10 valors únics.
+let _usedChanges = new Set();
+const MAX_UNIQUE_CHANGES = (NIVELL === 1) ? 3 : 10;
+
+function _resetChangeTracking() { _usedChanges = new Set(); }
+
+function _changeAlreadyUsed(changeCents) {
+    if (_usedChanges.size >= MAX_UNIQUE_CHANGES) { _usedChanges = new Set(); }
+    return _usedChanges.has(changeCents);
+}
+
+function _markChangeUsed(changeCents) { _usedChanges.add(changeCents); }
+
+// ============================================================
+// FORMAT I PARSEIG
+// ============================================================
+
+function fmtMoney(n) {
+    if (Math.round(n * 100) % 100 === 0) return Math.round(n) + ' €';
+    return n.toFixed(2).replace('.', ',') + ' €';
+}
+
+function parseMoneyInput(str) {
+    str = String(str).trim().replace('€', '').trim();
+    str = str.replace(',', '.');
+    // Acceptem qualsevol nombre de decimals; arrodonit a 2.
+    // La detecció de >2 decimals es fa a checkValue.
+    if (!/^\d+(\.\d+)?$/.test(str)) return NaN;
+    return Math.round(parseFloat(str) * 100) / 100;
+}
+
+function moneyEquals(a, b) {
+    return Math.round(a * 100) === Math.round(b * 100);
+}
+
+function r100(n) { return Math.round(n * 100) / 100; }
+
+// ============================================================
+// GENERACIÓ DE PROBLEMES
+// ============================================================
+
+function generateProblem() {
+
+    if (NIVELL === 1) {
+        // 1 producte. Preu = enter[1..4] + moneda gran (0,10 / 0,20 / 0,50).
+        // Sempre es paga amb 5€. El canvi és de la forma X,Y0 (senzill per NEE).
+        // Respecta el rang de preu del catàleg de productes.
+        // Usa _usedChanges per ciclar les 3 monedes de canvi possibles.
+        const LARGE_COINS  = [0.10, 0.20, 0.50];
+        const BILL         = 5;
+
+        let prod, validCombos, chosen;
+        let outerAttempts = 0;
+        do {
+            const availableCoins = LARGE_COINS.filter(
+                c => !_changeAlreadyUsed(Math.round((BILL - Math.ceil(1) - c) * 100 + 9999))
+                // Clau simplificada: usem el valor de canvi directament.
+            );
+
+            // Enfocament més directe: enumerar (euros, coin) vàlids per rang de producte
+            prod = pickProduct();
+            validCombos = [];
+            for (let euros = 1; euros <= 4; euros++) {
+                for (const coin of LARGE_COINS) {
+                    const price  = Math.round((euros + coin) * 100) / 100;
+                    const change = Math.round((BILL - price) * 100) / 100;
+                    if (price >= prod.preu[0] && price <= prod.preu[1] && change > 0) {
+                        if (!_changeAlreadyUsed(Math.round(change * 100))) {
+                            validCombos.push({ price, change, coin });
+                        }
+                    }
+                }
+            }
+            outerAttempts++;
+        } while (validCombos.length === 0 && outerAttempts < 25);
+
+        // Si no hi ha combinació no usada, agafem qualsevol
+        if (validCombos.length === 0) {
+            for (let euros = 1; euros <= 4; euros++) {
+                for (const coin of LARGE_COINS) {
+                    const price  = Math.round((euros + coin) * 100) / 100;
+                    const change = Math.round((BILL - price) * 100) / 100;
+                    if (price >= prod.preu[0] && price <= prod.preu[1] && change > 0) {
+                        validCombos.push({ price, change, coin });
+                    }
+                }
+            }
+        }
+
+        const chosen2 = pick(validCombos);
+        _markChangeUsed(Math.round(chosen2.change * 100));
+        prod.price = chosen2.price;
+        return {
+            products: [prod],
+            bill:   BILL,
+            total:  chosen2.price,
+            change: chosen2.change,
+            steps:  ['change'],
+        };
+    }
+
+    if (NIVELL === 2) {
+        // 1 producte. Preu múltiple de 0,10€ dins del rang del catàleg.
+        // Bitllet 5€ o 10€. Reintenta si el canvi ja s'ha vist.
+        let prob, attempts = 0;
+        do {
+            const prod    = pickProduct();
+            const min10   = Math.ceil(prod.preu[0] * 10);
+            const max10   = Math.min(Math.floor(prod.preu[1] * 10), 49); // màx 4,90€
+            const price   = randInt(min10, max10) * 10 / 100;
+            const bill    = price > 4.50 ? 10 : 5;
+            const change  = r100(bill - price);
+            prod.price    = price;
+            prob = { products: [prod], bill, total: price, change, steps: ['change'] };
+            attempts++;
+        } while (_changeAlreadyUsed(Math.round(prob.change * 100)) && attempts < 15);
+        _markChangeUsed(Math.round(prob.change * 100));
+        return prob;
+    }
+
+    // Nivell 3: 2 productes, preus múltiples de 0,10€, bitllet 10€.
+    // Total sempre < 10€. Dos passos: total → canvi.
+    // El bitllet s'amaga al pas 'total' i apareix en avançar (com a diners.html N2/N3).
+    let prob3, attempts3 = 0;
+    do {
+        const [p1, p2] = pickTwoDifferent();
+        // Limitem a [1,10..4,00] per garantir total < 10€
+        const min10 = 11; // 1,10€
+        const max10 = 40; // 4,00€
+        p1.price = randInt(min10, max10) * 10 / 100;
+        p2.price = randInt(min10, max10) * 10 / 100;
+        const total  = r100(p1.price + p2.price);
+        const bill   = 10;
+        const change = r100(bill - total);
+        prob3 = { products: [p1, p2], bill, total, change, steps: ['total', 'change'] };
+        attempts3++;
+    } while (_changeAlreadyUsed(Math.round(prob3.change * 100)) && attempts3 < 15);
+    _markChangeUsed(Math.round(prob3.change * 100));
+    return prob3;
+}
+
+// ============================================================
+// RENDERITZACIÓ DE LA BOTIGA
+// ============================================================
+
+function renderShop(p) {
+    let html = '<div class="products-row">';
+    p.products.forEach((prod, i) => {
+        if (i > 0) html += '<span class="products-plus">+</span>';
+        html += `<div class="product-card">
+            <span class="product-emoji">${prod.emoji}</span>
+            <span class="product-name">${prod.nom}</span>
+            <span class="product-price">${fmtMoney(prod.price)}</span>
+        </div>`;
+    });
+    html += '</div>';
+
+    // Al N3, el bitllet s'amaga mentre es demana el total.
+    // Apareix quan s'avança al pas 'change' (re-render a advanceStep).
+    const isOnTotalStep = currentProblem.steps[currentStep - 1] === 'total';
+    if (!(NIVELL === 3 && isOnTotalStep)) {
+        html += `<div class="bill-display">
+            <span class="bill-emoji">💵</span>
+            Pagues amb ${fmtMoney(p.bill)}
+        </div>`;
+    }
+    return html;
+}
+
+// ============================================================
+// AJUDA CONTEXTUAL (NEE: frases curtes i directes)
+// ============================================================
+
+function getHelpText() {
+    const p = currentProblem;
+
+    // N3, pas 1: suma de preus
+    if (NIVELL === 3 && currentStep === 1) {
+        return `🪙 ${p.products[0].nom}: ${fmtMoney(p.products[0].price)}. `
+             + `${p.products[1].nom}: ${fmtMoney(p.products[1].price)}. `
+             + `Quant és tot junt?`;
+    }
+
+    // Canvi (tots els nivells i pas 2 del N3)
+    return `🪙 Tens ${fmtMoney(p.bill)}. Gastes ${fmtMoney(p.total)}. Quant et queda?`;
+}
+
+function toggleHelp() {
+    _helpVisible = !_helpVisible;
+    if (_helpVisible) {
+        els.helpText.textContent = getHelpText();
+        els.helpText.classList.add('visible');
+    } else {
+        els.helpText.classList.remove('visible');
+    }
+}
+
+function resetHelp() {
+    _helpVisible = false;
+    els.helpText.classList.remove('visible');
+    els.helpText.textContent = '';
+}
+
+// ============================================================
+// GESTIÓ DE PASSOS
+// ============================================================
+
+function getStepPrompt(stepType) {
+    // Textos curts i directes (baixa exigència lectora, NEE)
+    if (stepType === 'total')  return 'Quant pagues en total?';
+    if (stepType === 'change') return 'Quant et torna?';
+    return '';
+}
+
+function showStep() {
+    const stepType = currentProblem.steps[currentStep - 1];
+    els.stepPrompt.textContent = getStepPrompt(stepType);
+
+    // Renderitzar passos completats
+    els.stepsDone.innerHTML = stepsDoneList
+        .map(t => `<div class="step-done">${t}</div>`).join('');
+
+    els.valueInput.value = '';
+    expectedAnswer = (stepType === 'total') ? currentProblem.total : currentProblem.change;
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+/** Avança al pas següent o finalitza. */
+function advanceStep(doneText) {
+    stepsDoneList.push(doneText);
+    // Neteja missatge pedagògic, ajuda i error-val en canviar de pas
+    els.stepHint.textContent = '';
+    els.stepHint.classList.remove('visible');
+    els.valueInput.classList.remove('error-val');
+    resetHelp();
+
+    if (currentStep >= currentProblem.steps.length) {
+        hideCustomKeyboard();
+        finishOperation(true);
+    } else {
+        currentStep++;
+        // Re-renderitzem la botiga perquè aparegui el bitllet (N3: pas total → change)
+        els.shopDisplay.innerHTML = renderShop(currentProblem);
+        showStep();
+    }
+}
+
+// ============================================================
+// COMPROVACIÓ DE RESPOSTES
+// ============================================================
+
+function checkValue() {
+    if (isTransitioning || isPenalizing) return;
+    const raw = els.valueInput.value.trim();
+    if (raw === '') return;
+
+    // Punt decimal europeu → avís sense penalització
+    if (raw.includes('.')) {
+        showErrorInInput("Has d'escriure amb COMA decimal i no amb punt decimal.");
+        shakeBtn(els.btnSubmitVal);
+        return;
+    }
+
+    const userAnswer = parseMoneyInput(raw);
+    if (isNaN(userAnswer)) { shakeBtn(els.btnSubmitVal); penalize(); return; }
+
+    // Més de 2 decimals però valor correcte → acceptem amb avís temporal
+    const rawNorm = raw.replace(',', '.');
+    const dotPos  = rawNorm.indexOf('.');
+    const hasExtraDecimals = dotPos !== -1 && rawNorm.length - dotPos - 1 > 2;
+
+    const stepType = currentProblem.steps[currentStep - 1];
+    const question = buildQuestionText(stepType);
+
+    if (hasExtraDecimals && moneyEquals(userAnswer, expectedAnswer)) {
+        els.stepHint.textContent = '🔍 Has afegit més de dos decimals, vigila!';
+        els.stepHint.classList.add('visible');
+        setTimeout(() => {
+            els.stepHint.textContent = '';
+            els.stepHint.classList.remove('visible');
+        }, 1500);
+        recordAnswerToHistory(question, raw, true);
+        advanceStep(stepType === 'total'
+            ? `✅ Total: ${fmtMoney(userAnswer)}`
+            : `✅ Canvi: ${fmtMoney(userAnswer)}`);
+        return;
+    }
+
+    if (!moneyEquals(userAnswer, expectedAnswer)) {
+        shakeBtn(els.btnSubmitVal);
+        // Animació blink al comptador (NEE: feedback visual extra)
+        els.attemptsDisplay.classList.add('blink');
+        setTimeout(() => els.attemptsDisplay.classList.remove('blink'), 1100);
+
+        recordAnswerToHistory(question, raw, false);
+        penalize();
+
+        // Missatge pedagògic específic (pas de 'change')
+        if (stepType === 'change') {
+            const errCode = DinersFeedback.detectChangeError(
+                expectedAnswer, userAnswer, currentProblem.total
+            );
+            const msg = DinersFeedback.getChangeMsg(
+                errCode, expectedAnswer, userAnswer, currentProblem.total
+            );
+            if (msg) {
+                showErrorInInput(msg);
+                return;
+            }
+        }
+
+        // Sense missatge específic: neteja l'input
+        if (isTouchDevice()) kbMarkForOverwrite(els.valueInput);
+        else { els.valueInput.value = ''; els.valueInput.focus(); }
+        return;
+    }
+
+    recordAnswerToHistory(question, raw, true);
+    advanceStep(stepType === 'total'
+        ? `✅ Total: ${fmtMoney(expectedAnswer)}`
+        : `✅ Canvi: ${fmtMoney(expectedAnswer)}`);
+}
+
+// ============================================================
+// TEXT DE PREGUNTA PER A L'HISTORIAL
+// ============================================================
+
+function buildQuestionText(stepType) {
+    const p = currentProblem;
+    if (stepType === 'total') {
+        return p.products.map(prod =>
+            `${prod.emoji} ${fmtMoney(prod.price)}`
+        ).join(' + ');
+    }
+    return `Canvi: ${fmtMoney(p.bill)} − ${fmtMoney(p.total)}`;
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+
+function shakeBtn(btn) {
+    btn.classList.add('error-shake');
+    setTimeout(() => btn.classList.remove('error-shake'), 200);
+}
+
+/**
+ * Mostra un missatge pedagògic mantenint el text incorrecte visible
+ * en vermell. Text seleccionat perquè sigui fàcil esborrar-lo.
+ * El vermell desapareix quan l'alumne modifica l'input.
+ */
+function showErrorInInput(msg) {
+    els.stepHint.textContent = msg;
+    els.stepHint.classList.add('visible');
+    els.valueInput.classList.add('error-val');
+    els.valueInput.select();
+    if (!isTouchDevice()) els.valueInput.focus();
+}
+
+// Neteja l'estat error-val en qualsevol modificació de l'input.
+els.valueInput.addEventListener('input', () => {
+    if (els.valueInput.classList.contains('error-val')) {
+        els.valueInput.classList.remove('error-val');
+    }
+});
+
+function updateHeader() {
+    els.sessionDisplay.innerText = `Sessió ${currentSession + 1} de ${TOTAL_SESSIONS}`;
+    els.lvlDisplay.innerText     = `Compra ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
+    els.nivellDisplay.innerText  = `· Nivell ${NIVELL}`;
+    els.scoreDisplay.innerText   = `Punts: ${sessionScore}`;
+    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
+    els.attemptsDisplay.className = 'attempts-counter' +
+        (attemptsLeft <= 2 ? ' danger' : '');
+}
+
+// ============================================================
+// LÒGICA PRINCIPAL
+// ============================================================
+
+function buildLevel() {
+    attemptsLeft    = MAX_INTENTS;
+    isPenalizing    = false;
+    isTransitioning = false;
+    currentStep     = 1;
+    stepsDoneList   = [];
+
+    // Reseteja anti-repetició al principi de cada sessió
+    if (currentOperation === 0) _resetChangeTracking();
+
+    // Neteja feedback inline, missatge pedagògic, ajuda i error-val
+    hideInlineFeedback();
+    els.stepHint.textContent = '';
+    els.stepHint.classList.remove('visible');
+    els.valueInput.classList.remove('error-val');
+    resetHelp();
+
+    currentProblem = generateProblem();
+
+    els.body.style.backgroundColor =
+        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
+
+    els.stepsDone.innerHTML           = '';
+    els.resolutionPanel.style.display = 'none';
+
+    updateHeader();
+
+    els.shopDisplay.innerHTML = renderShop(currentProblem);
+
+    els.resolutionPanel.style.display = 'flex';
+    showStep();
+}
+
+function penalize() {
+    if (isPenalizing || isTransitioning) return;
+    isPenalizing = true;
+
+    setTimeout(() => {
+        attemptsLeft--;
+        updateHeader();
+
+        if (attemptsLeft <= 0) {
+            isTransitioning = true;
+            hideCustomKeyboard();
+
+            // Mostra la resposta correcta dins la box de l'input (color verd)
+            els.valueInput.value                 = fmtMoney(expectedAnswer).replace(' €', '');
+            els.valueInput.style.borderColor     = 'var(--success)';
+            els.valueInput.style.background      = '#dcfce7';
+            els.valueInput.style.color           = '#166534';
+
+            finishOperation(false);
+        }
+
+        isPenalizing = false;
+    }, 700);  // delay lleugerament més llarg que diners.html (NEE: menys precipitat)
+}
+
+// ── Feedback inline ──────────────────────────────────────────
+// Substitueix el mini-overlay de game-core (fora del viewport).
+// Colors adaptats a la paleta verda de la versió NEE.
+
+function showInlineFeedback(levelPoints) {
+    isTransitioning = true;
+    els.btnSubmitVal.disabled = true;
+    if (els.valueInput) els.valueInput.disabled = true;
+
+    const fb = els.inlineFeedback;
+    fb.classList.remove('success', 'failure', 'visible');
+
+    if (levelPoints > 0) {
+        fb.innerHTML = `⭐ Molt bé! <span style="opacity:0.75;font-size:0.9em">+${levelPoints}</span>`;
+        fb.classList.add('success', 'visible');
+    } else {
+        fb.innerHTML = '❌ Intents esgotats';
+        fb.classList.add('failure', 'visible');
+    }
+}
+
+function hideInlineFeedback() {
+    const fb = els.inlineFeedback;
+    fb.classList.remove('visible', 'success', 'failure');
+    fb.innerHTML = '';
+    els.btnSubmitVal.disabled = false;
+    if (els.valueInput) {
+        els.valueInput.disabled = false;
+        els.valueInput.style.borderColor = '';
+        els.valueInput.style.background  = '';
+        els.valueInput.style.color       = '';
+    }
+}
+
+function finishOperation(success) {
+    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
+    const fails       = MAX_INTENTS - attemptsLeft;
+    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
+    sessionScore += levelPoints;
+
+    const waitTime = success ? 1200 : 2800;
+    showInlineFeedback(levelPoints);
+
+    setTimeout(() => {
+        hideInlineFeedback();
+        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
+            endSession();
+        } else {
+            currentOperation++;
+            buildLevel();
+        }
+    }, waitTime);
+}
+
+// ── Teclat físic ────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (els.gameScreen.style.display      === 'none') return;
+    if (els.resolutionPanel.style.display === 'none') return;
+    e.preventDefault();
+    if (!isTransitioning) checkValue();
+});
+
+function checkCurrentCell() { checkValue(); }
+
+// ── Botó Tutorial: fade-out i navega ────────────────────────
+document.getElementById('btn-tutorial').addEventListener('click', () => {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-decimals-tutorial.html'; }, 800);
+});
+
+// ============================================================
+// INICI
+// ============================================================
+
+injectSharedHTML();
+validateConfig();
+
+// Teclat custom: ',' en lloc de '−' (no hi ha imports negatius)
+initCustomKeyboard({ allowNegative: true });
+const minusBtn = document.querySelector('.kb-btn.kb-minus');
+if (minusBtn) {
+    minusBtn.dataset.key = ',';
+    minusBtn.textContent = ',';
+    minusBtn.classList.remove('kb-minus');
+}
+
+// Botó "Passar al nivell X" (fins a N2; N3 és el màxim per a NEE)
+(function initNextLevelBtn() {
+    const btn = els.btnNextLevel;
+    if (!btn || NIVELL >= 3) return;   // N3 és el màxim, no cal botó
+
+    btn.textContent = `Passar al nivell ${NIVELL + 1} ›`;
+    btn.classList.add('visible');
+
+    btn.addEventListener('click', () => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('nivell', NIVELL + 1);
+        window.location.search = params.toString();
+    });
+})();
+
+startGame();
+</script>
+</body>
+</html>

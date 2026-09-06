@@ -1,0 +1,279 @@
+/*
+============================================================================
+FITXER: css/chromebook.css
+ROL: Adaptacions per a Chromebooks i dispositius tàctils amb pantalla ≥ 1024px.
+CARREGA'S: DESPRÉS de shared.css i del CSS específic de cada joc.
+============================================================================
+*/
+
+/* ================================================================
+   1. AJUSTOS GLOBALS — Chromebooks i dispositius tàctils ≥ 1024px
+   ================================================================ */
+@media (min-width: 1024px) and (pointer: coarse) {
+
+    body {
+        padding: 12px 16px;
+    }
+
+    h1 { font-size: 1.45em; }
+    .subtitle { font-size: 1.05em; }
+
+    .panel {
+        max-width: 840px;
+    }
+
+    .header-info {
+        padding: 12px 16px;
+        gap: 8px;
+    }
+
+    /* ── TECLAT NUMÈRIC CUSTOM ── */
+    .kb-grid {
+        grid-template-columns: 72px 72px 72px 96px;
+        gap: 8px;
+    }
+    .kb-btn {
+        height: 56px;
+        font-size: 1.4rem;
+        border-radius: 12px;
+    }
+    .kb-btn.kb-enter { font-size: 1.6rem; }
+    .kb-btn.kb-del   { font-size: 1.2rem; }
+
+    #customKeyboard {
+        max-width: 780px;
+        padding: 14px 16px 18px;
+    }
+
+    /* ── BOTONS PRINCIPALS ── */
+    .btn-submit,
+    .btn-green,
+    .btn-finalitzar,
+    .btn-check,
+    .btn-nou-exemple,
+    .btn-mega-next,
+    .btn-next,
+    .btn-ok,
+    .btn-restart,
+    .btn-back,
+    .summary-continue-btn,
+    .btn-next-figure {
+        min-height: 48px;
+        padding: 14px 28px;
+        font-size: 1.05em;
+    }
+
+    .btn-sign {
+        min-height: 48px;
+        padding: 14px 20px;
+        font-size: 1.1em;
+    }
+
+    .btn-option {
+        min-height: 52px;
+        padding: 16px 14px;
+    }
+
+    .ops-tab {
+        min-height: 44px;
+        font-size: 0.95rem;
+    }
+
+    .diff-btn,
+    .lvl-btn,
+    .section-btn,
+    .nav-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+        min-height: 46px;
+        font-size: 1.25em;
+    }
+
+    .token-op {
+        padding: 8px 18px;
+        font-size: 1.05em;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* ── MATRIUS ── */
+    .cell input,
+    .manual-cell {
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 1.15rem;
+    }
+
+    /* ── COMPLEXOS ── */
+    .step-input {
+        min-height: 48px;
+        min-width: 58px;
+        font-size: 1.25rem;
+    }
+    .step-input-sm {
+        min-height: 42px;
+        min-width: 52px;
+    }
+    .frac-input .step-input {
+        min-height: 40px;
+        min-width: 52px;
+        font-size: 1.05rem;
+    }
+
+    /* ── RUFFINI ── */
+    .ruf-cell input {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* ── SISTEMES D'EQUACIONS ── */
+    .eq-cell input,
+    .sys-input {
+        min-height: 44px;
+        min-width: 42px;
+    }
+
+    /* ── FRACCIONS ── */
+    .frac-num-inp,
+    .frac-den-inp,
+    .det-input {
+        min-height: 44px;
+        min-width: 50px;
+        font-size: 1.2em;
+    }
+
+    .factor-input {
+        min-height: 44px;
+        font-size: 1.2em;
+    }
+
+    /* ── PLA CARTESIÀ ── */
+    .q-btn {
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 1em;
+    }
+    .coord-input {
+        min-height: 44px;
+        font-size: 1.2em;
+    }
+
+    /* ── RECTA NUMÈRICA ── */
+    .nl-point-btn,
+    .nl-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* ── ÀREA I PERÍMETRE ── */
+    .form-btn {
+        min-height: 48px;
+        padding: 12px 16px;
+    }
+
+    .mini-vic-text { font-size: 1.8em; }
+    .star-icon { font-size: 2.8em; }
+
+    #final-screen button,
+    .final-actions > button {
+        min-height: 48px;
+        font-size: 1em;
+    }
+
+    /* ── VOCABULARI ── */
+    .voc-option-btn,
+    .choice-btn,
+    .voc-submit {
+        min-height: 48px;
+        font-size: 1.05em;
+    }
+
+    .tb-btn {
+        min-height: 40px;
+        min-width: 40px;
+    }
+
+    select {
+        min-height: 38px;
+        font-size: 14px;
+    }
+}
+
+
+/* ================================================================
+   2. INDEX — touch targets dels dropdowns i botons
+   ================================================================ */
+@media (min-width: 1024px) and (pointer: coarse) {
+    .cd-trigger {
+        min-height: 40px;
+    }
+    .cd-option {
+        min-height: 40px;
+        padding: 10px 12px;
+    }
+    .copy-btn, .open-btn, .help-btn {
+        min-height: 44px;
+    }
+}
+
+
+/* ================================================================
+   3. LANDSCAPE CHROMEBOOK — teclat sempre a sota, mai al costat
+   [FIX M5] Eliminats !important. Doble selector per especificitat.
+   ================================================================ */
+@media (min-width: 1024px) and (pointer: coarse) {
+    .panel.panel {
+        flex-direction: column;
+    }
+    #customKeyboard.kb-visible,
+    #customKeyboard {
+        flex: none;
+        width: 100%;
+        border-left: none;
+        border-top: 2px solid var(--border-heavy);
+        border-radius: 0 0 12px 12px;
+    }
+}
+
+
+/* ================================================================
+   4. CANVAS — limitar alçada al 300e
+   ================================================================ */
+@media (min-width: 1024px) and (max-width: 1400px) and (pointer: coarse) {
+    .canvas-container {
+        max-height: 55vh;
+    }
+    #graph-canvas {
+        max-height: 55vh;
+    }
+}
+
+
+/* ================================================================
+   5. UX TÀCTIL — només en dispositius amb pantalla tàctil
+   ================================================================ */
+@media (pointer: coarse) {
+    html {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+
+    button, a, .token-op, .kb-btn, .btn-sign, .btn-option,
+    .cd-option, .cd-trigger, input, select,
+    .ops-tab, .diff-btn, .lvl-btn, .nav-btn, .q-btn,
+    .section-btn, .tb-btn, .choice-btn, .voc-option-btn,
+    .form-btn, .btn-check, .btn-next, .btn-ok,
+    .nl-point-btn, .nl-btn {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    button, .token-op, .btn-sign, .btn-option, .ops-tab,
+    .kb-btn, .q-btn, .choice-btn, .voc-option-btn {
+        touch-action: manipulation;
+    }
+}

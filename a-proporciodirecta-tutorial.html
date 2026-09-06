@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial — Proporcionalitat</title>
+  <style>
+    :root {
+      --primary:       #5a6a1e;
+      --primary-light: #e5e8c8;
+      --primary-dark:  #1c1f0e;
+      --bg:            #f4f6e8;
+      --panel:         #ffffff;
+      --text:          #1c1f0e;
+      --muted:         #64748b;
+      --border:        #e2e8f0;
+      --radius:        10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 14px 6px;
+    }
+
+    /* ── CAPÇALERA PÀGINA ─── */
+    .title-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 7px;
+      width: 100%; max-width: 920px;
+      justify-content: center;
+    }
+    .title-row h1 {
+      font-size: 1.25em; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--primary-dark);
+    }
+    .home-icon-link {
+      width: 36px; height: 36px; opacity: 0.7;
+      transition: opacity 0.2s; display: block; flex-shrink: 0;
+    }
+    .home-icon-link:hover { opacity: 1; }
+    .home-icon-link img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* ── PANELL ─── */
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--primary);
+      width: 100%; max-width: 920px;
+      overflow: hidden;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* ── CAPÇALERA TUTORIAL ─── */
+    .tut-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .step-dots {
+      display: flex; gap: 6px; align-items: center;
+      flex: 1;
+    }
+    .step-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      transition: background 0.4s ease, transform 0.4s ease;
+      flex-shrink: 0;
+    }
+    .step-dot.done    { background: #a3b54a; }
+    .step-dot.current { background: white; transform: scale(1.55); }
+
+    .btn-pause {
+      background: white; border: 2px solid #ea580c;
+      color: #ea580c; font-size: 1.1em; font-weight: 800;
+      width: 34px; height: 34px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.15s; flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
+    }
+    .btn-pause:hover { background: #fff7ed; }
+
+    /* ── BARRA TIMER ─── */
+    .timer-track { height: 5px; background: rgba(0,0,0,0.08); flex-shrink: 0; }
+    .timer-fill  { height: 100%; background: linear-gradient(90deg,#84a010,#5a6a1e); width:0%; }
+
+    /* ── COS PRINCIPAL ─── */
+    .game-body {
+      display: flex; flex-direction: row;
+      flex: 1 1 0; min-height: 0;
+      transition: opacity 0.22s ease;
+    }
+    .game-body.fading { opacity: 0; pointer-events: none; }
+
+    /* ── PANELL ESQUERRE: NOMÉS narrador ─── */
+    .game-left {
+      width: 38%; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px 18px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto; min-height: 0;
+    }
+
+    /* ── NARRADOR ─── */
+    .narration-box {
+      width: 100%; background: white;
+      border: 1.5px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; align-items: flex-start;
+      flex-shrink: 0;
+    }
+    .narration-text {
+      font-size: 1.05em; line-height: 1.7; color: var(--text);
+    }
+    .narration-text b  { color: var(--primary-dark); }
+    .narration-text .g { color: var(--primary); font-weight: 700; }
+    .narration-text .r { color: #dc2626; font-weight: 700; }
+
+    /* ── PANELL DRET: mock problema + visual SVG ─── */
+    .game-right {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 14px 16px 8px;
+      overflow-y: auto; min-height: 0;
+      gap: 12px;
+      background: linear-gradient(160deg, #fafff6 0%, #f4f6e8 100%);
+    }
+
+    /* Mock del problema (imita renderProblem del joc) */
+    #tut-problem {
+      width: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .prob-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px;
+      font-size: 1.5em;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+    }
+    .prob-label {
+      font-size: 0.5em; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.5px; font-family: 'Segoe UI', sans-serif;
+    }
+    .prob-qty {
+      padding: 5px 12px; background: #f1f5f9;
+      border: 2px solid #e2e8f0; border-radius: 9px; color: #334155;
+    }
+    .prob-price {
+      padding: 5px 12px; background: #f0fdf4;
+      border: 2px solid #bbf7d0; border-radius: 9px; color: #166534;
+    }
+    .prob-unknown {
+      padding: 5px 12px; background: var(--primary-light);
+      border: 2px solid var(--primary); border-radius: 9px;
+      color: var(--primary-dark);
+    }
+    .prob-known {
+      padding: 5px 12px; background: #dcfce7;
+      border: 2px solid #86efac; border-radius: 9px; color: #166534;
+    }
+    .prob-arrow { color: #94a3b8; font-size: 0.75em; }
+
+    .step-done-mock {
+      color: #166534; font-weight: 700;
+      font-size: 0.95em; text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    /* Input mock */
+    .mock-answer-wrap {
+      display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+      font-size: 1.4em;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+    }
+    .mock-prompt {
+      font-size: 1em; font-weight: 700;
+      color: #334155; text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .mock-input {
+      width: 90px; background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px; padding: 7px;
+      text-align: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9em; font-weight: bold;
+      color: #1e293b; line-height: 1;
+    }
+    .mock-input.correct {
+      background: #f0fdf4; border-color: var(--primary);
+      color: #166534;
+    }
+    .mock-unit { color: #475569; font-size: 0.6em; }
+    .mock-ok {
+      width: 2rem; height: 2rem;
+      background: #cbd5e1; border: 1.5px solid #94a3b8;
+      border-radius: 6px; font-weight: 700; font-size: 0.7rem;
+      color: #334155; cursor: default;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+
+    /* Visual SVG */
+    #tut-visual {
+      width: 100%;
+      display: flex; justify-content: center; align-items: center;
+      flex-shrink: 0;
+    }
+    #tut-visual svg  { display: block; max-width: 100%; height: auto; }
+    #tut-visual > div { max-width: 100%; }
+
+    /* ── SPOTLIGHT ─── */
+    .game-left, .game-right {
+      transition: opacity 0.5s ease, box-shadow 0.5s ease;
+    }
+    .game-left.spotlight  { box-shadow: inset 0 0 0 3px var(--primary); background: #fafff6; }
+    .game-right.spotlight { box-shadow: inset 0 0 0 3px var(--primary); }
+    .game-left.dimmed  { opacity: 0.20; }
+    .game-right.dimmed { opacity: 0.20; }
+
+    /* ── MEGA BOTÓ ─── */
+    .next-zone {
+      padding: 9px 20px 11px;
+      display: flex; justify-content: center; align-items: center;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+    .btn-mega-next {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 44px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white; border: none; border-radius: 50px;
+      font-family: inherit; font-size: 1.3em; font-weight: 900;
+      letter-spacing: 0.5px; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(90,106,30,0.38);
+      animation: megaPulse 2.6s ease-in-out infinite;
+      transition: transform 0.1s;
+    }
+    .btn-mega-next:active { transform: scale(0.95) !important; }
+    .btn-mega-next:hover  { animation-play-state: paused; }
+    .btn-mega-next.btn-finish {
+      background: linear-gradient(135deg, #16a34a 0%, #14532d 100%);
+      box-shadow: 0 4px 24px rgba(22,163,74,0.4);
+    }
+    .mega-arrows {
+      display: inline-flex;
+      animation: arrowBounce 1.3s ease-in-out infinite;
+      font-size: 1.1em;
+    }
+    @keyframes arrowBounce {
+      0%, 100% { transform: translateX(0); }
+      50%       { transform: translateX(5px); }
+    }
+    @keyframes megaPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(90,106,30,0.38); }
+      50%      { transform: scale(1.04); box-shadow: 0 6px 36px rgba(90,106,30,0.58), 0 0 0 8px rgba(90,106,30,0.10); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ─── */
+    @media (max-width: 680px) {
+      body   { overflow: auto; height: auto; padding: 6px; }
+      .panel { flex: none; }
+      .game-body { flex-direction: column; flex: none; overflow: visible; }
+      .game-left {
+        width: 100% !important; border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 16px 14px; justify-content: flex-start;
+        min-height: auto; overflow: visible;
+      }
+      .game-right {
+        width: 100% !important; padding: 14px;
+        min-height: auto; overflow: visible; gap: 12px;
+      }
+      #tut-visual svg { max-height: 190px; }
+      .game-left.spotlight,
+      .game-right.spotlight { box-shadow: none; background: #fafff6; }
+      .btn-mega-next { font-size: 1.05em; padding: 11px 28px; }
+      .next-zone     { padding: 8px 14px 10px; }
+    }
+    @media (max-width: 440px) {
+      .title-row h1  { font-size: 0.9em; }
+      .btn-mega-next { font-size: 0.95em; padding: 10px 22px; }
+      .prob-row      { font-size: 1.2em; }
+    }
+  </style>
+  <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<div class="title-row">
+  <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+    <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+  </a>
+  <h1>Tutorial — Proporcionalitat</h1>
+</div>
+
+<div class="panel">
+
+  <div class="tut-header">
+    <div class="step-dots" id="step-dots"></div>
+    <button class="btn-pause" id="btn-pause" aria-label="Pausa/Repren">⏸</button>
+  </div>
+
+  <div class="timer-track">
+    <div class="timer-fill" id="timer-fill"></div>
+  </div>
+
+  <div class="game-body" id="game-body">
+
+    <!-- Esquerra: NOMÉS text de narració -->
+    <div class="game-left" id="game-left">
+      <div class="narration-box" id="narration-box">
+        <div class="narration-text" id="narration-text"></div>
+      </div>
+    </div>
+
+    <!-- Dreta: mock del problema + visual SVG -->
+    <div class="game-right" id="game-right">
+      <div id="tut-problem"></div>
+      <div id="tut-visual"></div>
+    </div>
+
+  </div>
+
+  <div class="next-zone">
+    <button class="btn-mega-next" id="btn-mega-next">
+      <span id="btn-mega-label">Següent</span>
+      <span class="mega-arrows">»</span>
+    </button>
+  </div>
+
+</div>
+
+<div id="fade-overlay"
+     style="position:fixed;inset:0;background:#000;opacity:0;
+            pointer-events:none;z-index:9999;transition:opacity 1.2s ease;"></div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   VISUALS SVG — operació en columna com a Primària
+   ================================================================ */
+
+
+/**
+ * svgIntro — animació seqüencial:
+ *   0s  → apareix 1 llapis + "2 €"
+ *   1s  → apareix "×3"
+ *   2s  → apareixen 3 llapis + "?"
+ *   3s  → "?" desapareix, apareix "6 €"
+ */
+function svgIntro() {
+  return `<svg viewBox="0 0 260 90" xmlns="http://www.w3.org/2000/svg"
+           style="max-width:260px;width:100%;height:auto;display:block;margin:0 auto;">
+
+    <!-- 1) Un llapis + 2€  (apareix a t=0) -->
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.2s" fill="freeze"/>
+      <text x="36" y="42" text-anchor="middle" font-size="34">✏️</text>
+      <text x="36" y="68" text-anchor="middle"
+            font-family="'Courier New',monospace" font-size="16"
+            font-weight="700" fill="#166534">2 €</text>
+    </g>
+
+    <!-- 2) Símbol ×3  (apareix a t=1s) -->
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="0.4s" begin="1.2s" fill="freeze"/>
+      <text x="108" y="50" text-anchor="middle"
+            font-family="'Segoe UI',sans-serif" font-size="22"
+            font-weight="900" fill="#5a6a1e">×3</text>
+    </g>
+
+    <!-- 3) Tres llapis + "?"  (apareix a t=2s) -->
+    <g opacity="0" id="three-pencils">
+      <animate attributeName="opacity" values="0;1" dur="0.4s" begin="2.2s" fill="freeze"/>
+      <text x="162" y="42" text-anchor="middle" font-size="28">✏️</text>
+      <text x="194" y="42" text-anchor="middle" font-size="28">✏️</text>
+      <text x="226" y="42" text-anchor="middle" font-size="28">✏️</text>
+      <!-- "?" que desapareix a t=3s -->
+      <text x="194" y="68" text-anchor="middle"
+            font-family="'Courier New',monospace" font-size="18"
+            font-weight="800" fill="#92400e">
+        <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.9;1"
+                 dur="1s" begin="2.2s" fill="freeze"/>
+        ?
+      </text>
+    </g>
+
+    <!-- 4) "6 €"  (apareix a t=3s, quan el ? desapareix) -->
+    <text x="194" y="68" text-anchor="middle"
+          font-family="'Courier New',monospace" font-size="16"
+          font-weight="700" fill="#166534" opacity="0">
+      <animate attributeName="opacity" values="0;1" dur="0.4s" begin="3.2s" fill="freeze"/>
+      6 €
+    </text>
+
+  </svg>`;
+}
+
+/* ================================================================
+   HELPERS — mock del problema (imita renderProblem del joc)
+   ================================================================ */
+
+function probRow(label, emoji, qty, name, price, isUnknown, isKnown) {
+  const priceClass = isUnknown ? 'prob-unknown' : isKnown ? 'prob-known' : 'prob-price';
+  const priceText  = isUnknown ? '? €' : `${price} €`;
+  return `<div class="prob-row">
+    <span class="prob-label">${label}</span>
+    <span>${emoji}</span>
+    <span class="prob-qty">${qty} ${name}</span>
+    <span class="prob-arrow">→</span>
+    <span class="${priceClass}">${priceText}</span>
+  </div>`;
+}
+
+function mockPrompt(text) {
+  return `<div class="mock-prompt">${text}</div>`;
+}
+
+function mockAnswerRow(value, correct = false) {
+  const cls = value !== null && correct ? 'mock-input correct' : 'mock-input';
+  return `<div class="mock-answer-wrap">
+    <div class="${cls}">${value !== null ? value : ''}</div>
+    <span class="mock-unit">€</span>
+    <button class="mock-ok" disabled>OK</button>
+  </div>`;
+}
+
+function mockStepDone(text) {
+  return `<div class="step-done-mock">${text}</div>`;
+}
+
+/* ================================================================
+   DADES DEL TUTORIAL
+   ================================================================ */
+const TUTORIAL = [
+
+  /* ── INTRODUCCIÓ ─────────────────────────────────────────────── */
+  {
+    steps: [
+      {
+        narration: `Si en compres el <b>doble</b>, pagues el <b>doble</b>.<br><br>
+Si en compres el <b>triple</b>, pagues el <b>triple</b>.<br><br>
+La quantitat i el preu <span class="g">creixen igual</span>.`,
+        rightMain: () => '',
+        visual:    svgIntro,
+      },
+    ],
+  },
+
+  /* ── EXEMPLE: reducció a la unitat ──────────────────────────── */
+  {
+    steps: [
+      /* a: presentació */
+      {
+        narration: `2 llapis costen <b>4 €</b>.<br><br>
+Quant costen <b>6 llapis</b>?<br><br>
+Pas 1: <span class="g">quant costa 1 llapis?</span>`,
+        rightMain: () => `
+          ${probRow('Dada:', '✏️', 2, 'llapis', 4, false, false)}
+          ${probRow('Busca:', '✏️', 6, 'llapis', null, true, false)}
+          ${mockPrompt('Quant costa 1 llapis?')}
+          ${mockAnswerRow(null)}
+        `,
+        visual: null,
+      },
+      /* b: pas 1 resolt */
+      {
+        narration: `4 ÷ 2 = <span class="g">2</span><br><br>
+1 llapis costa <b>2 €</b>.<br><br>
+Pas 2: <span class="g">quant costen 6 llapis?</span>`,
+        rightMain: () => `
+          ${probRow('Dada:', '✏️', 2, 'llapis', 4, false, false)}
+          ${mockStepDone('✅ 1 llapis → 2 €')}
+          ${probRow('Busca:', '✏️', 6, 'llapis', null, true, false)}
+          ${mockPrompt('Quant costen 6 llapis?')}
+          ${mockAnswerRow(null)}
+        `,
+        visual: null,
+      },
+      /* c: pas 2 resolt */
+      {
+        narration: `6 × 2 = <span class="g">12</span><br><br>
+6 llapis costen <b>12 €</b>.<br><br>
+Sempre: <span class="g">÷ primer</span>, <span class="g">× després</span>.`,
+        rightMain: () => `
+          ${probRow('Dada:', '✏️', 2, 'llapis', 4, false, false)}
+          ${mockStepDone('✅ 1 llapis → 2 €')}
+          ${probRow('Busca:', '✏️', 6, 'llapis', 12, false, true)}
+          ${mockPrompt('Quant costen 6 llapis?')}
+          ${mockAnswerRow('12', true)}
+        `,
+        visual: null,
+      },
+    ],
+  },
+
+];
+
+const TOTAL_STEPS = TUTORIAL.reduce((n, ex) => n + ex.steps.length, 0);
+
+/* ================================================================
+   ESTAT
+   ================================================================ */
+let exIdx   = 0;
+let stepIdx = 0;
+
+/* ================================================================
+   TIMER — 15 s totals (3s esquerre + 5s dret + 7s lliure)
+   La barra comença des del primer instant del pas.
+   ================================================================ */
+const STEP_MS = 15000;
+let timerElapsed = 0;
+let timerLastMs  = null;
+let timerIntv    = null;
+let isPaused     = false;
+
+function startTimer() {
+  clearInterval(timerIntv);
+  timerElapsed = 0; timerLastMs = Date.now();
+  isPaused = false; _setPauseIcon(); _setFill(0);
+  timerIntv = setInterval(_tick, 60);
+}
+function _tick() {
+  if (isPaused) return;
+  const now = Date.now();
+  timerElapsed += now - timerLastMs;
+  timerLastMs   = now;
+  _setFill(Math.min(100, timerElapsed / STEP_MS * 100));
+  if (timerElapsed >= STEP_MS) { clearInterval(timerIntv); _advance(); }
+}
+function _setFill(pct) {
+  document.getElementById('timer-fill').style.width = pct + '%';
+}
+function togglePause() {
+  if (isPaused) { isPaused = false; timerLastMs = Date.now(); }
+  else          { isPaused = true; }
+  _setPauseIcon();
+}
+function _setPauseIcon() {
+  document.getElementById('btn-pause').textContent = isPaused ? '▶' : '⏸';
+}
+
+/* ================================================================
+   NAVEGACIÓ
+   ================================================================ */
+function _globalStep() {
+  let n = 0;
+  for (let i = 0; i < exIdx; i++) n += TUTORIAL[i].steps.length;
+  return n + stepIdx;
+}
+
+function _advance() {
+  clearInterval(timerIntv);
+  const ex         = TUTORIAL[exIdx];
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+
+  if (isLastStep && isLastEx) {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-proporciodirecta.html'; }, 1200);
+    return;
+  }
+  if (isLastStep) { exIdx++; stepIdx = 0; }
+  else            { stepIdx++; }
+  _transition();
+}
+
+function _transition() {
+  clearInterval(timerIntv);
+  const body = document.getElementById('game-body');
+  body.classList.add('fading');
+  setTimeout(() => {
+    render();
+    body.classList.remove('fading');
+    setTimeout(() => {
+      startTimer();
+      _revealSequence();
+    }, 600);
+  }, 220);
+}
+
+/* ================================================================
+   RENDER — panell dret buit fins a la fase 2
+   ================================================================ */
+function render() {
+  const ex   = TUTORIAL[exIdx];
+  const step = ex.steps[stepIdx];
+  const gs   = _globalStep();
+
+  // Punts de progrés
+  const dotsEl = document.getElementById('step-dots');
+  let dotsHtml = '', gIdx = 0;
+  TUTORIAL.forEach(e => {
+    e.steps.forEach(() => {
+      const cls = gIdx < gs ? 'done' : gIdx === gs ? 'current' : '';
+      dotsHtml += `<div class="step-dot ${cls}"></div>`;
+      gIdx++;
+    });
+  });
+  dotsEl.innerHTML = dotsHtml;
+
+  // Panell dret: buit fins a la fase 2
+  document.getElementById('tut-problem').innerHTML = '';
+  const visEl = document.getElementById('tut-visual');
+  visEl.style.transition = 'none';
+  visEl.style.opacity    = '0';
+  visEl.innerHTML        = '';
+
+  // Narrador: invisible fins que _revealSequence l'activa
+  const narBox = document.getElementById('narration-box');
+  narBox.style.transition = 'none';
+  narBox.style.opacity    = '0';
+  document.getElementById('narration-text').innerHTML = step.narration;
+
+  // Mega botó
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+  const btn = document.getElementById('btn-mega-next');
+  const lbl = document.getElementById('btn-mega-label');
+  if (isLastStep && isLastEx) {
+    lbl.textContent = '🎮 Juga!';
+    btn.className   = 'btn-mega-next btn-finish';
+  } else {
+    lbl.textContent = 'Següent';
+    btn.className   = 'btn-mega-next';
+  }
+  btn.blur();
+}
+
+function _renderRight() {
+  const step = TUTORIAL[exIdx].steps[stepIdx];
+  document.getElementById('tut-problem').innerHTML = step.rightMain ? step.rightMain() : '';
+  const visEl = document.getElementById('tut-visual');
+  visEl.style.transition = 'none';
+  visEl.style.opacity    = '0';
+  visEl.innerHTML = step.visual ? step.visual() : '';
+}
+
+/* ================================================================
+   SEQÜÈNCIA DE REVELACIÓ: spotlight esquerre (3s) → dret (5s) → tot
+   ================================================================ */
+function _revealSequence() {
+  const gl = document.getElementById('game-left');
+  const gr = document.getElementById('game-right');
+
+  gl.classList.remove('spotlight', 'dimmed');
+  gr.classList.remove('spotlight', 'dimmed');
+
+  // Fase 1 (0–3s) — focus esquerre, narrador apareix
+  gl.classList.add('spotlight');
+  gr.classList.add('dimmed');
+
+  setTimeout(() => {
+    const narBox = document.getElementById('narration-box');
+    narBox.style.transition = 'opacity 0.45s ease';
+    narBox.style.opacity    = '1';
+  }, 300);
+
+  // Fase 2 (3–8s) — focus dret, carrega contingut
+  setTimeout(() => {
+    gl.classList.remove('spotlight', 'dimmed');
+    gr.classList.remove('spotlight', 'dimmed');
+    gl.classList.add('dimmed');
+    gr.classList.add('spotlight');
+
+    _renderRight();
+    setTimeout(() => {
+      const visEl = document.getElementById('tut-visual');
+      visEl.style.transition = 'opacity 0.5s ease';
+      visEl.style.opacity    = '1';
+    }, 200);
+  }, 1500);
+
+  // Fase 3 (8s–) — tot il·luminat
+  setTimeout(() => {
+    gl.classList.remove('spotlight', 'dimmed');
+    gr.classList.remove('spotlight', 'dimmed');
+  }, 4000);
+}
+
+/* ================================================================
+   EVENTS
+   ================================================================ */
+document.getElementById('btn-mega-next').addEventListener('click', () => {
+  clearInterval(timerIntv);
+  _advance();
+});
+document.getElementById('btn-pause').addEventListener('click', togglePause);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+/* ================================================================
+   ARRENCADA
+   ================================================================ */
+render();
+setTimeout(() => {
+  startTimer();
+  _revealSequence();
+}, 600);
+</script>
+
+</body>
+</html>

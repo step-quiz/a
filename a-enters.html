@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Nombres enters — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Nombres enters (adaptat)</title>
+
+    <!--
+    ============================================================
+    FITXER: a-enters.html
+    ROL: Versió adaptada de enters.html per a alumnes amb
+         retard d'aprenentatge, discapacitat intel·lectual lleu o TDAH.
+
+    DIFERÈNCIES RESPECTE A enters.html:
+      · Expressió sempre de 2 termes: a OP b, amb b sempre > 0.
+        Mai apareixerà una operació com 4−(−5).
+      · Eliminat el pas "Signe del resultat".
+      · Eliminada la selecció manual d'operador (s'activa sol).
+      · Eliminada la recta numèrica.
+      · Nombres de color: negatiu = vermell, positiu = blau.
+      · Botó "Ajuda" que genera una frase contextual de suport.
+      · Si s'esgoten els intents, es mostra la resposta correcta.
+      · El nivell actiu apareix a la capçalera, a la dreta de "Operació X de Y".
+      · Paràmetres per defecte més conservadors.
+
+    PARÀMETRES URL (específics d'aquesta versió):
+      ?rang=N            Rang de a: de −N a +N  (default 12, màx 12)
+                         b sempre a [1..N]
+      ?nivell=1          Sumes: a ∈ [0..N], b ∈ [1..N], op = +
+      ?nivell=2          Sumes i restes: a ∈ [−N..N], b ∈ [1..N]  (default)
+      ?operadors=suma    Forçar només sumes (qualsevol nivell)
+      ?operadors=resta   Forçar només restes (qualsevol nivell)
+      ?operadors=tots    Suma i resta (default)
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N   (default 1)
+      ?totaloperations=N (default 4)
+      ?maxintents=N      (default 5)
+      ?maxenllocmitjana= (default 1)
+
+    EXEMPLE:
+      a-enters.html?nivell=1&rang=3&totaloperations=4&maxintents=6
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5,
+            defaultEnllocMitjana: 1
+        };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+
+    <link rel="stylesheet" href="css/shared.css">
+
+    <style>
+        /* ── PALETA DE COLOR PER A SIGNES ─────────────────────── */
+        :root {
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+            --neg-color:   #dc2626;
+            --neg-bg:      #fef2f2;
+            --neg-border:  #fca5a5;
+            --pos-color:   #5a6a1e;
+            --pos-bg:      #eceee0;
+            --pos-border:  #b8be8a;
+            --zero-color:  #475569;
+            --zero-bg:     #f5f4ec;
+            --zero-border: #d4d9a8;
+        }
+
+        /* ── TÍTOL: menys marge per guanyar espai vertical ──────── */
+        h1         { margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+
+        /* ── NOMBRES (color per signe) ─────────────────────────── */
+        .token-num {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.25s ease;
+            line-height: 1;
+            font-size: 1em;
+        }
+        .token-num.neg  { color: var(--neg-color);  background: var(--neg-bg);  border-color: var(--neg-border); }
+        .token-num.pos  { color: var(--pos-color);  background: var(--pos-bg);  border-color: var(--pos-border); }
+        .token-num.zero { color: var(--zero-color); background: var(--zero-bg); border-color: var(--zero-border); }
+
+        /* ── OPERADOR: fons blanc, símbol negre ─────────────────── */
+        .token-op {
+            background: #ffffff;
+            border: 2px solid var(--border-heavy);
+            border-radius: 10px;
+            padding: 8px 18px;
+            color: #1e293b;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1em;
+            user-select: none;
+        }
+        /* Signe igual (separador visual) */
+        .eq-sign {
+            color: #475569;
+            font-size: 1em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            padding: 0 4px;
+        }
+
+        /* ── LAYOUT: a OP b =  [input]
+                              [OK]  [Ajuda]           ──────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 28px 20px 24px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        /* Fila expressió: a OP b = seguida del bloc [input / botons] */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 2.2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* Fila [OK] [Ajuda] centrada sota l'input */
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input[type="text"]#value-input {
+            width: 120px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;          /* relatiu al .answer-row (2.2em) */
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: #5a6a1e;
+            background: #eceee0;
+        }
+
+        /* ── BOTÓ OK: quadrat, mateixa alçada que Ajuda ─────────── */
+        #btn-submit-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0;
+            width:  2.4rem;
+            height: 2.4rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: #5a6a1e;
+                border-color: #3d4a14;
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ AJUDA: 30% més petit que OK ───────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.7rem;          /* 30% més petit: OK = 1rem, Ajuda = 0.7rem */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 1.05em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            width: fit-content;
+            max-width: min(860px, 95%); /* prou ampli per caber en 1 línia */
+            white-space: nowrap;
+            line-height: 1.4;
+            animation: fadeIn 0.25s ease;
+        }
+        /* En pantalles petites, permet salts de línia */
+        @media (max-width: 640px) {
+            .help-text { white-space: normal; max-width: 95%; }
+        }
+        .help-text.visible { display: block; }
+
+        /* Pista del signe (taronja diferent) */
+        .sign-hint {
+            display: none;
+            background: #fff7ed;
+            border: 2px solid #fb923c;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 1.0em;
+            color: #7c2d12;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+            max-width: 700px;
+            animation: fadeIn 0.25s ease;
+        }
+        .sign-hint.visible { display: block; }
+
+        /* ── RESPOSTA CORRECTA QUAN S'ESGOTEN INTENTS ─────────── */
+        .answer-reveal {
+            display: none;
+            font-size: 1.05em;
+            color: #b91c1c;
+            font-weight: 600;
+            text-align: center;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 10px;
+            padding: 12px 24px;
+            animation: fadeIn 0.35s ease;
+            max-width: 320px;
+        }
+        .answer-reveal.visible { display: block; }
+        .answer-reveal .ans-val {
+            font-size: 1.5em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: block;
+            margin-top: 4px;
+        }
+        .answer-reveal .ans-val.neg  { color: var(--neg-color); }
+        .answer-reveal .ans-val.pos  { color: var(--pos-color); }
+        .answer-reveal .ans-val.zero { color: var(--zero-color); }
+
+        /* ── NIVELL DINS LA CAPÇALERA (inline amb "Operació X de Y") ── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── RESPONSIU ─────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .expression-box   { font-size: 1.8em; padding: 18px 10px 14px; gap: 8px; min-height: 80px; }
+            .token-num        { padding: 6px 10px; border-radius: 8px; }
+            input[type="text"]#value-input { width: 110px; font-size: 1.7em; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text        { font-size: 0.97em; padding: 12px 14px; }
+        }
+        @media (max-width: 350px) {
+            .expression-box { font-size: 1.5em; }
+        }
+
+        /* ── BOTÓ TUTORIAL ─────────────────────────────────────── */
+        .btn-tutorial {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-tutorial:hover  { background: #d4d9a8; }
+        .btn-tutorial:active { transform: scale(0.96); }
+
+        /* Punt pulsant (com a recta-numerica) */
+        .tut-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #dc2626;
+            flex-shrink: 0;
+            animation: tutDotPulse 0.8s ease-in-out 5;  /* 5 × 0.8s = 4s */
+            animation-fill-mode: forwards;
+        }
+        @keyframes tutDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%      { opacity: 0.2; transform: scale(0.65); }
+        }
+
+        /* Fade overlay per a la transició al tutorial */
+        #fade-overlay {
+            position: fixed; inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ── ANIMACIÓ INTENTS ──────────────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+    </style>
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol + botó Tutorial -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Nombres enters</h1>
+    <button class="btn-tutorial" id="btn-tutorial" aria-label="Veure tutorial">
+        <span class="tut-dot" aria-hidden="true"></span>
+        Tutorial
+    </button>
+</div>
+
+<!-- Fade overlay per a la transició al tutorial -->
+<div id="fade-overlay"></div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Operació X de Y · Nivell N] | Punts | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="level-row">
+                    <div class="level-text"  id="lvl-display">Operació 1 de 4</div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text"  id="score-display">Punts: 0</div>
+            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+        </div>
+
+        <!-- Fila única: a OP b = [input] OK Ajuda -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Construïda dinàmicament per activateOperation() -->
+            <div class="answer-row" id="answer-row" aria-live="polite"></div>
+
+            <!-- Frase de suport (toggle) + pista del signe -->
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+            <div class="sign-hint"  id="sign-hint"  aria-live="polite"></div>
+
+            <!-- Resposta correcta quan s'esgoten els intents -->
+            <div class="answer-reveal" id="answer-reveal" aria-live="assertive">
+                La resposta correcta era:
+                <span class="ans-val" id="answer-correct-val"></span>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script src="js/game-core.js"></script>
+<script>
+
+// ============================================================
+// PARÀMETRES URL ESPECÍFICS
+// ============================================================
+
+const _aParams = new URLSearchParams(window.location.search);
+
+/** ?rang=N → a ∈ [−N..+N], b ∈ [1..N]. Default 5, màx 10. */
+const RANG = getIntParam(_aParams, 'rang', 12, 1, 12);
+
+/**
+ * ?nivell=1  a ∈ [0..RANG], op = + únicament → resultats sempre positius
+ * ?nivell=2  a ∈ [−RANG..RANG], op = + o −  (default)
+ */
+const NIVELL = getIntParam(_aParams, 'nivell', 2, 1, 2);
+
+/** ?operadors=suma | resta | tots */
+const OPERADORS_PARAM = (() => {
+    const v = (_aParams.get('operadors') || '').toLowerCase();
+    return ['suma', 'resta', 'tots'].includes(v) ? v : 'tots';
+})();
+
+// ============================================================
+// ELEMENTS DOM
+// ============================================================
+
+const els = {
+    body:             document.body,
+    gameScreen:       document.getElementById('game-screen'),
+    sessionDisplay:   document.getElementById('session-display'),
+    lvlDisplay:       document.getElementById('lvl-display'),
+    nivellDisplay:    document.getElementById('nivell-display'),
+    scoreDisplay:     document.getElementById('score-display'),
+    attemptsDisplay:  document.getElementById('attempts-display'),
+    resolutionPanel:  document.getElementById('resolution-panel'),
+    answerRow:        document.getElementById('answer-row'),
+    helpText:         document.getElementById('help-text'),
+    answerReveal:     document.getElementById('answer-reveal'),
+    answerCorrectVal: document.getElementById('answer-correct-val'),
+    // valueInput i btnSubmitVal s'injecten via activateOperation()
+    get valueInput()   { return document.getElementById('value-input'); },
+    get btnSubmitVal() { return document.getElementById('btn-submit-val'); },
+};
+
+// ============================================================
+// ESTAT LOCAL
+// ============================================================
+
+let isPenalizing   = false;
+let currentA       = 0;
+let currentB       = 1;
+let currentOp      = '+';
+let expectedAnswer = 0;
+let _helpVisible   = false;
+
+// ============================================================
+// GENERACIÓ DEL PROBLEMA
+// ============================================================
+
+function getOperadorsDisponibles() {
+    if (OPERADORS_PARAM === 'suma')  return ['+'];
+    if (OPERADORS_PARAM === 'resta') return ['-'];
+    if (NIVELL === 1)                return ['+'];
+    return ['+', '-'];
+}
+
+/**
+ * Genera { a, op, b } amb les probabilitats i rangs especificats:
+ *
+ *   Rangs fixos (independents de ?rang=):
+ *     a ∈ [−12..12]  (−13 < a < 13, enter)
+ *     b ∈ [1..12]    (0 < b < 13, enter, sempre positiu)
+ *
+ *   Probabilitats:
+ *     op '+': 40%   op '−': 60%
+ *     a < b:  70%   a >= b: 30%
+ *
+ *   Restriccions addicionals per URL:
+ *     ?nivell=1      → a ∈ [0..12], op = + únicament
+ *     ?operadors=    → força l'operador
+ */
+function generateProblem() {
+    const ops = getOperadorsDisponibles();
+
+    // Rangs fixos pel disseny pedagògic d'aquesta versió adaptada
+    const MAX_A = 12;   // a ∈ [−12..12]
+    const MAX_B = 12;   // b ∈ [1..12]
+
+    // Operador: 40% suma / 60% resta (o forçat per URL / nivell)
+    let op;
+    if (ops.length === 1) {
+        op = ops[0];
+    } else {
+        op = Math.random() < 0.4 ? '+' : '-';
+    }
+
+    // b: sempre positiu, uniforme [1..12]
+    const b = randInt(1, MAX_B);
+
+    // a: 70% probabilitat a < b, 30% probabilitat a >= b
+    let a;
+    if (NIVELL === 1) {
+        // Nivell 1: tot positiu, sense restricció relativa a/b
+        a = randInt(0, MAX_A);
+    } else if (Math.random() < 0.7) {
+        // 70%: a < b → a ∈ [−12 .. b−1]
+        a = randInt(-MAX_A, b - 1);
+    } else {
+        // 30%: a >= b → a ∈ [b .. 12]
+        a = randInt(b, MAX_A);
+    }
+
+    return { a, op, b };
+}
+
+// ============================================================
+// HELPERS VISUALS
+// ============================================================
+
+function signClass(n) {
+    if (n < 0) return 'neg';
+    if (n > 0) return 'pos';
+    return 'zero';
+}
+
+function fmtN(n) { return String(n); }
+
+function numSpan(n) {
+    return `<span class="token-num ${signClass(n)}">${fmtN(n)}</span>`;
+}
+
+// ============================================================
+// AJUDA CONTEXTUAL — metàfora de l'ascensor
+// ============================================================
+
+/**
+ * Genera una frase de suport per a l'operació a OP b.
+ * Invariant garantit: b > 0 sempre.
+ *   op '+' → "pujo b pisos"
+ *   op '−' → "baixo b pisos"
+ */
+function getHelpText(a, op, b) {
+    // lloc inclou la preposició contracta correcta:
+    //   a = 0  → "a la planta baixa"
+    //   a > 0  → "al pis N"
+    //   a < 0  → "al soterrani N"   (Math.abs: el mot "soterrani" ja implica negatiu)
+    let lloc;
+    if (a === 0)    lloc = `a la planta baixa`;
+    else if (a > 0) lloc = `al pis ${a}`;
+    else            lloc = `al soterrani ${Math.abs(a)}`;  // ex: "al soterrani 11"
+
+    const accio = op === '+' ? `pujo ${b} pis${b > 1 ? 'os' : ''}`
+                             : `baixo ${b} pis${b > 1 ? 'os' : ''}`;
+
+    return `🏢 Si estic ${lloc} i ${accio}, en quin pis acabo?`;
+}
+
+/** Retorna la pista del signe del resultat (apareix ~50% de vegades). */
+function getSignHintText(result) {
+    if (result === 0) return `🔵 El signe del resultat és zero`;
+    return result > 0
+        ? `🟢 El signe del resultat és positiu`
+        : `🔴 El signe del resultat és negatiu`;
+}
+
+function toggleHelp() {
+    _helpVisible = !_helpVisible;
+    const signHint = document.getElementById('sign-hint');
+    if (_helpVisible) {
+        els.helpText.textContent = getHelpText(currentA, currentOp, currentB);
+        els.helpText.classList.add('visible');
+        // ~50% de vegades mostrem també la pista del signe
+        if (signHint) {
+            if (Math.random() < 0.5) {
+                signHint.textContent = getSignHintText(expectedAnswer);
+                signHint.classList.add('visible');
+            } else {
+                signHint.classList.remove('visible');
+            }
+        }
+    } else {
+        els.helpText.classList.remove('visible');
+        if (signHint) signHint.classList.remove('visible');
+    }
+}
+
+function resetHelp() {
+    _helpVisible = false;
+    els.helpText.classList.remove('visible');
+    els.helpText.textContent = '';
+    const signHint = document.getElementById('sign-hint');
+    if (signHint) signHint.classList.remove('visible');
+}
+
+// ============================================================
+// UPDATE CAPÇALERA
+// ============================================================
+
+function updateHeader() {
+    els.sessionDisplay.innerText  = `Sessió ${currentSession + 1} de ${TOTAL_SESSIONS}`;
+    els.lvlDisplay.innerText      = `Operació ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
+    els.nivellDisplay.innerText   = `· Nivell ${NIVELL}`;
+    els.scoreDisplay.innerText    = `Punts: ${sessionScore}`;
+    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
+    els.attemptsDisplay.className = 'attempts-counter' +
+        (attemptsLeft <= 2 ? ' danger' : '');
+}
+
+// ============================================================
+// LÒGICA PRINCIPAL
+// ============================================================
+
+/** Cridat per game-core.js via startSession(). */
+function buildLevel() {
+    attemptsLeft    = MAX_INTENTS;
+    isPenalizing    = false;
+    isTransitioning = false;
+
+    const { a, op, b } = generateProblem();
+    currentA       = a;
+    currentOp      = op;
+    currentB       = b;
+    expectedAnswer = op === '+' ? a + b : a - b;
+
+    els.body.style.backgroundColor =
+        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
+
+    resetHelp();
+    els.answerReveal.classList.remove('visible');
+    els.resolutionPanel.style.display = 'none';
+
+    updateHeader();
+    activateOperation();
+}
+
+/**
+ * Construeix la fila única: a OP b = [input] OK Ajuda
+ * i obre el camp de resposta.
+ */
+function activateOperation() {
+    if (isTransitioning) return;
+
+    // Fila 1: a OP b = [input] — l'input s'alinea amb els nombres
+    els.answerRow.innerHTML =
+        numSpan(currentA) +
+        `<span class="token-op">${currentOp}</span>` +
+        numSpan(currentB) +
+        `<span class="eq-sign">=</span>` +
+        `<input type="text" id="value-input" autocomplete="off"
+                aria-label="Escriu el resultat">`;
+
+    // Fila 2: [OK] [Ajuda] — centrada just sota l'input
+    let actionRow = document.getElementById('action-row');
+    if (!actionRow) {
+        actionRow = document.createElement('div');
+        actionRow.id        = 'action-row';
+        actionRow.className = 'action-row';
+        els.answerRow.insertAdjacentElement('afterend', actionRow);
+    }
+    actionRow.innerHTML =
+        `<button class="btn-submit" id="btn-submit-val"
+                 onclick="checkValue()">OK</button>` +
+        `<button class="btn-ajuda" onclick="toggleHelp()">💡 Ajuda</button>`;
+
+    els.answerReveal.classList.remove('visible');
+    els.resolutionPanel.style.display = 'flex';
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+function checkValue() {
+    if (isTransitioning || isPenalizing) return;
+    const raw = els.valueInput.value.trim();
+    if (raw === '') return;
+    if (!/^-?\d+$/.test(raw)) { shakeInput(); penalize(); return; }
+
+    const userAnswer = parseInt(raw, 10);
+    const question   = `${fmtN(currentA)} ${currentOp} ${fmtN(currentB)}`;
+
+    if (userAnswer !== expectedAnswer) {
+        shakeInput();
+        recordAnswerToHistory(question, raw, false);
+        penalize();
+        if (isTouchDevice()) kbMarkForOverwrite(els.valueInput);
+        else { els.valueInput.value = ''; els.valueInput.focus(); }
+        return;
+    }
+
+    recordAnswerToHistory(question, raw, true);
+    hideCustomKeyboard();
+    finishOperation(true);
+}
+
+function shakeInput() {
+    els.btnSubmitVal.classList.add('error-shake');
+    setTimeout(() => els.btnSubmitVal.classList.remove('error-shake'), 200);
+}
+
+function penalize() {
+    if (isPenalizing || isTransitioning) return;
+    isPenalizing = true;
+    els.attemptsDisplay.classList.add('blink');
+
+    setTimeout(() => {
+        els.attemptsDisplay.classList.remove('blink');
+        attemptsLeft--;
+        updateHeader();
+
+        if (attemptsLeft <= 0) {
+            isTransitioning = true;
+            hideCustomKeyboard();
+            const ans = expectedAnswer;
+            els.answerCorrectVal.textContent = ans;
+            els.answerCorrectVal.className   = `ans-val ${signClass(ans)}`;
+            els.answerReveal.classList.add('visible');
+            setTimeout(() => finishOperation(false), 2400);
+        }
+
+        isPenalizing = false;
+    }, 700);
+}
+
+function finishOperation(success) {
+    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
+    const fails       = MAX_INTENTS - attemptsLeft;
+    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
+    sessionScore += levelPoints;
+
+    const waitTime = showMiniOverlay(levelPoints);
+    setTimeout(() => {
+        hideMiniOverlay();
+        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
+            endSession();
+        } else {
+            currentOperation++;
+            buildLevel();
+        }
+    }, waitTime);
+}
+
+// ── Teclat físic ────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (els.gameScreen.style.display   === 'none') return;
+    if (els.resolutionPanel.style.display === 'none') return;
+    e.preventDefault();
+    if (!isTransitioning) checkValue();
+});
+
+function checkCurrentCell() { checkValue(); }
+
+// ============================================================
+// INICI
+// ============================================================
+
+injectSharedHTML();
+validateConfig();
+initCustomKeyboard({ allowNegative: true });
+startGame();
+
+// ── Botó Tutorial: fade-out i navega ────────────────────────
+document.getElementById('btn-tutorial').addEventListener('click', () => {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-enters-tutorial.html'; }, 800);
+});
+</script>
+</body>
+</html>

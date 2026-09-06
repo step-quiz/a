@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛠 DEBUG — Equacions Layout Editor (v2 · 7 passos)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #1e293b; color: #f1f5f9;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── TOOLBAR ── */
+#toolbar {
+  background: #0f172a; border-bottom: 2px solid #334155;
+  padding: 7px 12px;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+}
+#toolbar h2 { font-size: 0.9em; font-weight: 800; color: #38bdf8; white-space: nowrap; margin-right: 4px; }
+.tb-sep { width: 1px; height: 26px; background: #334155; flex-shrink: 0; }
+.tb-btn {
+  padding: 4px 10px; border-radius: 7px; border: 1.5px solid #475569;
+  background: #1e293b; color: #cbd5e1;
+  font-family: inherit; font-size: 0.78em; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: background 0.15s;
+}
+.tb-btn:hover { background: #334155; }
+.tb-btn.add   { border-color: #0ea5e9; color: #38bdf8; }
+.tb-btn.add:hover { background: #0c4a6e; }
+.tb-btn.export { border-color: #22c55e; color: #4ade80; }
+.tb-btn.export:hover { background: #14532d; }
+.tb-btn.danger { border-color: #ef4444; color: #f87171; }
+.tb-btn.danger:hover { background: #7f1d1d; }
+.tb-label { font-size: 0.72em; color: #64748b; white-space: nowrap; }
+#grid-toggle { display: flex; align-items: center; gap: 5px; font-size: 0.76em; color: #94a3b8; cursor: pointer; }
+
+/* ── STEP BAR ── */
+#step-bar {
+  background: #0c1829; border-bottom: 2px solid #334155;
+  padding: 6px 14px;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  overflow-x: auto;
+}
+#step-bar .sb-label { font-size: 0.72em; color: #475569; white-space: nowrap; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.step-tab {
+  padding: 5px 13px; border-radius: 8px;
+  border: 1.5px solid #334155; background: #1e293b;
+  color: #64748b; font-size: 0.78em; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
+  text-align: center;
+}
+.step-tab:hover { border-color: #475569; color: #94a3b8; background: #263548; }
+.step-tab.active {
+  background: #0d9488; border-color: #5eead4;
+  color: white; box-shadow: 0 2px 10px rgba(13,148,136,0.4);
+}
+.step-tab .st-sub { font-size: 0.8em; opacity: 0.7; margin-top: 1px; }
+
+/* ── MAIN ── */
+#main { display: flex; flex: 1; min-height: 0; }
+
+/* ── PALETTE ── */
+#palette {
+  width: 150px; flex-shrink: 0; background: #0f172a;
+  border-right: 2px solid #334155;
+  padding: 10px 8px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto;
+}
+#palette h3 { font-size: 0.7em; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+.palette-item {
+  padding: 7px 9px; background: #1e293b; border: 1.5px dashed #475569;
+  border-radius: 7px; font-size: 0.75em; color: #94a3b8;
+  cursor: grab; user-select: none; transition: all 0.15s; text-align: center;
+}
+.palette-item:hover { border-color: #38bdf8; color: #e2e8f0; background: #1e3a4c; }
+
+/* ── CANVAS WRAP ── */
+#canvas-wrap {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 14px; overflow: auto; background: #1e293b;
+}
+#canvas-wrap.grid-on {
+  background-image: linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ── TUTORIAL MOCK ── */
+#tut-canvas {
+  width: 900px; flex-shrink: 0;
+  background: white; border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#tut-header-mock {
+  background: #115e59; height: 36px; flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+}
+.dot-progress { display: flex; gap: 5px; }
+.dot-p { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.22); }
+.dot-p.done { background: #5eead4; }
+.dot-p.cur  { background: white; transform: scale(1.4); }
+#timer-bar-mock { height: 4px; background: #e2e8f0; flex-shrink: 0; }
+#timer-fill-mock { height: 100%; background: linear-gradient(90deg,#f97316,#ea580c); transition: width 0.5s; }
+
+/* ── PANELS ── */
+#panels { display: flex; height: 420px; }
+#panel-left {
+  flex-shrink: 0; border-right: 2px solid #e2e8f0;
+  position: relative; overflow: hidden; background: #fff;
+}
+#panel-right {
+  flex: 1; position: relative; overflow: hidden;
+  background: linear-gradient(160deg, #fafffe 0%, #f0fdfa 100%);
+}
+#panel-divider {
+  width: 5px; flex-shrink: 0; background: #e2e8f0;
+  cursor: col-resize; z-index: 100; transition: background 0.15s;
+}
+#panel-divider:hover, #panel-divider.dragging { background: #38bdf8; }
+.panel-label {
+  position: absolute; top: 3px; left: 5px;
+  font-size: 0.58em; font-weight: 700; color: rgba(0,0,0,0.14);
+  pointer-events: none; text-transform: uppercase; letter-spacing: 0.06em; z-index: 0;
+}
+
+/* ── BOTTOM MOCK ── */
+#bottom-next-mock {
+  height: 50px; flex-shrink: 0; background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+}
+.mega-btn-mock {
+  padding: 9px 38px;
+  background: linear-gradient(135deg, #0d9488, #115e59);
+  color: white; border-radius: 50px; font-weight: 900; font-size: 1.05em;
+  display: flex; align-items: center; gap: 10px;
+  animation: mp 2.6s ease-in-out infinite;
+}
+@keyframes mp { 0%,100%{transform:scale(1)}50%{transform:scale(1.04)} }
+
+/* ── BLOCKS ── */
+.block {
+  position: absolute; border: 2px solid transparent; border-radius: 10px;
+  cursor: move; user-select: none; transition: box-shadow 0.12s;
+  min-width: 50px; min-height: 28px;
+}
+.block:hover { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.18); }
+.block.selected { border-color: #38bdf8 !important; box-shadow: 0 0 0 4px rgba(56,189,248,0.32) !important; }
+
+.resize-handle {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 16px; height: 16px; cursor: se-resize; display: none;
+}
+.block.selected .resize-handle { display: block; }
+.resize-handle::after {
+  content: ''; position: absolute; bottom: 3px; right: 3px;
+  width: 8px; height: 8px; border-right: 2px solid #38bdf8; border-bottom: 2px solid #38bdf8;
+}
+.delete-btn {
+  position: absolute; top: -9px; right: -9px;
+  width: 19px; height: 19px; background: #ef4444; border: 2px solid white;
+  border-radius: 50%; color: white; font-size: 10px; font-weight: 900;
+  display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 10;
+}
+.block.selected .delete-btn { display: flex; }
+
+.block-content {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 5px 7px; overflow: hidden;
+}
+.block-editable {
+  width: 100%; height: 100%; border: none; background: transparent;
+  font-family: inherit; font-size: inherit; color: inherit;
+  resize: none; outline: none; cursor: text; display: none;
+  padding: 5px 7px; line-height: 1.4;
+}
+.block.edit-mode .block-content { display: none; }
+.block.edit-mode .block-editable { display: block; }
+
+/* Block type styles */
+.b-narration { background: white; border: 1.5px solid #e2e8f0 !important; border-left: 4px solid #0d9488 !important; }
+.b-narration .block-content { font-size: 0.77em; color: #0f172a; justify-content: flex-start; align-items: flex-start; line-height: 1.5; flex-direction: column; }
+.b-eq { background: #f0fdfa; border: 2px solid #5eead4 !important; }
+.b-eq .block-content { font-size: 1.3em; font-family: 'Courier New',monospace; font-weight: 700; color: #115e59; }
+.b-answer { background: #f0fdf4; border: 2px solid #22c55e !important; }
+.b-answer .block-content { font-size: 1.2em; font-family: 'Courier New',monospace; font-weight: 700; color: #166534; }
+.b-story { background: #ccfbf1; border: 2px solid #5eead4 !important; border-radius: 14px !important; }
+.b-story .block-content { font-size: 1.3em; flex-wrap: wrap; gap: 5px; }
+.b-visual { background: #f8fafc; border: 2px dashed #94a3b8 !important; border-radius: 12px !important; }
+.b-visual .block-content { font-size: 0.7em; color: #94a3b8; flex-direction: column; gap: 3px; text-align: center; }
+.b-custom { background: #fffbeb; border: 2px solid #fbbf24 !important; }
+.b-custom .block-content { font-size: 0.82em; color: #78350f; }
+
+/* ── INFO BAR ── */
+#bottom-bar {
+  background: #0f172a; border-top: 1px solid #1e293b;
+  padding: 5px 12px; font-size: 0.7em; color: #475569;
+  display: flex; gap: 14px; align-items: center; flex-shrink: 0;
+}
+#info-selected { color: #38bdf8; }
+
+/* ── MODAL ── */
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.78); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+#modal {
+  background: #0f172a; border: 2px solid #334155; border-radius: 14px;
+  width: 820px; max-width: 96vw; max-height: 92vh;
+  display: flex; flex-direction: column; box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+}
+#modal-header {
+  padding: 12px 16px; border-bottom: 1px solid #334155;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#modal-header h3 { font-size: 0.95em; color: #38bdf8; }
+#modal-close { background: none; border: none; color: #94a3b8; font-size: 1.2em; cursor: pointer; padding: 2px 6px; }
+#modal-close:hover { color: white; }
+#code-output {
+  flex: 1; overflow: auto; padding: 14px 16px;
+  font-family: 'Courier New',monospace; font-size: 0.79em; color: #a5f3fc;
+  background: #020617; margin: 10px; border-radius: 10px;
+  white-space: pre; line-height: 1.6; min-height: 100px;
+}
+#modal-footer {
+  padding: 10px 16px; border-top: 1px solid #334155;
+  display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+}
+#copy-status { font-size: 0.8em; color: #4ade80; opacity: 0; transition: opacity 0.3s; }
+#copy-status.show { opacity: 1; }
+
+@keyframes arrowB { 0%,100%{transform:translateX(0)}50%{transform:translateX(5px)} }
+</style>
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <h2>🛠 Layout Editor</h2>
+  <div class="tb-sep"></div>
+  <span class="tb-label">Afegir:</span>
+  <button class="tb-btn add" onclick="addBlock('b-narration','📦 Narració del pas\n(doble clic per editar)',210,72)">+ Narració</button>
+  <button class="tb-btn add" onclick="addBlock('b-eq','x + 2 = 7',180,58)">+ Equació</button>
+  <button class="tb-btn add" onclick="addBlock('b-answer','x = 5',140,52)">+ Resposta</button>
+  <button class="tb-btn add" onclick="addBlock('b-story','[x] + 🍬🍬 = 🍬🍬🍬🍬🍬🍬🍬',310,54)">+ Story Strip</button>
+  <button class="tb-btn add" onclick="addBlock('b-visual','🖼 Visual SVG\n(animació caixes)',200,130)">+ Visual</button>
+  <button class="tb-btn add" onclick="addBlock('b-custom','✏️ Caixa lliure',160,52)">+ Caixa lliure</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="adjustPanelWidth(-20)">◀ Esquerra</button>
+  <button class="tb-btn" onclick="adjustPanelWidth(+20)">Esquerra ▶</button>
+  <div class="tb-sep"></div>
+  <label id="grid-toggle"><input type="checkbox" id="grid-cb" onchange="toggleGrid(this.checked)"> Grid</label>
+  <div class="tb-sep"></div>
+  <button class="tb-btn danger" onclick="clearSelected()">🗑 Esborra</button>
+  <button class="tb-btn danger" onclick="clearCurrentStep()">🗑 Tot el pas</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn export" onclick="openExport()">📋 Exporta tots els passos »</button>
+</div>
+
+<!-- STEP BAR -->
+<div id="step-bar">
+  <span class="sb-label">Pas:</span>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="palette">
+    <h3>Paleta</h3>
+    <div class="palette-item" draggable="true" data-type="b-narration" data-text="📦 Narració">📦 Narració</div>
+    <div class="palette-item" draggable="true" data-type="b-eq" data-text="x + 2 = 7">∿ Equació</div>
+    <div class="palette-item" draggable="true" data-type="b-answer" data-text="x = 5">✓ Solució</div>
+    <div class="palette-item" draggable="true" data-type="b-story" data-text="[x] + 🍬🍬 = 🍬🍬🍬🍬🍬🍬🍬">🍬 Story Strip</div>
+    <div class="palette-item" draggable="true" data-type="b-visual" data-text="🖼 Animació SVG">🖼 Visual SVG</div>
+    <div class="palette-item" draggable="true" data-type="b-custom" data-text="Escriu aquí...">✏️ Caixa lliure</div>
+    <div style="height:1px;background:#1e293b;margin:6px 0"></div>
+    <h3>Ajuda</h3>
+    <div style="font-size:0.67em;color:#475569;line-height:1.7;">
+      <b style="color:#94a3b8">Moure</b><br>arrossega el bloc<br><br>
+      <b style="color:#94a3b8">Redim.</b><br>angle ▗ dret-baix<br><br>
+      <b style="color:#94a3b8">Editar text</b><br>doble clic<br><br>
+      <b style="color:#94a3b8">Esborrar</b><br>✕ o tecla Supr<br><br>
+      <b style="color:#94a3b8">Canviar pas</b><br>barra de passos<br><br>
+      <b style="color:#94a3b8">Exportar</b><br>botó verd →<br>tots els passos junts
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <div id="tut-canvas">
+      <div id="tut-header-mock">
+        <div class="dot-progress" id="dot-progress-mock"></div>
+        <div style="flex:1"></div>
+        <div style="width:28px;height:28px;background:white;border:2px solid #ea580c;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ea580c;font-size:0.9em;">⏸</div>
+      </div>
+      <div id="timer-bar-mock"><div id="timer-fill-mock" style="width:10%"></div></div>
+      <div id="panels">
+        <div id="panel-left" style="width:370px;"><div class="panel-label">ESQUERRA</div></div>
+        <div id="panel-divider"></div>
+        <div id="panel-right"><div class="panel-label">DRETA</div></div>
+      </div>
+      <div id="bottom-next-mock">
+        <div class="mega-btn-mock">Següent <span style="animation:arrowB 1.3s ease-in-out infinite;display:inline-block">»</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INFO BAR -->
+<div id="bottom-bar">
+  <span>Esquerra: <b id="info-left-w">370px</b></span>
+  <span>Dreta: <b id="info-right-w">—</b></span>
+  <span id="info-selected">Cap bloc seleccionat</span>
+  <span style="margin-left:auto;color:#334155">Doble clic → editar · ▗ → redimensionar · Supr → esborrar</span>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h3>📋 Codi exportat — copia i envia a la conversa amb Claude</h3>
+      <button id="modal-close" onclick="closeExport()">✕</button>
+    </div>
+    <pre id="code-output"></pre>
+    <div id="modal-footer">
+      <span id="copy-status">✅ Copiat al porta-retalls!</span>
+      <button class="tb-btn export" onclick="copyCode()">📋 Copia tot</button>
+      <button class="tb-btn" onclick="closeExport()">Tanca</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   DEFINICIÓ DELS 6 PASSOS — estat inicial = tutorial v2 actual
+   ================================================================ */
+const STEP_DEFS = [
+  /* ── PAS 0 — Intro ── */
+  { id:0, label:'0 · Intro',    sub:'x = ❓',       leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:76,  txt:"🔍 La x és un nombre que no coneixem.\n📦 Hem de fer operacions per descobrir el nombre." },
+    { p:'L', t:'b-eq',        x:85,  y:116, w:190, h:60,  txt:"x  =  ?" },
+    { p:'R', t:'b-visual',    x:60,  y:20,  w:290, h:240, txt:"🖼 svgIntro()\ncaixa amb ? parpellejant" },
+  ]},
+  /* ── PAS 1a — 3·x=12 · planteja ── */
+  { id:1, label:'1a · 3·x=12', sub:'planteja',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:88,  txt:"3📦 tenen 12🍬\nFem 12 ÷ 3 = 4\n1📦 té 4🍬" },
+    { p:'L', t:'b-eq',        x:60,  y:124, w:240, h:62,  txt:"3 · x  =  12" },
+    { p:'L', t:'b-answer',    x:85,  y:208, w:175, h:56,  txt:"x  =  __" },
+    { p:'L', t:'b-custom',    x:108, y:280, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-story',     x:14,  y:10,  w:430, h:52,  txt:"📦📦📦  =  🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬" },
+    // sense visual (es revela al pas 1b)
+  ]},
+  /* ── PAS 1b — 3·x=12 · resol ── */
+  { id:2, label:'1b · 3·x=12', sub:'resol ✅',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:88,  txt:"3📦 tenen 12🍬\nFem 12 ÷ 3 = 4\n1📦 té 4🍬" },
+    { p:'L', t:'b-eq',        x:60,  y:124, w:240, h:62,  txt:"3 · x  =  12" },
+    { p:'L', t:'b-answer',    x:85,  y:208, w:175, h:56,  txt:"x  =  4" },
+    { p:'L', t:'b-custom',    x:108, y:280, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-story',     x:14,  y:10,  w:430, h:52,  txt:"📦📦📦  =  🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬" },
+    { p:'R', t:'b-visual',    x:50,  y:78,  w:340, h:240, txt:"🖼 svgBoxesAnim(3,4)\n3 caixes → x=4 (flip)" },
+  ]},
+  /* ── PAS 2a — x+2=7 · planteja ── */
+  { id:3, label:'2a · x+2=7',  sub:'planteja',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:88,  txt:"📦 En una caixa hi ha uns quants caramels.\nAfegeixo 2 caramels i ara veig que en tinc 7.\nQuants caramels hi havia a l'inici?" },
+    { p:'L', t:'b-eq',        x:50,  y:122, w:255, h:62,  txt:"x  +  2  =  7" },
+    { p:'L', t:'b-answer',    x:75,  y:206, w:178, h:56,  txt:"x  =  __" },
+    { p:'L', t:'b-custom',    x:100, y:278, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-story',     x:14,  y:10,  w:430, h:52,  txt:"📦  +  🍬🍬  =  🍬🍬🍬🍬🍬🍬🍬" },
+    // sense visual
+  ]},
+  /* ── PAS 2b — x+2=7 · resol ── */
+  { id:4, label:'2b · x+2=7',  sub:'resol ✅',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:76,  txt:"✅ La caixa tenia 5 caramels.\nHem fet l'operació inversa: 7 − 2 = 5" },
+    { p:'L', t:'b-eq',        x:50,  y:106, w:255, h:62,  txt:"x  +  2  =  7" },
+    { p:'L', t:'b-answer',    x:75,  y:190, w:178, h:56,  txt:"x  =  5" },
+    { p:'L', t:'b-custom',    x:100, y:262, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-visual',    x:50,  y:78,  w:340, h:240, txt:"🖼 svgAddAnim(2,7,5)\nx → 5 (flip)\nfórmula: 7 − 2 = 5 ✅" },
+  ]},
+  /* ── PAS 3a — x−3=10 · planteja ── */
+  { id:5, label:'3a · x−3=10', sub:'planteja',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:88,  txt:"📦 Traiem 3 caramels d'una caixa.\nVeiem que queden 10 caramels a dins.\nQuants caramels hi havia al principi?" },
+    { p:'L', t:'b-eq',        x:50,  y:122, w:255, h:62,  txt:"x  −  3  =  10" },
+    { p:'L', t:'b-answer',    x:75,  y:206, w:178, h:56,  txt:"x  =  __" },
+    { p:'L', t:'b-custom',    x:100, y:278, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-story',     x:14,  y:10,  w:430, h:52,  txt:"📦  −  🍬🍬🍬  =  🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬" },
+    // sense visual
+  ]},
+  /* ── PAS 3b — x−3=10 · resol ── */
+  { id:6, label:'3b · x−3=10', sub:'resol ✅',      leftWidth:370, blocks:[
+    { p:'L', t:'b-narration', x:12,  y:10,  w:342, h:76,  txt:"✅ A la caixa hi havia 13 caramels.\nHem sumat l'operació inversa: 10 + 3 = 13" },
+    { p:'L', t:'b-eq',        x:50,  y:106, w:255, h:62,  txt:"x  −  3  =  10" },
+    { p:'L', t:'b-answer',    x:75,  y:190, w:178, h:56,  txt:"x  =  13" },
+    { p:'L', t:'b-custom',    x:100, y:262, w:58,  h:34,  txt:"OK" },
+    { p:'R', t:'b-story',     x:14,  y:10,  w:430, h:52,  txt:"🍬×10  +  🍬🍬🍬  =  📦=13🍬" },
+    { p:'R', t:'b-visual',    x:50,  y:78,  w:340, h:240, txt:"🖼 svgSubAnim(3,10,13)\nx → 13 (flip)\nfórmula: 10 + 3 = 13 ✅" },
+  ]},
+];
+
+/* Còpia mutable de l'estat de cada pas */
+const stepStates = STEP_DEFS.map(d => ({
+  leftWidth: d.leftWidth,
+  blocks: d.blocks.map(b => ({ ...b })),
+}));
+
+/* ================================================================
+   ESTAT GLOBAL
+   ================================================================ */
+let currentStepIdx = 0;
+let selectedBlock  = null;
+let blockIdCtr     = 0;
+let liveBlocks     = [];   // {id, el, panel:'panel-left'|'panel-right', type, get text()}
+
+/* ================================================================
+   PANEL DIVIDER
+   ================================================================ */
+const panelLeft  = document.getElementById('panel-left');
+const panelRight = document.getElementById('panel-right');
+const divider    = document.getElementById('panel-divider');
+let divDrag = false, divSX = 0, divSW = 0;
+
+divider.addEventListener('mousedown', e => {
+  divDrag = true; divSX = e.clientX; divSW = panelLeft.offsetWidth;
+  divider.classList.add('dragging'); e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!divDrag) return;
+  panelLeft.style.width = clamp(160, 700, divSW + e.clientX - divSX) + 'px';
+  updateInfoBar();
+});
+document.addEventListener('mouseup', () => {
+  if (!divDrag) return;
+  divDrag = false; divider.classList.remove('dragging');
+});
+function adjustPanelWidth(d) {
+  panelLeft.style.width = clamp(160, 700, panelLeft.offsetWidth + d) + 'px';
+  updateInfoBar();
+}
+function clamp(lo, hi, v) { return Math.max(lo, Math.min(hi, v)); }
+
+/* ================================================================
+   GRID
+   ================================================================ */
+function toggleGrid(on) { document.getElementById('canvas-wrap').classList.toggle('grid-on', on); }
+function snap(v) { return document.getElementById('grid-cb').checked ? Math.round(v/10)*10 : v; }
+
+/* ================================================================
+   STEP BAR + HEADER DOTS
+   ================================================================ */
+function buildStepBar() {
+  const bar = document.getElementById('step-bar');
+  const lbl = bar.querySelector('.sb-label');
+  bar.innerHTML = ''; bar.appendChild(lbl);
+  STEP_DEFS.forEach((def, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'step-tab' + (i === currentStepIdx ? ' active' : '');
+    btn.innerHTML = `<div>${def.label}</div><div class="st-sub">${def.sub}</div>`;
+    btn.addEventListener('click', () => switchToStep(i));
+    bar.appendChild(btn);
+  });
+}
+function updateStepBar() {
+  document.querySelectorAll('.step-tab').forEach((btn, i) =>
+    btn.classList.toggle('active', i === currentStepIdx));
+}
+function updateHeaderDots() {
+  const el = document.getElementById('dot-progress-mock');
+  el.innerHTML = STEP_DEFS.map((_, i) =>
+    `<div class="dot-p ${i < currentStepIdx ? 'done' : i === currentStepIdx ? 'cur' : ''}"></div>`
+  ).join('');
+  document.getElementById('timer-fill-mock').style.width =
+    Math.round(currentStepIdx / (STEP_DEFS.length - 1) * 100) + '%';
+}
+
+/* ================================================================
+   SAVE / LOAD STEP
+   ================================================================ */
+function saveCurrentStep() {
+  const s = stepStates[currentStepIdx];
+  s.leftWidth = panelLeft.offsetWidth;
+  s.blocks = liveBlocks.map(b => ({
+    p: b.panel === 'panel-left' ? 'L' : 'R',
+    t: b.type,
+    txt: b.text,
+    x: parseInt(b.el.style.left),
+    y: parseInt(b.el.style.top),
+    w: b.el.offsetWidth,
+    h: b.el.offsetHeight,
+  }));
+}
+
+function loadStep(idx) {
+  liveBlocks.forEach(b => b.el.remove());
+  liveBlocks = []; selectedBlock = null;
+  document.getElementById('info-selected').textContent = 'Cap bloc seleccionat';
+
+  const s = stepStates[idx];
+  panelLeft.style.width = s.leftWidth + 'px';
+  s.blocks.forEach(bd => _spawnBlock(bd.t, bd.txt, bd.w, bd.h,
+    bd.p === 'L' ? 'panel-left' : 'panel-right', bd.x, bd.y));
+
+  updateStepBar();
+  updateHeaderDots();
+  updateInfoBar();
+}
+
+function switchToStep(idx) {
+  if (idx === currentStepIdx) return;
+  saveCurrentStep();
+  currentStepIdx = idx;
+  loadStep(idx);
+}
+
+/* ================================================================
+   CREATE / DELETE BLOCKS
+   ================================================================ */
+function _spawnBlock(type, text, w, h, panelId, x, y) {
+  x = snap(x ?? 20); y = snap(y ?? 20);
+  const id    = 'b' + (++blockIdCtr);
+  const panel = document.getElementById(panelId);
+
+  const el = document.createElement('div');
+  el.className = 'block ' + type;
+  el.id = id;
+  el.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+
+  const content = document.createElement('div');
+  content.className = 'block-content';
+  content.innerHTML = (text || '').replace(/\n/g, '<br>');
+
+  const ta = document.createElement('textarea');
+  ta.className = 'block-editable'; ta.value = text || ''; ta.spellcheck = false;
+  ta.addEventListener('input', () => { content.innerHTML = ta.value.replace(/\n/g,'<br>'); });
+  ta.addEventListener('mousedown', e => e.stopPropagation());
+  ta.addEventListener('dblclick',  e => e.stopPropagation());
+
+  const rh = document.createElement('div'); rh.className = 'resize-handle';
+  const db = document.createElement('div'); db.className = 'delete-btn'; db.textContent = '✕';
+  db.addEventListener('click', e => { e.stopPropagation(); _deleteBlock(id); });
+
+  el.append(content, ta, rh, db);
+  panel.appendChild(el);
+
+  const rec = { id, el, panel: panelId, type, get text() { return ta.value; } };
+  liveBlocks.push(rec);
+  _attachEvents(el, rh, ta);
+  return rec;
+}
+
+function addBlock(type, text, w, h) {
+  const panel = document.getElementById('panel-left');
+  const rec = _spawnBlock(type, text, w, h, 'panel-left',
+    Math.max(8, (panel.offsetWidth  - w) / 2),
+    Math.max(8, (panel.offsetHeight - h) / 2));
+  selectBlock(rec.el);
+}
+
+function _deleteBlock(id) {
+  const i = liveBlocks.findIndex(b => b.id === id);
+  if (i < 0) return;
+  liveBlocks[i].el.remove(); liveBlocks.splice(i, 1);
+  selectedBlock = null;
+  document.getElementById('info-selected').textContent = 'Cap bloc seleccionat';
+}
+
+function clearSelected()    { if (selectedBlock) _deleteBlock(selectedBlock.id); }
+function clearCurrentStep() {
+  if (!confirm('Esborra tots els blocs del pas ' + currentStepIdx + '?')) return;
+  [...liveBlocks].forEach(b => b.el.remove());
+  liveBlocks = []; selectedBlock = null;
+  document.getElementById('info-selected').textContent = 'Cap bloc seleccionat';
+}
+
+/* ================================================================
+   BLOCK EVENTS (move, resize, select, edit)
+   ================================================================ */
+function _attachEvents(el, rh, ta) {
+  let mode = null, sx, sy, sl, st, sw, sh;
+
+  el.addEventListener('mousedown', e => {
+    if ([rh, ta].includes(e.target) || e.target.classList.contains('delete-btn')) return;
+    selectBlock(el);
+    if (el.classList.contains('edit-mode')) return;
+    mode = 'move'; sx = e.clientX; sy = e.clientY;
+    sl = parseInt(el.style.left); st = parseInt(el.style.top);
+    e.preventDefault();
+  });
+  rh.addEventListener('mousedown', e => {
+    selectBlock(el); mode = 'resize'; sx = e.clientX; sy = e.clientY;
+    sw = el.offsetWidth; sh = el.offsetHeight;
+    e.preventDefault(); e.stopPropagation();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!mode) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (mode === 'move') {
+      el.style.left = snap(sl + dx) + 'px';
+      el.style.top  = snap(st + dy) + 'px';
+    } else {
+      el.style.width  = snap(Math.max(50, sw + dx)) + 'px';
+      el.style.height = snap(Math.max(28, sh + dy)) + 'px';
+    }
+    updateSelectedInfo();
+  });
+  document.addEventListener('mouseup', () => { mode = null; });
+
+  el.addEventListener('dblclick', e => {
+    if ([rh].includes(e.target) || e.target.classList.contains('delete-btn')) return;
+    e.stopPropagation(); el.classList.add('edit-mode'); ta.focus(); ta.select();
+  });
+  document.addEventListener('mousedown', e => {
+    if (el.classList.contains('edit-mode') && !el.contains(e.target))
+      el.classList.remove('edit-mode');
+  });
+  ta.addEventListener('keydown', e => { if (e.key === 'Escape') el.classList.remove('edit-mode'); });
+}
+
+function selectBlock(el) {
+  if (selectedBlock) selectedBlock.el.classList.remove('selected');
+  selectedBlock = liveBlocks.find(b => b.el === el) || null;
+  if (selectedBlock) { el.classList.add('selected'); updateSelectedInfo(); }
+}
+function updateSelectedInfo() {
+  if (!selectedBlock) return;
+  const el = selectedBlock.el;
+  document.getElementById('info-selected').textContent =
+    `[${selectedBlock.type.replace('b-','')}]  pos(${el.style.left}, ${el.style.top})  ${el.offsetWidth}×${el.offsetHeight}px`;
+}
+
+['panel-left','panel-right'].forEach(pid => {
+  document.getElementById(pid).addEventListener('mousedown', e => {
+    if (e.target.id === pid || e.target.classList.contains('panel-label')) {
+      if (selectedBlock) selectedBlock.el.classList.remove('selected');
+      selectedBlock = null;
+      document.getElementById('info-selected').textContent = 'Cap bloc seleccionat';
+    }
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedBlock) {
+    const a = document.activeElement;
+    if (a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT')) return;
+    _deleteBlock(selectedBlock.id);
+  }
+});
+
+/* ================================================================
+   PALETTE DRAG & DROP
+   ================================================================ */
+let palDrag = null;
+document.querySelectorAll('.palette-item').forEach(item => {
+  item.addEventListener('dragstart', e => {
+    palDrag = { type: item.dataset.type, text: item.dataset.text };
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+  item.addEventListener('dragend', () => { palDrag = null; });
+});
+const defSz = { 'b-narration':[210,76], 'b-eq':[190,58], 'b-answer':[150,52],
+                'b-story':[320,54], 'b-visual':[240,150], 'b-custom':[180,52] };
+['panel-left','panel-right'].forEach(pid => {
+  const panel = document.getElementById(pid);
+  panel.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  panel.addEventListener('drop', e => {
+    e.preventDefault(); if (!palDrag) return;
+    const [dw,dh] = defSz[palDrag.type] || [180,52];
+    const rect = panel.getBoundingClientRect();
+    const rec = _spawnBlock(palDrag.type, palDrag.text, dw, dh, pid,
+      e.clientX - rect.left - dw/2, e.clientY - rect.top - dh/2);
+    selectBlock(rec.el); palDrag = null;
+  });
+});
+
+/* ================================================================
+   INFO BAR
+   ================================================================ */
+function updateInfoBar() {
+  document.getElementById('info-left-w').textContent  = panelLeft.offsetWidth + 'px';
+  document.getElementById('info-right-w').textContent = panelRight.offsetWidth + 'px';
+}
+
+/* ================================================================
+   EXPORT
+   ================================================================ */
+function openExport() {
+  saveCurrentStep();
+  document.getElementById('code-output').textContent = generateCode();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeExport() { document.getElementById('modal-overlay').classList.remove('open'); }
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById('code-output').textContent).then(() => {
+    const s = document.getElementById('copy-status');
+    s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 2500);
+  });
+}
+
+function generateCode() {
+  const L = [];
+  L.push('/* ====================================================');
+  L.push('   LAYOUT EXPORTAT — ' + new Date().toLocaleString('ca'));
+  L.push('   ' + stepStates.length + ' passos · envia a la conversa amb Claude');
+  L.push('==================================================== */\n');
+
+  stepStates.forEach((s, si) => {
+    const def = STEP_DEFS[si];
+    L.push(`/* ── PAS ${si}: ${def.label} (${def.sub}) ─────────────── */`);
+    L.push(`step[${si}] = { leftWidth: ${s.leftWidth}, blocks: [`);
+    if (!s.blocks.length) { L.push('  // cap bloc'); }
+    else s.blocks.forEach((b, bi) => {
+      const panName = b.p === 'L' ? 'Esquerra' : 'Dreta';
+      const preview = (b.txt||'').replace(/\n/g,' ').slice(0,70);
+      L.push(`  /* ${bi}) [${b.t.replace('b-','')}] ${panName} — pos(${b.x},${b.y}) — ${b.w}×${b.h}px`);
+      if (preview) L.push(`     "${preview}" */`);
+      else         L.push(`  */`);
+      L.push(`  { p:'${b.p}', t:'${b.t}', x:${b.x}, y:${b.y}, w:${b.w}, h:${b.h},`);
+      L.push(`    txt:\`${(b.txt||'').replace(/`/g,"'")}\` },`);
+    });
+    L.push(`] };\n`);
+  });
+
+  // Compact summary table
+  L.push('/* ── RESUM COMPACTE ─────────────────────────────────');
+  stepStates.forEach((s, si) => {
+    L.push(`   Pas ${si} (${STEP_DEFS[si].label}) | esq=${s.leftWidth}px | ${s.blocks.length} blocs`);
+    s.blocks.forEach((b,bi) => {
+      L.push(`     ${bi}) [${b.t.replace('b-','')}] ${b.p==='L'?'ESQ':'DRE'} (${b.x},${b.y}) ${b.w}×${b.h}  "${(b.txt||'').slice(0,40).replace(/\n/g,' ')}"`);
+    });
+  });
+  L.push('─────────────────────────────────────────────────── */');
+
+  return L.join('\n');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+buildStepBar();
+loadStep(0);
+</script>
+</body>
+</html>

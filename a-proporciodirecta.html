@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Proporcionalitat directa — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Proporcionalitat directa (adaptat)</title>
+
+    <!--
+    ============================================================
+    FITXER: a-proporciodirecta.html
+    ROL: Activitat adaptada de proporcionalitat directa per a
+         alumnes amb NEE. Enfocament per REDUCCIÓ A LA UNITAT
+         (mai regla de tres).
+
+    NIVELLS:
+      Nivell 1: La quantitat preguntada és múltiple de la donada
+                (o a l'inrevés). Un sol pas (× o ÷ directe).
+                4 casos: 1→N, N→1, N→kN, kN→N. Tot enters petits.
+      Nivell 2: Relació qualsevol. Dos passos (reducció a la unitat):
+                Pas 1: trobar preu unitari (÷). Pas 2: multiplicar (×).
+                Nombres petits (preu unitari 1–4, quantitats 2–5).
+      Nivell 3: Igual que nivell 2, amb nombres més grans
+                (preu unitari 2–6, quantitats 2–8).
+
+    FILOSOFIA PEDAGÒGICA:
+      - Sempre per reducció a la unitat. Mai regla de tres.
+      - Tots els nombres enters (preu unitari, totals, respostes).
+      - La divisió sempre és exacta.
+      - Textos curts i directes (baixa exigència lectora).
+
+    PARÀMETRES URL ESPECÍFICS:
+      ?nivell=1|2|3       (default 1)
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?maxenllocmitjana=  (default 1)
+
+    EXEMPLE:
+      a-proporciodirecta.html?nivell=2&totaloperations=6
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5,
+            defaultEnllocMitjana: 1
+        };
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+
+    <link rel="stylesheet" href="css/shared.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions / a-diners) ── */
+        :root {
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── ZONA DEL PROBLEMA: dada + pregunta ──────────────── */
+        .problem-display {
+            padding: 24px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .problem-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 1.8em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        .problem-emoji { font-size: 1.1em; }
+
+        .problem-qty {
+            padding: 6px 14px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            color: #334155;
+        }
+
+        .problem-arrow {
+            color: #94a3b8;
+            font-size: 0.9em;
+        }
+
+        .problem-price {
+            padding: 6px 14px;
+            background: #f0fdf4;
+            border: 2px solid #bbf7d0;
+            border-radius: 10px;
+            color: #166534;
+        }
+
+        .problem-unknown {
+            padding: 6px 14px;
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            color: var(--primary-dark);
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Etiqueta "Dada:" / "Pregunta:" */
+        .row-label {
+            font-size: 0.65em;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .given-row { opacity: 0.95; }
+        .asked-row { margin-top: 4px; }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step-prompt {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type="text"]#value-input {
+            width: 120px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .answer-unit {
+            color: #475569;
+            font-size: 0.8em;
+        }
+
+        /* ── BOTONS: OK + Ajuda ──────────────────────────────── */
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #btn-submit-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0;
+            width: 2.4rem;
+            height: 2.4rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* ── AJUDA TEXT ───────────────────────────────────────── */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 1.05em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            width: fit-content;
+            max-width: min(860px, 95%);
+            white-space: nowrap;
+            line-height: 1.4;
+            animation: fadeIn 0.25s ease;
+        }
+        @media (max-width: 640px) {
+            .help-text { white-space: normal; max-width: 95%; }
+        }
+        .help-text.visible { display: block; }
+
+        /* ── SVG PRODUCTES (hint visual) ──────────────────────── */
+        .items-hint {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        .items-hint.visible { display: flex; }
+
+        /* ── RESPOSTA CORRECTA ────────────────────────────────── */
+        .answer-reveal {
+            display: none;
+            font-size: 1.05em;
+            color: #b91c1c;
+            font-weight: 600;
+            text-align: center;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+            border-radius: 10px;
+            padding: 12px 24px;
+            animation: fadeIn 0.35s ease;
+            max-width: 320px;
+        }
+        .answer-reveal.visible { display: block; }
+        .answer-reveal .ans-val {
+            font-size: 1.5em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: block;
+            margin-top: 4px;
+            color: var(--primary);
+        }
+
+        /* ── NIVELL A LA CAPÇALERA ────────────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── BOTÓ TUTORIAL ────────────────────────────────────── */
+        .btn-tutorial {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-tutorial:hover  { background: #d4d9a8; }
+        .btn-tutorial:active { transform: scale(0.96); }
+
+        .tut-dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #dc2626;
+            flex-shrink: 0;
+            animation: tutDotPulse 0.8s ease-in-out 5;
+            animation-fill-mode: forwards;
+        }
+        @keyframes tutDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%      { opacity: 0.2; transform: scale(0.65); }
+        }
+
+        #fade-overlay {
+            position: fixed; inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .problem-display  { padding: 16px 12px 12px; gap: 12px; }
+            .problem-row      { font-size: 1.4em; gap: 8px; }
+            .problem-qty,
+            .problem-price,
+            .problem-unknown  { padding: 5px 10px; border-radius: 8px; }
+            .answer-row       { font-size: 1.6em; }
+            input[type="text"]#value-input { width: 100px; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text        { font-size: 0.97em; padding: 12px 14px; }
+            .step-prompt      { font-size: 1.05em; }
+        }
+        @media (max-width: 350px) {
+            .problem-row { font-size: 1.2em; }
+        }
+
+        /* ── ANIMACIÓ INTENTS ────────────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Proporcionalitat</h1>
+    <button class="btn-tutorial" id="btn-tutorial" aria-label="Veure tutorial">
+        <span class="tut-dot" aria-hidden="true"></span>
+        Tutorial
+    </button>
+</div>
+
+<div id="fade-overlay"></div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display">Problema 1 de 4</div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text"  id="score-display">Punts: 0</div>
+            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+        </div>
+
+        <!-- Problema: dada + pregunta -->
+        <div class="problem-display" id="problem-display"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <div class="step-done" id="step-done" style="display:none;"></div>
+            <div class="step-prompt" id="step-prompt"></div>
+
+            <div class="answer-row" id="answer-row">
+                <input type="text" id="value-input" autocomplete="off"
+                       aria-label="Escriu la resposta">
+                <span class="answer-unit">€</span>
+            </div>
+
+            <div class="action-row">
+                <button class="btn-submit" id="btn-submit-val"
+                        onclick="checkValue()">OK</button>
+                <button class="btn-ajuda"
+                        onclick="toggleHelp()">💡 Ajuda</button>
+            </div>
+
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+
+            <div class="items-hint" id="items-hint" aria-live="polite">
+                <div id="items-hint-svg"></div>
+            </div>
+
+            <div class="answer-reveal" id="answer-reveal" aria-live="assertive">
+                Era:
+                <span class="ans-val" id="answer-correct-val"></span>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script src="js/game-core.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// PARÀMETRES URL
+// ============================================================
+
+const _aParams = new URLSearchParams(window.location.search);
+
+/**
+ * ?nivell=1  Múltiple directe: 1→N, N→1, N→kN, kN→N (1 pas)
+ * ?nivell=2  Qualsevol relació, reducció a la unitat (2 passos, petit)
+ * ?nivell=3  Qualsevol relació, reducció a la unitat (2 passos, gran)
+ */
+const NIVELL = getIntParam(_aParams, 'nivell', 1, 1, 3);
+
+// ============================================================
+// ELEMENTS DOM
+// ============================================================
+
+const els = {
+    body:             document.body,
+    gameScreen:       document.getElementById('game-screen'),
+    sessionDisplay:   document.getElementById('session-display'),
+    lvlDisplay:       document.getElementById('lvl-display'),
+    nivellDisplay:    document.getElementById('nivell-display'),
+    scoreDisplay:     document.getElementById('score-display'),
+    attemptsDisplay:  document.getElementById('attempts-display'),
+    problemDisplay:   document.getElementById('problem-display'),
+    resolutionPanel:  document.getElementById('resolution-panel'),
+    stepDone:         document.getElementById('step-done'),
+    stepPrompt:       document.getElementById('step-prompt'),
+    valueInput:       document.getElementById('value-input'),
+    btnSubmitVal:     document.getElementById('btn-submit-val'),
+    helpText:         document.getElementById('help-text'),
+    itemsHint:        document.getElementById('items-hint'),
+    itemsHintSvg:     document.getElementById('items-hint-svg'),
+    answerReveal:     document.getElementById('answer-reveal'),
+    answerCorrectVal: document.getElementById('answer-correct-val'),
+};
+
+// ============================================================
+// ESTAT LOCAL
+// ============================================================
+
+let isPenalizing    = false;
+let currentProblem  = null;
+let expectedAnswer  = 0;
+let currentStep     = 1;     // 1 o 2 (nivell 3 té dos passos)
+let _helpVisible    = false;
+
+// ============================================================
+// PRODUCTES (els mateixos que a-diners per coherència)
+// ============================================================
+
+const PRODUCTS = [
+    { emoji: '🍞', nom: 'pa',        noms: 'pans' },
+    { emoji: '🥛', nom: 'llet',      noms: 'llets' },
+    { emoji: '🍎', nom: 'poma',      noms: 'pomes' },
+    { emoji: '✏️', nom: 'llapis',    noms: 'llapis' },
+    { emoji: '📓', nom: 'llibreta',  noms: 'llibretes' },
+    { emoji: '🍫', nom: 'xocolata',  noms: 'xocolates' },
+    { emoji: '💧', nom: 'ampolla',   noms: 'ampolles' },
+    { emoji: '🧃', nom: 'suc',       noms: 'sucs' },
+    { emoji: '🥐', nom: 'croissant', noms: 'croissants' },
+    { emoji: '🍌', nom: 'plàtan',    noms: 'plàtans' },
+    { emoji: '🍪', nom: 'galeta',    noms: 'galetes' },
+    { emoji: '🥪', nom: 'entrepà',   noms: 'entrepans' },
+    { emoji: '🖊️', nom: 'boli',     noms: 'bolis' },
+];
+
+function pickProduct() {
+    return { ...pick(PRODUCTS) };
+}
+
+/** Retorna el nom en singular o plural segons la quantitat. */
+function productName(prod, qty) {
+    return qty === 1 ? prod.nom : prod.noms;
+}
+
+// ============================================================
+// GENERACIÓ DE PROBLEMES
+// ============================================================
+
+function generateProblem() {
+    const prod = pickProduct();
+
+    if (NIVELL === 1) {
+        // Un sol pas: la quantitat preguntada és múltiple de la donada (o invers).
+        // 4 casos equiprobables: 1→N, N→1, N→kN, kN→N.
+        const cas = pick(['1toN', 'Nto1', 'NtokN', 'kNtoN']);
+        const unitPrice = randInt(1, 4);
+
+        if (cas === '1toN') {
+            // 1 poma → 2 €. 3 pomes → ?
+            const askQty = randInt(2, 5);
+            return {
+                prod, cas, unitPrice,
+                givenQty: 1, givenPrice: unitPrice,
+                askQty,   answer: unitPrice * askQty,
+                twoStep: false,
+            };
+        }
+        if (cas === 'Nto1') {
+            // 3 pomes → 6 €. 1 poma → ?
+            const givenQty = randInt(2, 5);
+            return {
+                prod, cas, unitPrice,
+                givenQty, givenPrice: unitPrice * givenQty,
+                askQty: 1, answer: unitPrice,
+                twoStep: false,
+            };
+        }
+        if (cas === 'NtokN') {
+            // 2 pomes → 4 €. 6 pomes → ?  (×3)
+            const givenQty  = randInt(2, 3);
+            const multiplier = randInt(2, 3);
+            const askQty    = givenQty * multiplier;
+            return {
+                prod, cas, unitPrice, multiplier,
+                givenQty, givenPrice: unitPrice * givenQty,
+                askQty,   answer: unitPrice * askQty,
+                twoStep: false,
+            };
+        }
+        // kNtoN: 6 pomes → 12 €. 2 pomes → ?  (÷3)
+        const askQty    = randInt(2, 3);
+        const multiplier = randInt(2, 3);
+        const givenQty  = askQty * multiplier;
+        return {
+            prod, cas, unitPrice, multiplier,
+            givenQty, givenPrice: unitPrice * givenQty,
+            askQty,   answer: unitPrice * askQty,
+            twoStep: false,
+        };
+    }
+
+    // Nivells 2 i 3: reducció a la unitat obligada (dos passos)
+    // askQty no és múltiple de givenQty ni a l'inrevés.
+    const small = (NIVELL === 2);
+    const unitPrice = small ? randInt(1, 4) : randInt(2, 6);
+    const givenQty  = small ? randInt(2, 5) : randInt(2, 8);
+
+    let askQty;
+    do {
+        askQty = small ? randInt(2, 5) : randInt(2, 8);
+    } while (
+        askQty === givenQty ||
+        askQty % givenQty === 0 ||
+        givenQty % askQty === 0
+    );
+
+    return {
+        prod, unitPrice,
+        givenQty, givenPrice: unitPrice * givenQty,
+        askQty,
+        step1Answer: unitPrice,
+        step2Answer: unitPrice * askQty,
+        twoStep: true,
+    };
+}
+
+// ============================================================
+// RENDERITZACIÓ DEL PROBLEMA
+// ============================================================
+
+function renderProblem(p) {
+    const e = p.prod.emoji;
+    const givenName = productName(p.prod, p.givenQty);
+    const askName   = productName(p.prod, p.askQty);
+
+    // Fila dada: "🍎 2 pomes → 6 €"
+    const givenRow = `<div class="problem-row given-row">
+        <span class="row-label">Dada:</span>
+        <span class="problem-emoji">${e}</span>
+        <span class="problem-qty">${p.givenQty} ${givenName}</span>
+        <span class="problem-arrow">→</span>
+        <span class="problem-price">${p.givenPrice} €</span>
+    </div>`;
+
+    // Fila pregunta: "🍎 5 pomes → ? €"
+    const askRow = `<div class="problem-row asked-row">
+        <span class="row-label">Busca:</span>
+        <span class="problem-emoji">${e}</span>
+        <span class="problem-qty">${p.askQty} ${askName}</span>
+        <span class="problem-arrow">→</span>
+        <span class="problem-unknown">? €</span>
+    </div>`;
+
+    return givenRow + askRow;
+}
+
+/** Nivell 3, pas 2: actualitza la fila de pregunta. */
+function updateAskedRow(p) {
+    const askName = productName(p.prod, p.askQty);
+    const e = p.prod.emoji;
+    els.problemDisplay.innerHTML = `
+        <div class="problem-row given-row">
+            <span class="row-label">Dada:</span>
+            <span class="problem-emoji">${e}</span>
+            <span class="problem-qty">${p.givenQty} ${productName(p.prod, p.givenQty)}</span>
+            <span class="problem-arrow">→</span>
+            <span class="problem-price">${p.givenPrice} €</span>
+        </div>
+        <div class="problem-row" style="color: var(--success); font-size:1.1em;">
+            <span class="problem-emoji">${e}</span>
+            <span class="problem-qty" style="background:#dcfce7;border-color:#bbf7d0;">1 ${p.prod.nom}</span>
+            <span class="problem-arrow">→</span>
+            <span class="problem-price">${p.unitPrice} €</span>
+        </div>
+        <div class="problem-row asked-row">
+            <span class="row-label">Busca:</span>
+            <span class="problem-emoji">${e}</span>
+            <span class="problem-qty">${p.askQty} ${askName}</span>
+            <span class="problem-arrow">→</span>
+            <span class="problem-unknown">? €</span>
+        </div>`;
+}
+
+// ============================================================
+// SVG AJUDA VISUAL
+// ============================================================
+
+/**
+ * Nivell 1: N productes en fila, cadascun amb el preu a sobre.
+ * L'alumne veu que ha de comptar-los.
+ */
+function buildItemsSVG_N1(emoji, qty, unitPrice) {
+    const IW   = 56;
+    const GAP  = 8;
+    const PAD  = 10;
+    const W    = qty * (IW + GAP) - GAP + PAD * 2;
+    const H    = 70;
+    const s    = [];
+
+    s.push(`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+             style="max-width:${Math.min(W, 360)}px;width:100%;height:auto;">`);
+
+    for (let i = 0; i < qty; i++) {
+        const x = PAD + i * (IW + GAP);
+        // Preu a dalt
+        s.push(`<text x="${x + IW/2}" y="16" text-anchor="middle"
+                 font-family="'Courier New',monospace" font-size="14"
+                 font-weight="700" fill="#166534">${unitPrice} €</text>`);
+        // Emoji a baix
+        s.push(`<text x="${x + IW/2}" y="52" text-anchor="middle"
+                 font-size="28">${emoji}</text>`);
+    }
+
+    s.push('</svg>');
+    return s.join('');
+}
+
+/**
+ * Nivell 2: N productes en fila amb "?" a sobre i clau "Total: X €" a sota.
+ * Patró visual basat en buildBoxSVG d'a-equacions.
+ */
+function buildItemsSVG_N2(emoji, qty, totalPrice) {
+    const IW   = 56;
+    const GAP  = 8;
+    const PAD  = 10;
+    const W    = qty * (IW + GAP) - GAP + PAD * 2;
+    const H    = 88;
+    const s    = [];
+
+    s.push(`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+             style="max-width:${Math.min(W, 360)}px;width:100%;height:auto;">`);
+
+    for (let i = 0; i < qty; i++) {
+        const x = PAD + i * (IW + GAP);
+        // Interrogant a dalt
+        s.push(`<text x="${x + IW/2}" y="16" text-anchor="middle"
+                 font-family="'Courier New',monospace" font-size="15"
+                 font-weight="800" fill="#5a6a1e" font-style="italic">?</text>`);
+        // Emoji
+        s.push(`<text x="${x + IW/2}" y="48" text-anchor="middle"
+                 font-size="26">${emoji}</text>`);
+    }
+
+    // Clau a sota: línia + total
+    const lineY = 60;
+    s.push(`<line x1="${PAD}" y1="${lineY}" x2="${W - PAD}" y2="${lineY}"
+             stroke="#94a3b8" stroke-width="1.5"/>`);
+    s.push(`<line x1="${PAD}" y1="${lineY}" x2="${PAD}" y2="${lineY - 5}"
+             stroke="#94a3b8" stroke-width="1.5"/>`);
+    s.push(`<line x1="${W - PAD}" y1="${lineY}" x2="${W - PAD}" y2="${lineY - 5}"
+             stroke="#94a3b8" stroke-width="1.5"/>`);
+    s.push(`<text x="${W/2}" y="${lineY + 18}" text-anchor="middle"
+             font-family="'Segoe UI',sans-serif" font-size="13"
+             font-weight="700" fill="#475569">Total: ${totalPrice} €</text>`);
+
+    s.push('</svg>');
+    return s.join('');
+}
+
+// ============================================================
+// AJUDA CONTEXTUAL — textos curts
+// ============================================================
+
+function getHelpText() {
+    const p    = currentProblem;
+    const nom1 = p.prod.nom;
+    const nomN = p.prod.noms;
+
+    // ── Nivell 1: un sol pas, 4 casos ──
+    if (NIVELL === 1) {
+        if (p.cas === '1toN') {
+            return `🪙 1 ${nom1} costa ${p.unitPrice} €. Tens ${p.askQty} ${nomN}.`;
+        }
+        if (p.cas === 'Nto1') {
+            return `🪙 Reparteix ${p.givenPrice} € entre ${p.givenQty} ${nomN}.`;
+        }
+        if (p.cas === 'NtokN') {
+            return `🪙 De ${p.givenQty} a ${p.askQty} ${nomN} → ×${p.multiplier}. El preu també ×${p.multiplier}.`;
+        }
+        // kNtoN
+        return `🪙 De ${p.givenQty} a ${p.askQty} ${nomN} → ÷${p.multiplier}. El preu també ÷${p.multiplier}.`;
+    }
+
+    // ── Nivells 2–3: dos passos ──
+    if (currentStep === 1) {
+        return `🪙 Reparteix ${p.givenPrice} € entre ${p.givenQty} ${nomN}.`;
+    }
+    return `🪙 1 ${nom1} costa ${p.unitPrice} €. Tens ${p.askQty}.`;
+}
+
+function toggleHelp() {
+    _helpVisible = !_helpVisible;
+    if (_helpVisible) {
+        els.helpText.textContent = getHelpText();
+        els.helpText.classList.add('visible');
+
+        // SVG: ~50% de les vegades, només casos simples
+        if (Math.random() < 0.5) {
+            const p = currentProblem;
+            if (NIVELL === 1 && p.cas === '1toN') {
+                els.itemsHintSvg.innerHTML = buildItemsSVG_N1(p.prod.emoji, p.askQty, p.unitPrice);
+                els.itemsHint.classList.add('visible');
+            } else if (NIVELL === 1 && p.cas === 'Nto1') {
+                els.itemsHintSvg.innerHTML = buildItemsSVG_N2(p.prod.emoji, p.givenQty, p.givenPrice);
+                els.itemsHint.classList.add('visible');
+            } else if (p.twoStep && currentStep === 1) {
+                els.itemsHintSvg.innerHTML = buildItemsSVG_N2(p.prod.emoji, p.givenQty, p.givenPrice);
+                els.itemsHint.classList.add('visible');
+            }
+        }
+    } else {
+        els.helpText.classList.remove('visible');
+        els.itemsHint.classList.remove('visible');
+    }
+}
+
+function resetHelp() {
+    _helpVisible = false;
+    els.helpText.classList.remove('visible');
+    els.helpText.textContent = '';
+    els.itemsHint.classList.remove('visible');
+}
+
+// ============================================================
+// UPDATE CAPÇALERA
+// ============================================================
+
+function updateHeader() {
+    els.sessionDisplay.innerText  = `Sessió ${currentSession + 1} de ${TOTAL_SESSIONS}`;
+    els.lvlDisplay.innerText      = `Problema ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
+    els.nivellDisplay.innerText   = `· Nivell ${NIVELL}`;
+    els.scoreDisplay.innerText    = `Punts: ${sessionScore}`;
+    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
+    els.attemptsDisplay.className = 'attempts-counter' +
+        (attemptsLeft <= 2 ? ' danger' : '');
+}
+
+// ============================================================
+// LÒGICA PRINCIPAL
+// ============================================================
+
+function buildLevel() {
+    attemptsLeft    = MAX_INTENTS;
+    isPenalizing    = false;
+    isTransitioning = false;
+    currentStep     = 1;
+
+    currentProblem = generateProblem();
+
+    // expectedAnswer segons nivell
+    if (currentProblem.twoStep) {
+        expectedAnswer = currentProblem.step1Answer;
+    } else {
+        expectedAnswer = currentProblem.answer;
+    }
+
+    els.body.style.backgroundColor =
+        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
+
+    resetHelp();
+    els.stepDone.style.display = 'none';
+    els.answerReveal.classList.remove('visible');
+    els.valueInput.value              = '';
+    els.resolutionPanel.style.display = 'none';
+
+    updateHeader();
+
+    // Renderitzar el problema
+    els.problemDisplay.innerHTML = renderProblem(currentProblem);
+
+    // Prompt segons nivell i cas
+    const p = currentProblem;
+    if (p.twoStep) {
+        // Nivells 2–3: primer pas sempre "Quant costa 1?"
+        els.stepPrompt.textContent = `Quant costa 1 ${p.prod.nom}?`;
+    } else {
+        // Nivell 1: depèn del cas
+        const askName = productName(p.prod, p.askQty);
+        if (p.askQty === 1) {
+            els.stepPrompt.textContent = `Quant costa 1 ${p.prod.nom}?`;
+        } else {
+            els.stepPrompt.textContent = `Quant costen ${p.askQty} ${askName}?`;
+        }
+    }
+
+    // Obrir panell
+    els.resolutionPanel.style.display = 'flex';
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+/** Transició de pas 1 → pas 2 (nivells 2 i 3). */
+function advanceToStep2() {
+    currentStep    = 2;
+    expectedAnswer = currentProblem.step2Answer;
+
+    const p   = currentProblem;
+    const nom = productName(p.prod, p.askQty);
+
+    // Mostrar el pas 1 completat
+    els.stepDone.textContent   = `✅ 1 ${p.prod.nom} → ${p.unitPrice} €`;
+    els.stepDone.style.display = 'block';
+
+    // Actualitzar la zona del problema (afegeix fila intermèdia)
+    updateAskedRow(p);
+
+    // Nova pregunta
+    els.stepPrompt.textContent = `Quant costen ${p.askQty} ${nom}?`;
+
+    resetHelp();
+    els.valueInput.value = '';
+    els.answerReveal.classList.remove('visible');
+
+    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
+    else                 els.valueInput.focus();
+}
+
+function checkValue() {
+    if (isTransitioning || isPenalizing) return;
+    const raw = els.valueInput.value.trim();
+    if (raw === '') return;
+    if (!/^\d+$/.test(raw)) { shakeInput(); penalize(); return; }
+
+    const userAnswer = parseInt(raw, 10);
+    const question   = buildQuestionText();
+
+    if (userAnswer !== expectedAnswer) {
+        shakeInput();
+        recordAnswerToHistory(question, raw, false);
+        penalize();
+        if (isTouchDevice()) kbMarkForOverwrite(els.valueInput);
+        else { els.valueInput.value = ''; els.valueInput.focus(); }
+        return;
+    }
+
+    // Correcte!
+    recordAnswerToHistory(question, raw, true);
+
+    // Dos passos, pas 1 → avançar al pas 2
+    if (currentProblem.twoStep && currentStep === 1) {
+        advanceToStep2();
+        return;
+    }
+
+    hideCustomKeyboard();
+    finishOperation(true);
+}
+
+function buildQuestionText() {
+    const p       = currentProblem;
+    const askName = productName(p.prod, p.askQty);
+    const givName = productName(p.prod, p.givenQty);
+
+    if (!p.twoStep) {
+        // Nivell 1: un sol pas
+        return `${p.prod.emoji} ${p.givenQty} ${givName}→${p.givenPrice} €, ${p.askQty} ${askName}→?`;
+    }
+    // Nivells 2–3: dos passos
+    if (currentStep === 1) {
+        return `${p.prod.emoji} ${p.givenQty} ${givName}→${p.givenPrice} €, 1→?`;
+    }
+    return `${p.prod.emoji} 1→${p.unitPrice} €, ${p.askQty} ${askName}→?`;
+}
+
+function shakeInput() {
+    els.btnSubmitVal.classList.add('error-shake');
+    setTimeout(() => els.btnSubmitVal.classList.remove('error-shake'), 200);
+}
+
+function penalize() {
+    if (isPenalizing || isTransitioning) return;
+    isPenalizing = true;
+    els.attemptsDisplay.classList.add('blink');
+
+    setTimeout(() => {
+        els.attemptsDisplay.classList.remove('blink');
+        attemptsLeft--;
+        updateHeader();
+
+        if (attemptsLeft <= 0) {
+            isTransitioning = true;
+            hideCustomKeyboard();
+            els.answerCorrectVal.textContent = expectedAnswer + ' €';
+            els.answerReveal.classList.add('visible');
+            setTimeout(() => finishOperation(false), 2400);
+        }
+
+        isPenalizing = false;
+    }, 700);
+}
+
+function finishOperation(success) {
+    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
+    const fails       = MAX_INTENTS - attemptsLeft;
+    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
+    sessionScore += levelPoints;
+
+    const waitTime = showMiniOverlay(levelPoints, {
+        successColor: 'var(--primary-dark)',
+        pointsColor:  'var(--primary)'
+    });
+
+    setTimeout(() => {
+        hideMiniOverlay();
+        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
+            endSession();
+        } else {
+            currentOperation++;
+            buildLevel();
+        }
+    }, waitTime);
+}
+
+// ── Teclat físic ────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (els.gameScreen.style.display   === 'none') return;
+    if (els.resolutionPanel.style.display === 'none') return;
+    e.preventDefault();
+    if (!isTransitioning) checkValue();
+});
+
+function checkCurrentCell() { checkValue(); }
+
+// ── Botó Tutorial ───────────────────────────────────────────
+document.getElementById('btn-tutorial').addEventListener('click', () => {
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-proporciodirecta-tutorial.html'; }, 800);
+});
+
+// ============================================================
+// INICI
+// ============================================================
+
+injectSharedHTML();
+validateConfig();
+initCustomKeyboard({ allowNegative: false });
+startGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial — Nombres enters</title>
+  <style>
+    /* ── VARIABLES ─────────────────────────────────────────────── */
+    :root {
+      --primary:       #0369a1;
+      --primary-light: #e0f2fe;
+      --primary-dark:  #0c4a6e;
+      --bg:            #f0f9ff;
+      --panel:         #ffffff;
+      --text:          #0f172a;
+      --muted:         #64748b;
+      --border:        #e2e8f0;
+      --neg-color:     #dc2626;
+      --neg-bg:        #fef2f2;
+      --neg-border:    #fca5a5;
+      --pos-color:     #5a6a1e;
+      --pos-bg:        #eceee0;
+      --pos-border:    #b8be8a;
+      --zero-color:    #475569;
+      --zero-bg:       #f8fafc;
+      --zero-border:   #e2e8f0;
+      --radius:        10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px 8px;
+    }
+
+    /* ── CAPÇALERA PÀGINA ─────────────────────────────────────── */
+    .title-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+      width: 100%; max-width: 860px;
+      justify-content: center;
+    }
+    .title-row h1 {
+      font-size: 1.4em; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--primary-dark);
+    }
+    .home-icon-link {
+      width: 38px; height: 38px; opacity: 0.7;
+      transition: opacity 0.2s; display: block; flex-shrink: 0;
+    }
+    .home-icon-link:hover { opacity: 1; }
+    .home-icon-link img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* ── PANELL ───────────────────────────────────────────────── */
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--primary);
+      width: 100%; max-width: 860px;
+      overflow: hidden;
+      flex: 1 1 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* ── CAPÇALERA TUTORIAL ───────────────────────────────────── */
+    .tut-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .step-counter {
+      font-size: 0.85em; font-weight: 700;
+      background: rgba(255,255,255,0.15);
+      padding: 3px 10px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .header-spacer { flex: 1 1 0; }
+    .btn-pause {
+      background: white;
+      border: 2px solid #ea580c;
+      color: #ea580c; font-size: 1em; font-weight: 800;
+      width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s; flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
+    }
+    .btn-pause:hover { background: #fff7ed; }
+    .btn-next {
+      padding: 5px 16px;
+      background: white; color: var(--primary-dark);
+      font-family: inherit; font-size: 1em; font-weight: 700;
+      border: none; border-radius: 7px; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-next:hover  { background: #e2e8f0; }
+    .btn-next:active { transform: scale(0.97); }
+    .btn-next.btn-finish       { background: #d1fae5; color: #065f46; }
+    .btn-next.btn-finish:hover { background: #a7f3d0; }
+
+    /* ── BARRA TIMER ──────────────────────────────────────────── */
+    .timer-track { height: 5px; background: rgba(0,0,0,0.08); flex-shrink: 0; }
+    .timer-fill  { height: 100%; background: linear-gradient(90deg, #f97316, #ea580c); width: 0%; }
+
+    /* ── COS PRINCIPAL ────────────────────────────────────────── */
+    .game-body {
+      display: flex; flex-direction: row;
+      flex: 1 1 0; min-height: 0;
+      transition: opacity 0.22s ease;
+    }
+    .game-body.fading { opacity: 0; pointer-events: none; }
+
+    /* ── PANELL ESQUERRE: mock del joc ────────────────────────── */
+    .game-left {
+      width: 45%; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px 16px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto; min-height: 0;
+      gap: 18px;
+      transition: opacity 0.3s ease;
+    }
+
+    /* ── EXPRESSIÓ MOCK (imita a-enters.html) ─────────────────── */
+    .expr-row {
+      display: flex; align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 2.4em;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      flex-wrap: wrap;
+    }
+    .t-num {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      line-height: 1;
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+    .t-num.neg  { color: var(--neg-color);  background: var(--neg-bg);  border-color: var(--neg-border); }
+    .t-num.pos  { color: var(--pos-color);  background: var(--pos-bg);  border-color: var(--pos-border); }
+    .t-num.zero { color: var(--zero-color); background: var(--zero-bg); border-color: var(--zero-border); }
+    .t-num.pulse {
+      box-shadow: 0 0 0 5px #fbbf24;
+      transform: scale(1.12);
+    }
+    .t-op {
+      background: #f1f5f9;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 18px;
+      color: #64748b;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+    }
+    .t-op.pulse {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+      color: #334155;
+    }
+    .t-eq { color: #475569; padding: 0 4px; }
+
+    /* Input mock */
+    .mock-input {
+      width: 120px;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9em;
+      font-weight: bold;
+      color: #1e293b;
+      line-height: 1;
+    }
+    .mock-input.filled-correct {
+      background: #f0fdf4;
+      border-color: #94a3b8;
+      color: #475569;
+    }
+    .mock-input.cursor::after {
+      content: '|';
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    /* Caixa d'ajuda mock */
+    .mock-help {
+      display: none;
+      background: #fffbeb;
+      border: 2px solid #fde68a;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 0.92em; color: #78350f; font-weight: 600;
+      text-align: center;
+      width: 100%; max-width: 360px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+    .mock-help.visible { display: block; }
+
+    /* Caixa de signe mock */
+    .mock-sign {
+      display: none;
+      background: #fff7ed;
+      border: 2px solid #fb923c;
+      border-radius: 10px;
+      padding: 9px 18px;
+      font-size: 0.92em; color: #7c2d12; font-weight: 600;
+      text-align: center;
+      width: 100%; max-width: 360px;
+      animation: fadeIn 0.3s ease;
+    }
+    .mock-sign.visible { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PANELL DRET: narrador + edifici ──────────────────────── */
+    .game-right {
+      width: 55%; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 14px 16px 12px;
+      overflow-y: auto; min-height: 0;
+      gap: 12px;
+    }
+
+    /* Narrador */
+    .narration-box {
+      width: 100%;
+      background: white;
+      border: 2px solid var(--primary);
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      display: flex; align-items: flex-start; gap: 10px;
+      box-shadow: 0 2px 10px rgba(3,105,161,0.1);
+      flex-shrink: 0;
+      opacity: 0;
+    }
+    .narration-icon { font-size: 1.4em; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+    .narration-text { font-size: 1.05em; line-height: 1.55; color: var(--text); }
+    .narration-text b { color: var(--primary-dark); }
+    .narration-text .neg { color: var(--neg-color); font-weight: 700; }
+    .narration-text .pos { color: var(--pos-color); font-weight: 700; }
+
+    /* Edifici SVG */
+    #tut-building { width: 100%; display: flex; justify-content: center; flex-shrink: 0; }
+    #tut-building svg { display: block; max-width: 260px; height: auto; }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────── */
+    @media (max-width: 680px) {
+      body { overflow: auto; height: auto; padding: 8px; }
+      .panel { flex: none; min-height: 520px; }
+      .game-body { flex-direction: column; }
+      .game-left, .game-right { width: 100%; border-right: none; }
+      .game-left  { border-bottom: 1px solid var(--border); padding: 14px; }
+      .game-right { padding: 12px; }
+      .expr-row   { font-size: 1.8em; }
+    }
+    @media (max-width: 440px) {
+      .title-row h1 { font-size: 1.05em; }
+      .expr-row      { font-size: 1.5em; }
+    }
+  </style>
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<div class="title-row">
+  <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+    <img src="icon.png" alt="Inici" onerror="this.style.display='none'">
+  </a>
+  <h1>Tutorial — Nombres enters</h1>
+</div>
+
+<div class="panel">
+
+  <div class="tut-header">
+    <span class="step-counter" id="step-counter">Completat: 0%</span>
+    <button class="btn-pause" id="btn-pause" aria-label="Pausa/Repren">⏸</button>
+    <button class="btn-next"  id="btn-next">Següent →</button>
+    <div class="header-spacer"></div>
+  </div>
+
+  <div class="timer-track">
+    <div class="timer-fill" id="timer-fill"></div>
+  </div>
+
+  <div class="game-body" id="game-body">
+
+    <!-- Esquerra: mock del joc -->
+    <div class="game-left" id="game-left">
+      <div class="expr-row"  id="tut-expr"></div>
+      <div class="mock-help" id="tut-help"></div>
+      <div class="mock-sign" id="tut-sign"></div>
+    </div>
+
+    <!-- Dreta: narrador + edifici -->
+    <div class="game-right">
+      <div class="narration-box">
+        <span class="narration-icon" id="narration-icon">👀</span>
+        <div  class="narration-text" id="narration-text"></div>
+      </div>
+      <div id="tut-building"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="fade-overlay"
+     style="position:fixed;inset:0;background:#000;opacity:0;
+            pointer-events:none;z-index:9999;transition:opacity 1.2s ease;"></div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   EDIFICI SVG
+   Mostra un edifici de -7 a +7 (15 plantes).
+   highlighted: llista de {floor, color} per pintar.
+   arrow:       {from, to} per dibuixar una fletxa de moviment.
+   ================================================================ */
+function buildBuilding(highlighted = [], arrow = null) {
+  const MIN_F  = -6, MAX_F = 5;
+  const FLOORS = MAX_F - MIN_F + 1;   // 12
+  const FH     = 24;                  // alçada de cada planta (px)
+  const FW     = 110;                 // amplada del bloc de plantes
+  const LW     = 88;                  // amplada etiquetes (prou per "Planta baixa")
+  const AW     = 28;                  // amplada fletxa dreta
+  const MT     = 10, MB = 10;
+  const W      = LW + FW + AW + 4;
+  const H      = FLOORS * FH + MT + MB;
+
+  // y del centre d'una planta
+  function yf(floor) {
+    return MT + (MAX_F - floor) * FH + FH / 2;
+  }
+
+  const s = [];
+  s.push(`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`);
+
+  // Fons de les plantes
+  for (let f = MIN_F; f <= MAX_F; f++) {
+    const y   = MT + (MAX_F - f) * FH;
+    const hl  = highlighted.find(h => h.floor === f);
+    const bg  = hl
+      ? (f > 0 ? 'rgba(90,106,30,0.18)' : f < 0 ? 'rgba(220,38,38,0.18)' : 'rgba(5,150,105,0.15)')
+      : (f === 0 ? '#f1f5f9' : '#f8fafc');
+    const stroke = f === 0 ? '#94a3b8' : '#e2e8f0';
+    s.push(`<rect x="${LW}" y="${y}" width="${FW}" height="${FH}"
+             fill="${bg}" stroke="${stroke}" stroke-width="0.8"/>`);
+  }
+
+  // Etiquetes (pis / Planta baixa / soterrani)
+  for (let f = MIN_F; f <= MAX_F; f++) {
+    const cy  = yf(f);
+    const hl  = highlighted.find(h => h.floor === f);
+    let label, color, fw;
+    let fsize;
+    if (f === 0)      { label = 'Planta baixa'; color = '#059669'; fw = '700'; fsize = 9; }
+    else if (f > 0)   { label = `pis ${f}`;     color = hl ? '#5a6a1e' : '#64748b'; fw = hl ? '700' : '500'; fsize = 10.5; }
+    else              { label = `s. ${Math.abs(f)}`; color = hl ? '#dc2626' : '#64748b'; fw = hl ? '700' : '500'; fsize = 10.5; }
+
+    s.push(`<text x="${LW - 5}" y="${cy + 4.5}" text-anchor="end"
+             font-family="'Courier New',monospace" font-size="${fsize}"
+             font-weight="${fw}" fill="${color}">${label}</text>`);
+  }
+
+  // Punt destacat (cercle)
+  highlighted.forEach(h => {
+    const cx = LW + FW / 2;
+    const cy = yf(h.floor);
+    const c  = h.floor > 0 ? '#5a6a1e' : h.floor < 0 ? '#dc2626' : '#059669';
+    // Pulsació per al destacat principal
+    if (h.pulse) {
+      s.push(`<circle cx="${cx}" cy="${cy}" r="10" fill="none" stroke="${c}" stroke-width="2.2">
+                <animate attributeName="r" from="9" to="22" dur="1.1s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" from="0.7" to="0" dur="1.1s" repeatCount="indefinite"/>
+              </circle>`);
+    }
+    s.push(`<circle cx="${cx}" cy="${cy}" r="8" fill="${c}" stroke="white" stroke-width="2.2"/>`);
+  });
+
+  // Fletxa de moviment
+  if (arrow) {
+    const cx    = LW + FW * 0.72;
+    const y1    = yf(arrow.from);
+    const y2    = yf(arrow.to);
+    const up    = arrow.to > arrow.from;
+    const color = up ? '#5a6a1e' : '#dc2626';
+    const ay2   = up ? y2 + 6 : y2 - 6;
+    s.push(`<line x1="${cx}" y1="${y1}" x2="${cx}" y2="${ay2}"
+             stroke="${color}" stroke-width="2.5" stroke-linecap="round"
+             stroke-dasharray="5,3" opacity="0.8"/>`);
+    // Cap de fletxa
+    if (up) {
+      s.push(`<polygon points="${cx},${y2} ${cx-5},${y2+9} ${cx+5},${y2+9}"
+               fill="${color}" opacity="0.9"/>`);
+    } else {
+      s.push(`<polygon points="${cx},${y2} ${cx-5},${y2-9} ${cx+5},${y2-9}"
+               fill="${color}" opacity="0.9"/>`);
+    }
+    // Etiqueta del moviment
+    const mid    = (y1 + y2) / 2;
+    const dx     = arrow.to - arrow.from;
+    const lblTxt = (dx > 0 ? `+${dx}` : `${dx}`) + ' pisos';
+    s.push(`<text x="${cx + 10}" y="${mid + 4}" font-family="'Segoe UI',sans-serif"
+             font-size="10" font-weight="700" fill="${color}">${lblTxt}</text>`);
+  }
+
+  // Línia de planta baixa (gruixuda)
+  const y0 = MT + MAX_F * FH;
+  s.push(`<line x1="${LW}" y1="${y0 + FH}" x2="${LW + FW}" y2="${y0 + FH}"
+           stroke="#475569" stroke-width="2"/>`);
+
+  s.push(`</svg>`);
+  return s.join('');
+}
+
+/* ================================================================
+   HELPERS per generar el mock d'expressió
+   ================================================================ */
+function signClass(n) {
+  return n < 0 ? 'neg' : n > 0 ? 'pos' : 'zero';
+}
+function numSpan(n, pulse = false, forceClass = null) {
+  const cls = forceClass || signClass(n);
+  return `<span class="t-num ${cls}${pulse ? ' pulse' : ''}">${n}</span>`;
+}
+function opSpan(op, pulse = false) {
+  return `<span class="t-op${pulse ? ' pulse' : ''}">${op}</span>`;
+}
+
+/* ================================================================
+   DADES DEL TUTORIAL  —  3 exemples, 9 passos totals
+   ================================================================ */
+const TUTORIAL = [
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 0 — Introducció: nombres positius i negatius
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Introducció · Positius i negatius',
+    steps: [
+      {
+        icon:      '🔵',
+        narration: 'Els nombres en <b class="pos">verd</b> (positius) representen <b>pisos per sobre</b> de la planta baixa.<br>Per exemple, <b class="pos">+4</b> és el <b>pis 4</b>.',
+        expr:      () => numSpan(4, true),
+        showBtns:  false,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: 4, pulse: true }]),
+      },
+      {
+        icon:      '🔴',
+        narration: 'Els nombres en <b class="neg">vermell</b> (negatius) representen <b>soterranis</b>.<br>Per exemple, <b class="neg">−3</b> és el <b>soterrani 3</b>.',
+        expr:      () => numSpan(-3, true),
+        showBtns:  false,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: -3, pulse: true }]),
+      },
+      {
+        icon:      '🏢',
+        narration: '<b>La planta baixa és el zero.</b><br>Ni positiu ni negatiu. Si estem al 0, estem a l\'entrada de l\'edifici.',
+        expr:      () => numSpan(0, true),
+        showBtns:  false,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: 0, pulse: true }]),
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 1 — Suma: −3 + 5 = 2
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Exemple 1 · Suma: −3 + 5',
+    steps: [
+      {
+        icon:      '📖',
+        narration: 'Tenim l\'operació <b>−3 + 5</b>.<br>El primer nombre (en <b class="neg">vermell</b>) és el nostre punt de partida: el <b>soterrani 3</b>.',
+        expr:      () => numSpan(-3, true) + opSpan('+') + numSpan(5),
+        showBtns:  true,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: -3, pulse: true }]),
+      },
+      {
+        icon:      '💡',
+        narration: 'El <b>+ 5</b> vol dir que <b>pugem 5 pisos</b> des del soterrani 3.',
+        expr:      () => numSpan(-3) + opSpan('+', true) + numSpan(5, true),
+        showBtns:  true,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: -3 }], { from: -3, to: 2 }),
+      },
+      {
+        icon:      '✅',
+        narration: 'Si pugem 5 pisos des del soterrani 3, arribem al <b class="pos">pis 2</b>.<br>El resultat de −3+5 és <b>2</b>.',
+        expr:      () => numSpan(-3) + opSpan('+') + numSpan(5) +
+                        `<span class="t-eq">=</span>` +
+                        `<span class="mock-input" style="display:inline-flex;align-items:center;justify-content:center;font-size:0.9em;width:80px;border-radius:8px;border:2px solid #94a3b8;background:#f8fafc;color:#475569;font-family:'Courier New',monospace;font-weight:bold;padding:8px;">2</span>`,
+        showBtns:  false,
+        help:      null,
+        sign:      '🟢 El signe del resultat és positiu',
+        building:  () => buildBuilding([{ floor: -3 }, { floor: 2, pulse: true }], { from: -3, to: 2 }),
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────
+  // EXEMPLE 2 — Resta: −2 − 4 = −6
+  // ──────────────────────────────────────────────────────────────
+  {
+    chip: 'Exemple 2 · Resta: −2 − 4',
+    steps: [
+      {
+        icon:      '📖',
+        narration: 'Ara tenim <b>−2 − 4</b>.<br>Partim del <b class="neg">soterrani −2</b>.',
+        expr:      () => numSpan(-2, true) + opSpan('−') + numSpan(4, false, 'neg'),
+        showBtns:  true,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: -2, pulse: true }]),
+      },
+      {
+        icon:      '💡',
+        narration: 'El <b>− 4</b> vol dir que <b>baixem 4 pisos</b>.<br>Arribem al <b class="neg">soterrani −6</b>.',
+        expr:      () => numSpan(-2) + opSpan('−', true) + numSpan(4, true, 'neg'),
+        showBtns:  true,
+        help:      null,
+        sign:      null,
+        building:  () => buildBuilding([{ floor: -2 }], { from: -2, to: -6 }),
+      },
+      {
+        icon:      '✅',
+        narration: 'Baixem 4 pisos des del soterrani −2, és a dir que estem al <b class="neg">soterrani −6</b>.<br>El resultat de −2−4 és <b>−6</b>.',
+        expr:      () => numSpan(-2) + opSpan('−') + numSpan(4, false, 'neg') +
+                        `<span class="t-eq">=</span>` +
+                        `<span class="mock-input" style="display:inline-flex;align-items:center;justify-content:center;font-size:0.9em;width:80px;border-radius:8px;border:2px solid #94a3b8;background:#f8fafc;color:#475569;font-family:'Courier New',monospace;font-weight:bold;padding:8px;">−6</span>`,
+        showBtns:  false,
+        help:      null,
+        sign:      '🔴 El signe del resultat és negatiu',
+        building:  () => buildBuilding([{ floor: -2 }, { floor: -6, pulse: true }], { from: -2, to: -6 }),
+      },
+    ],
+  },
+
+];
+
+const TOTAL_STEPS = TUTORIAL.reduce((n, ex) => n + ex.steps.length, 0);
+
+/* ================================================================
+   PERCENTATGE PER PAS
+   ================================================================ */
+function stepPct(gStep) {
+  // 10% per pas, 100% al darrer pas
+  if (gStep >= TOTAL_STEPS - 1) return 100;
+  return (gStep + 1) * 10;
+}
+
+/* ================================================================
+   ESTAT
+   ================================================================ */
+let exIdx   = 0;
+let stepIdx = 0;
+
+/* ================================================================
+   TIMER
+   ================================================================ */
+const STEP_MS = 10000;
+let timerElapsed = 0;
+let timerLastMs  = null;
+let timerIntv    = null;
+let isPaused     = false;
+
+function startTimer() {
+  clearInterval(timerIntv);
+  timerElapsed = 0;
+  timerLastMs  = Date.now();
+  isPaused     = false;
+  _setPauseIcon();
+  _setFill(0);
+  timerIntv = setInterval(_tick, 60);
+}
+
+function _tick() {
+  if (isPaused) return;
+  const now = Date.now();
+  timerElapsed += now - timerLastMs;
+  timerLastMs   = now;
+  _setFill(Math.min(100, timerElapsed / STEP_MS * 100));
+  if (timerElapsed >= STEP_MS) { clearInterval(timerIntv); _advance(); }
+}
+
+function _setFill(pct) {
+  document.getElementById('timer-fill').style.width = pct + '%';
+}
+
+function togglePause() {
+  if (isPaused) {
+    isPaused    = false;
+    timerLastMs = Date.now();
+  } else {
+    isPaused = true;
+  }
+  _setPauseIcon();
+}
+
+function _setPauseIcon() {
+  document.getElementById('btn-pause').textContent = isPaused ? '▶' : '⏸';
+}
+
+/* ================================================================
+   NAVEGACIÓ
+   ================================================================ */
+function _globalStep() {
+  let n = 0;
+  for (let i = 0; i < exIdx; i++) n += TUTORIAL[i].steps.length;
+  return n + stepIdx;
+}
+
+function _advance() {
+  clearInterval(timerIntv);
+  const ex         = TUTORIAL[exIdx];
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+
+  if (isLastStep && isLastEx) {
+    // Fade-out → navega al joc
+    const overlay = document.getElementById('fade-overlay');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity       = '1';
+    setTimeout(() => { window.location.href = 'a-enters.html'; }, 1200);
+    return;
+  }
+
+  if (isLastStep) { exIdx++; stepIdx = 0; }
+  else            { stepIdx++; }
+  _transition();
+}
+
+function _transition() {
+  const body = document.getElementById('game-body');
+  body.classList.add('fading');
+  setTimeout(() => {
+    render();
+    body.classList.remove('fading');
+    setTimeout(() => {
+      _showNarration();
+      startTimer();
+    }, 600);
+  }, 220);
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function render() {
+  const ex   = TUTORIAL[exIdx];
+  const step = ex.steps[stepIdx];
+  const gs   = _globalStep();
+
+  // Capçalera
+  document.getElementById('step-counter').textContent = `Completat: ${stepPct(gs)}%`;
+  // Narrador invisible
+  const narBox = document.querySelector('.narration-box');
+  narBox.style.transition = 'none';
+  narBox.style.opacity    = '0';
+  document.getElementById('narration-icon').textContent = step.icon;
+  document.getElementById('narration-text').innerHTML   = step.narration;
+
+  // Expressió mock
+  const exprEl = document.getElementById('tut-expr');
+  exprEl.innerHTML = step.expr ? step.expr() : '';
+
+  // Ajuda mock
+  const helpEl = document.getElementById('tut-help');
+  if (step.help) {
+    helpEl.textContent = step.help;
+    helpEl.classList.add('visible');
+  } else {
+    helpEl.classList.remove('visible');
+    helpEl.textContent = '';
+  }
+
+  // Signe mock
+  const signEl = document.getElementById('tut-sign');
+  if (step.sign) {
+    signEl.textContent = step.sign;
+    signEl.classList.add('visible');
+  } else {
+    signEl.classList.remove('visible');
+    signEl.textContent = '';
+  }
+
+  // Edifici
+  document.getElementById('tut-building').innerHTML =
+    step.building ? step.building() : '';
+
+  // Botó Següent
+  const isLastStep = stepIdx === ex.steps.length - 1;
+  const isLastEx   = exIdx   === TUTORIAL.length  - 1;
+  const btn = document.getElementById('btn-next');
+  if (isLastStep && isLastEx) {
+    btn.textContent = '🎮 Ves a jugar!';
+    btn.className   = 'btn-next btn-finish';
+  } else if (isLastStep) {
+    btn.textContent = 'Següent →';
+    btn.className   = 'btn-next';
+  } else {
+    btn.textContent = 'Següent →';
+    btn.className   = 'btn-next';
+  }
+  btn.blur();
+}
+
+function _showNarration() {
+  const box = document.querySelector('.narration-box');
+  box.style.transition = 'opacity 0.45s ease';
+  box.style.opacity    = '1';
+}
+
+/* ================================================================
+   EVENTS
+   ================================================================ */
+document.getElementById('btn-next').addEventListener('click', () => {
+  clearInterval(timerIntv);
+  _advance();
+});
+document.getElementById('btn-pause').addEventListener('click', togglePause);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+/* ================================================================
+   ARRENCADA
+   ================================================================ */
+render();
+setTimeout(() => {
+  _showNarration();
+  startTimer();
+}, 600);
+</script>
+
+</body>
+</html>

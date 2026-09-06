@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Activitats interactives de matemàtiques per a ESO. Atenció a la diversitat." />
+  <meta name="author" content="Step Quiz" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="icon-green.png" />
+  <title>Step Quiz Matemàtiques</title>
+
+  <script>
+    const BASE_URL = 'https://step-quiz.net/a/';
+
+    const ACTIVITIES_ESO = [
+      { file: 'a-rellotge.html',    label: "Rellotge d'agulles",       yt: '' },
+      { file: 'a-enters.html',    label: 'Nombres enters',       yt: '' },
+      { file: 'a-decimals.html',    label: 'Nombres decimals',       yt: '' },
+      { file: 'a-equacions.html', label: 'Equacions de 1r grau', yt: '' }
+    ];
+
+    const DEFAULT_ESO = 'a-enters.html';
+  </script>
+
+  <style>
+    :root {
+      --text-main: #2e2f1e;
+      --text-muted: #6b6e4a;
+      --bg-body: #f5f4ec;
+      --eso-bg: #eceee0;
+      --math-title: #5a6a1e;
+      --border-heavy: #b8be8a;
+      --panel-w: 384px;
+      --accent: #5a6a1e;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { overflow: hidden; }
+    @media (max-height: 600px) { html { overflow: auto; } }
+    body {
+      margin: 0;
+      background: var(--bg-body);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      padding: 10px;
+      padding-bottom: 75px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-container { text-align: center; margin-bottom: 20px; }
+    .title-row-1 { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 36px; font-weight: 800; color: #1c1f0e; margin: 0; }
+    .title-row-2 { font-size: 24px; font-weight: 400; color: var(--math-title); margin-top: -15px; }
+    .inline-icon { height: 82px; opacity: 0; animation: icon-slide-brake 0.6s cubic-bezier(0.1, 1.0, 0.2, 1.0) 0.1s forwards; }
+    .text-step { opacity: 0; animation: fade-in 0.43s ease-out 0.6s forwards; }
+    .title-row-2 { opacity: 0; animation: fade-in 0.24s ease-out 1.50s forwards; }
+
+    @keyframes icon-slide-brake { from { transform: translateX(-60px) scale(0.8); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    .main-wrapper { display: flex; gap: 30px; justify-content: center; width: 100%; max-width: 1000px; align-items: flex-start; }
+    .quiz-panel { width: var(--panel-w); max-width: 100%; padding: 15px 25px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-heavy); }
+    #panel-eso { background-color: var(--eso-bg); opacity: 0; animation: fade-in 0.24s ease-out 1.50s forwards; }
+
+    h2 { margin: 0 0 10px 5px; font-size: 22px; font-weight: 800; color: #1c1f0e; }
+
+    .row { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; padding: 4px 8px; }
+    .row label { font-size: 14px; font-weight: 600; text-align: left; }
+
+    select {
+      appearance: none; background-color: #ffffff; height: 32px; padding: 0 10px;
+      font-size: 14px; border: 1px solid var(--border-heavy); border-radius: 6px;
+      cursor: pointer; text-align: center; width: 100%; transition: background-color 0.2s;
+    }
+    select:hover { background-color: #d4d9a8; }
+
+    /* ── CUSTOM DROPDOWN ── */
+    .cd-wrap { position: relative; width: 100%; font-size: 14px; user-select: none; }
+
+    .cd-trigger {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      height: 32px; padding: 0 10px; background: #fff;
+      border: 1px solid var(--border-heavy); border-radius: 8px;
+      cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .cd-trigger:hover { border-color: #9aa45a; background: #e5e8c8; }
+    .cd-wrap.open .cd-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(90,106,30,0.15); background: #fff; }
+
+    .cd-chevron {
+      flex-shrink: 0; width: 15px; height: 15px; color: var(--text-muted);
+      transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cd-wrap.open .cd-chevron { transform: rotate(180deg); }
+
+    .cd-list {
+      position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+      background: #fff; border: 1px solid var(--border-heavy); border-radius: 10px;
+      box-shadow: 0 8px 30px -4px rgba(28,31,14,0.12), 0 2px 8px -2px rgba(28,31,14,0.08);
+      z-index: 999; overflow-y: auto; max-height: 260px; padding: 4px;
+      transform-origin: top center;
+      transform: scaleY(0.92) translateY(-4px); opacity: 0; pointer-events: none;
+      transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cd-wrap.open .cd-list { transform: scaleY(1) translateY(0); opacity: 1; pointer-events: auto; }
+
+    .cd-option {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 14px; color: var(--text-main); transition: background 0.1s;
+    }
+    .cd-option:hover { background: #eceee0; }
+    .cd-option.selected { font-weight: 600; color: var(--accent); background: #eceee0; }
+    .cd-check { width: 13px; height: 13px; flex-shrink: 0; color: var(--accent); opacity: 0; }
+    .cd-option.selected .cd-check { opacity: 1; }
+
+    /* Link block */
+    .link-block { margin-top: 5px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.08); padding-inline: 5px; }
+    .link-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; margin-bottom: 4px; display: block; }
+    .link-output { width: 100%; min-height: 45px; height: 45px; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-heavy); background: #d4d9a8; word-break: break-all; user-select: all; -webkit-user-select: all; cursor: text; line-height: 1.3; display: flex; align-items: center; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+    .copy-btn, .open-btn, .help-btn { height: 38px; cursor: pointer; border-radius: 6px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; border: none; gap: 6px; transition: all 0.2s ease; }
+    .copy-btn { flex: 0.8; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
+    .help-btn { flex: 0.9; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
+    .open-btn { flex: 1.25; background: var(--accent); color: white; }
+    .copy-btn:hover, .help-btn:hover { background-color: #d4d9a8; border-color: #9aa45a; }
+    .open-btn:hover { background: #3d4a14; }
+
+    .yt-icon { height: 16px; width: auto; }
+    .copy-status { font-size: 13px; color: #5a6a1e; margin-top: 0px; min-height: 0px; font-weight: 700; text-align: center; }
+
+    .help-btn { display: none; }
+
+    .select-atencio-shake { animation: select-shake-wave 1.2s ease-in-out; }
+    @keyframes select-shake-wave {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); background-color: #d4d9a8; }
+      20%, 40%, 60%, 80% { transform: translateX(4px); background-color: #e5e8c8; }
+    }
+  </style>
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+  <div class="title-container">
+    <h1 class="title-row-1">
+      <span class="text-step">Step</span>
+      <img src="icon-green.png" alt="Icona" class="inline-icon">
+      <span class="text-step">Quiz</span>
+    </h1>
+    <div class="title-row-2">Matemàtiques</div>
+  </div>
+
+  <div class="main-wrapper">
+    <div id="panel-eso" class="quiz-panel active">
+      <h2>ESO</h2>
+      <div class="row">
+        <label>Activitat</label>
+        <div class="cd-wrap" id="cd-eso">
+          <div class="cd-trigger"><span class="cd-label"></span><svg class="cd-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 10 13 15 8"/></svg></div>
+          <div class="cd-list"></div>
+        </div>
+      </div>
+      <div class="row"><label for="s-eso">Sessions</label><select id="s-eso"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="row"><label for="o-eso">Preguntes</label><select id="o-eso"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+      <div class="row"><label for="i-eso">Errors màx.</label><select id="i-eso"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      <div class="row"><label for="m-eso">Criteri</label><select id="m-eso"><option value="1">Nota màxima</option><option value="0">Nota mitjana</option></select></div>
+      <div class="link-block">
+        <div class="btn-row">
+          <button id="c-eso" class="copy-btn">Copia</button>
+          <button id="h-eso" class="help-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" alt="YT" class="yt-icon">Ajuda</button>
+          <button id="p-eso" class="open-btn">Obre</button>
+        </div>
+        <div id="st-eso" class="copy-status"></div>
+        <div class="link-label">Enllaç:</div>
+        <div id="l-eso" class="link-output" tabindex="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Custom dropdown factory ──
+    function makeCustomDropdown(wrapId, activities, defaultFile, onChangeCallback) {
+      const wrap    = document.getElementById(wrapId);
+      const trigger = wrap.querySelector('.cd-trigger');
+      const list    = wrap.querySelector('.cd-list');
+      const label   = wrap.querySelector('.cd-label');
+      let currentFile = defaultFile;
+
+      function getValue() { return currentFile; }
+
+      function render() {
+        list.innerHTML = '';
+        activities.forEach(a => {
+          const div = document.createElement('div');
+          div.className = 'cd-option' + (a.file === currentFile ? ' selected' : '');
+          div.innerHTML = `
+            <svg class="cd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 8 7 12 13 4"/>
+            </svg>
+            <span>${a.label}</span>`;
+          div.addEventListener('click', () => {
+            currentFile = a.file;
+            label.textContent = a.label;
+            render();
+            wrap.classList.remove('open');
+            onChangeCallback();
+          });
+          list.appendChild(div);
+        });
+      }
+
+      const def = activities.find(a => a.file === defaultFile) || activities[0];
+      label.textContent = def.label;
+      render();
+
+      trigger.addEventListener('click', e => { e.stopPropagation(); wrap.classList.toggle('open'); });
+      list.addEventListener('click', e => e.stopPropagation());
+
+      return { getValue };
+    }
+
+    // ── Panel init ──
+    function initPanel(suffix, activities, defaultFile) {
+      const els = {
+        s:      document.getElementById('s-' + suffix),
+        o:      document.getElementById('o-' + suffix),
+        i:      document.getElementById('i-' + suffix),
+        m:      document.getElementById('m-' + suffix),
+        link:   document.getElementById('l-' + suffix),
+        copy:   document.getElementById('c-' + suffix),
+        open:   document.getElementById('p-' + suffix),
+        help:   document.getElementById('h-' + suffix),
+        status: document.getElementById('st-' + suffix)
+      };
+
+      let timeout1, timeout2;
+
+      function build() {
+        const file = dropdown.getValue();
+        const qs = new URLSearchParams({
+          totalsessions:    els.s.value,
+          totaloperations:  els.o.value,
+          maxintents:       els.i.value,
+          maxenllocmitjana: els.m.value
+        });
+        els.link.textContent = `${BASE_URL}${file}?${qs.toString()}`;
+      }
+
+      function manageHelpButton(isInitialLoad = false) {
+        const selected = activities.find(a => a.file === dropdown.getValue());
+        const hasVideo = selected && selected.yt && selected.yt.trim() !== '';
+        clearTimeout(timeout1); clearTimeout(timeout2);
+        if (isInitialLoad) {
+          els.help.style.display = 'none';
+          timeout1 = setTimeout(() => {
+            const nowSel = activities.find(a => a.file === dropdown.getValue());
+            if (nowSel && nowSel.yt) els.help.style.display = 'flex';
+          }, 4500);
+        } else {
+          timeout1 = setTimeout(() => {
+            els.help.style.display = 'none';
+            timeout2 = setTimeout(() => { if (hasVideo) els.help.style.display = 'flex'; }, 800);
+          }, 200);
+        }
+      }
+
+      const dropdown = makeCustomDropdown('cd-' + suffix, activities, defaultFile, () => {
+        build();
+        manageHelpButton(false);
+      });
+
+      build();
+      manageHelpButton(true);
+
+      [els.s, els.o, els.i, els.m].filter(Boolean).forEach(el => el.addEventListener('change', build));
+
+      els.copy.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(els.link.textContent);
+        els.status.textContent = 'Copiat ✅';
+        setTimeout(() => els.status.textContent = '', 2000);
+      });
+      els.open.addEventListener('click', () => window.open(els.link.textContent, '_blank'));
+      els.help.addEventListener('click', () => {
+        const selected = activities.find(a => a.file === dropdown.getValue());
+        if (selected && selected.yt) window.open(selected.yt, '_blank');
+      });
+    }
+
+    initPanel('eso', ACTIVITIES_ESO, DEFAULT_ESO);
+
+    // Tanca dropdowns en clicar fora
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.cd-wrap').forEach(w => w.classList.remove('open'));
+    });
+
+    // Shake d'atenció inicial
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const triggers = document.querySelectorAll('.cd-trigger');
+        triggers.forEach(t => t.classList.add('select-atencio-shake'));
+        setTimeout(() => triggers.forEach(t => t.classList.remove('select-atencio-shake')), 1250);
+      }, 2220);
+    });
+  </script>
+
+  <footer style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f5f4ec; border-top: 1px solid #b8be8a; padding: 10px; z-index: 9999; display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; box-sizing: border-box; text-align: center;">
+    <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.ca" style="flex-shrink: 0;">
+      <img alt="Llicència CC BY-SA" style="border-width:0; height: 31px;" src="https://licensebuttons.net/l/by-sa/4.0/88x31.png" />
+    </a>
+    <span style="font-size: 0.85em; color: #2e2f1e;">
+      © 2026 <strong>David Arso Civil</strong>. Ús educatiu lliure.
+      <br style="display: none;" /> Es pot compartir i adaptar citant-ne l'autoria (<a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.ca" style="color: #2e2f1e; text-decoration: underline;">CC BY-NC-ND 4.0</a>).
+    </span>
+  </footer>
+
+  <a href="https://step-quiz.net/" title="Step Quiz" aria-label="Step Quiz" class="bottom-icon"
+     style="position: fixed; bottom: 65px; left: 14px; z-index: 10000;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #eceee0; border: 2px solid #b8be8a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;"
+     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.3)'"
+     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
+    <img src="icon.png" alt="Step Quiz"
+         style="width: 32px; height: 32px; object-fit: contain;"
+         onerror="this.style.display='none'">
+  </a>
+
+  <a href="https://cb.step-quiz.net/" title="CB Step Quiz" aria-label="CB Step Quiz" class="bottom-icon"
+     style="position: fixed; bottom: 65px; left: 72px; z-index: 10000;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #e2e8f0; border: 2px solid #b8be8a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;
+            font-size: 14px; font-weight: 800; color: #000000;
+            text-decoration: none; letter-spacing: 0.5px;"
+     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.4)'"
+     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
+    CB
+  </a>
+
+  <a href="https://step-quiz.net/analitzador-stepquiz.html" title="Analitzador de resultats" aria-label="Analitzador de resultats" class="bottom-icon"
+     style="position: fixed; bottom: 65px; left: 130px; z-index: 10000;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #eceee0; border: 2px solid #b8be8a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;
+            font-size: 26px; text-decoration: none;"
+     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.3)'"
+     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
+    📒
+  </a>
+
+</body>
+</html>
