@@ -2,7 +2,7 @@
 
 Activitats d'operacions matemàtiques amb suport visual, pensades per a alumnat amb adaptació. Cada bloc té una activitat i un tutorial.
 
-Web: https://aa.step-quiz.net
+Web: https://a.step-quiz.net
 
 ## Contingut
 
