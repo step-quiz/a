@@ -6,11 +6,11 @@ Material desenvolupat per **David Arso Civil** per al Departament de Matemàtiqu
 
 | | Contingut pedagògic | Codi |
 |---|---|---|
-| **Llicència** | CC BY-SA 4.0 | MIT |
+| **Llicència** | CC BY-NC-SA 4.0 | MIT |
 | Fer-lo servir a classe | Sí | Sí |
 | Modificar-lo i adaptar-lo | Sí | Sí |
 | Publicar-ne la versió modificada | Sí, amb la mateixa llicència | Sí |
-| Ús comercial | Sí | Sí |
+| Ús comercial | No | Sí |
 | Cal citar l'autoria | Sí | Sí |
 
 **Contingut pedagògic** vol dir textos, exercicis, enunciats, solucions, imatges, fitxes i PDF. **Codi** vol dir els fitxers `.js`, `.py`, `.css`, les plantilles HTML i les eines de construcció.
@@ -26,6 +26,6 @@ L'autoria correspon a la persona que va crear el material i no es transfereix: e
 ## Com citar-lo
 
 > Material desenvolupat per David Arso Civil per al Departament de Matemàtiques de l'INS Miquel Tarradell.
-> Contingut sota CC BY-SA 4.0, codi sota llicència MIT.
+> Contingut sota CC BY-NC-SA 4.0, codi sota llicència MIT.
 
 El text legal complet és al fitxer [`LICENSE`](LICENSE).
