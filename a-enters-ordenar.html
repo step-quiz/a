@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ordenar enters — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Ordenar enters</title>
+
+    <!--
+    ============================================================
+    FITXER: a-enters-ordenar.html
+    ROL: Activitat «Ordenar enters» per a l'aula d'acollida. Adaptació de
+         enters-ordenar.html d'operacions: tres reptes que van rotant, sense frases.
+    JAVASCRIPT: js/a-enters-ordenar/a-enters-ordenar.js (pantalla, teclat, punts) i
+         js/a-enters-ordenar/generador.js (reptes, lògica pura); motor comú a js/game-core.js.
+
+    ELS TRES REPTES (la pregunta 1 és el 1, la 2 el 2, la 3 el 3, la 4 l'1…):
+      1. Signe:  (−3) [ ? ] 5      → triar < o >.
+      2. Entre:  p < [    ] < q    → escriure un enter que hi càpiga.
+      3. Menors: ▢ < r             → tocar tots els nombres que són menors que r (8 nombres escampats).
+         Els encertats es queden en verd; els que sobren es sacsegen.
+      Si s'esgoten els intents, es veu la solució (el signe, un enter que serveix o els nombres en verd).
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 6)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    6,
+            defaultIntents:       5
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-decimals) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── L'EXPRESSIÓ ─────────────────────────────────────── */
+        .expression-box {
+            padding: 36px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+        .token-num { padding: 8px 14px; border-radius: 10px; color: #334155; }
+        .token-num.highlight    { background-color: var(--primary-light); }
+        .token-num.resolved-num { color: var(--primary-hover); }
+        .token-num.sign-big     { font-size: 1.3em; background: #dcfce7; color: #166534; }
+        .token-sym { color: #475569; padding: 0 4px; }
+        .token-op.auto-selected {
+            background-color: #ffffff;
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 5px 18px;
+            color: #334155;
+        }
+        input[type="text"].inline-input {
+            width: 100px;
+            font-family: inherit;
+            font-size: 1em;
+            font-weight: bold;
+            padding: 5px;
+            text-align: center;
+            border: 3px solid var(--primary);
+            border-radius: 8px;
+            outline: none;
+            background-color: white;
+            color: var(--primary-hover);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"].inline-input:focus { background: var(--primary-light); }
+        input[type="text"].inline-input.error-shake { background-color: var(--danger-light); border-color: var(--danger); animation: shake 0.2s; }
+        input[type="text"].inline-input.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 25px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .step-container { display: none; flex-direction: column; align-items: center; width: 100%; animation: fadeIn 0.3s; }
+        .step-container.active { display: flex; }
+        .sign-buttons { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%; }
+        .btn-sign {
+            padding: 12px 20px;
+            font-size: 1.4em;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border-radius: 8px;
+            border: 2px solid var(--border-heavy);
+            background: white;
+            color: #334155;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+            min-width: 80px;
+            max-width: 105px;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .btn-sign:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+        @media (hover: hover) {
+            .btn-sign:not(:disabled):hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        }
+        .btn-sign:active      { transform: scale(0.95); }
+        .btn-sign.error-shake { background-color: var(--danger-light); border-color: var(--danger); color: var(--danger); animation: shake 0.2s; }
+        .btn-sign.selected    { background-color: var(--primary-light); border-color: var(--primary); color: var(--primary-hover); box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-sign.locked      { background-color: #dcfce7; border-color: var(--success); color: #166534; opacity: 1; }
+
+        /* Repte 3: la pregunta («▢ < r») i els 8 nombres escampats */
+        #menors-title { font-size: 1.8em; font-family: 'Courier New', Courier, monospace; font-weight: bold; text-align: center; }
+        .menors-grid  { position: relative; width: 300px; height: 160px; margin: 20px auto 15px auto; }
+        .btn-num {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            min-width: 50px;
+            padding: 8px 0;
+            flex: none;
+        }
+        #btn-submit-val, #btn-submit-menors { margin-top: 6px; }
+
+        /* ── NIVELL, ANIMACIÓ INTENTS ────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .expression-box { font-size: 1.5em; padding: 20px 10px; gap: 6px; min-height: 80px; }
+            .token-num      { padding: 6px 10px; }
+            input[type="text"].inline-input { width: 80px; border-width: 2px; }
+            .resolution-panel { padding: 20px 15px; }
+            #menors-title   { font-size: 1.5em; }
+            .sign-buttons   { gap: 8px; }
+        }
+        @media (max-width: 350px) {
+            .expression-box { font-size: 1.25em; }
+            .menors-grid { transform: scale(0.85); transform-origin: top center; margin-bottom: -20px; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Ordenar enters</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | Repte X de Y | Punts | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-text"   id="lvl-display"></div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <!-- L'expressió (repte 1 i 2) -->
+        <div class="expression-box" id="expression-box"></div>
+
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Repte 1: triar el signe -->
+            <div class="step-container" id="step-signe">
+                <div class="sign-buttons">
+                    <button class="btn-sign" onclick="checkSigne('&lt;', this)">&lt;</button>
+                    <button class="btn-sign" onclick="checkSigne('&gt;', this)">&gt;</button>
+                </div>
+            </div>
+
+            <!-- Repte 2: escriure un enter (el camp és dins de l'expressió) -->
+            <div class="step-container" id="step-entre">
+                <button class="btn-submit" id="btn-submit-val" onclick="checkEntre()">OK</button>
+            </div>
+
+            <!-- Repte 3: tocar els nombres menors que r -->
+            <div class="step-container" id="step-menors">
+                <div id="menors-title"></div>
+                <div class="menors-grid" id="menors-grid" role="group"></div>
+                <button class="btn-submit" id="btn-submit-menors" onclick="checkMenors()">OK</button>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-enters-ordenar/a-enters-ordenar.js"></script>
+</body>
+</html>

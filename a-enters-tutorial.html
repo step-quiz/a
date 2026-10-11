@@ -33,6 +33,7 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh;   /* mòbil: no tapat per la barra del navegador */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -289,6 +290,7 @@
       .expr-row      { font-size: 1.5em; }
     }
   </style>
+<link rel="stylesheet" href="css/accessibilitat.css">
 <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>
@@ -385,7 +387,7 @@ function buildBuilding(highlighted = [], arrow = null) {
     const hl  = highlighted.find(h => h.floor === f);
     let label, color, fw;
     let fsize;
-    if (f === 0)      { label = 'Planta baixa'; color = '#059669'; fw = '700'; fsize = 9; }
+    if (f === 0)      { label = 'Planta baixa'; color = '#047857'; fw = '700'; fsize = 9; }
     else if (f > 0)   { label = `pis ${f}`;     color = hl ? '#5a6a1e' : '#64748b'; fw = hl ? '700' : '500'; fsize = 10.5; }
     else              { label = `s. ${Math.abs(f)}`; color = hl ? '#dc2626' : '#64748b'; fw = hl ? '700' : '500'; fsize = 10.5; }
 
@@ -398,7 +400,7 @@ function buildBuilding(highlighted = [], arrow = null) {
   highlighted.forEach(h => {
     const cx = LW + FW / 2;
     const cy = yf(h.floor);
-    const c  = h.floor > 0 ? '#5a6a1e' : h.floor < 0 ? '#dc2626' : '#059669';
+    const c  = h.floor > 0 ? '#5a6a1e' : h.floor < 0 ? '#dc2626' : '#047857';
     // Pulsació per al destacat principal
     if (h.pulse) {
       s.push(`<circle cx="${cx}" cy="${cy}" r="10" fill="none" stroke="${c}" stroke-width="2.2">
@@ -661,7 +663,7 @@ function _advance() {
     const overlay = document.getElementById('fade-overlay');
     overlay.style.pointerEvents = 'all';
     overlay.style.opacity       = '1';
-    setTimeout(() => { window.location.href = 'a-enters.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'a-enters.html' + window.location.search; }, 1200);
     return;
   }
 

@@ -26,6 +26,7 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh;   /* mòbil: no tapat per la barra del navegador */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -93,10 +94,9 @@
     /* exemple-chip eliminat (punt 1) */
 
     /*
-     * TODO-2: El botó de pausa hauria de ser molt més gran (mínim 48×48 px),
-     * amb icona clara i potser una etiqueta visible "PAUSA",
-     * de manera que alumnes amb TDAH o TEA el trobin immediatament
-     * sense haver de buscar-lo ni llegir res.
+     * El botó de pausa ha de ser gran (mínim 48×48 px) i de lectura immediata,
+     * perquè qualsevol alumne el trobi d'una ullada sense haver de llegir res:
+     * la mida mínima és a css/accessibilitat.css (R20, abans TODO-2).
      */
     .btn-pause {
       background: white; border: 2px solid #ea580c;
@@ -401,6 +401,7 @@
       .btn-mega-next { font-size: 1em; padding: 11px 24px; }
     }
   </style>
+<link rel="stylesheet" href="css/accessibilitat.css">
 <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>
@@ -570,7 +571,7 @@ function svgAdd(b, c) {
   s.push(`<text x="${eqX+10}" y="${CY+8}" text-anchor="middle" font-family="'Courier New',monospace" font-size="26" font-weight="700" fill="#0d9488">=</text>`);
   s.push(`<circle cx="${x3+BW/2}" cy="${CY}" r="${BH/2+2}" fill="#f0fdfa" stroke="#0d9488" stroke-width="2.5"/>`);
   s.push(`<text x="${x3+BW/2}" y="${CY+8}" text-anchor="middle" font-family="'Courier New',monospace" font-size="24" font-weight="700" fill="#0d9488">${c}</text>`);
-  s.push(`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="600" fill="#94a3b8">📦 + 🍬×${b} = 🍬×${c}</text>`);
+  s.push(`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="600" fill="#64748b">📦 + 🍬×${b} = 🍬×${c}</text>`);
   s.push(`</svg>`);
   return s.join('');
 }
@@ -623,7 +624,7 @@ function svgSub(b, c) {
   s.push(`<text x="${eqX+10}" y="${CY+8}" text-anchor="middle" font-family="'Courier New',monospace" font-size="26" font-weight="700" fill="#0d9488">=</text>`);
   s.push(`<circle cx="${x3+BW/2}" cy="${CY}" r="${BH/2+2}" fill="#f0fdfa" stroke="#0d9488" stroke-width="2.5"/>`);
   s.push(`<text x="${x3+BW/2}" y="${CY+8}" text-anchor="middle" font-family="'Courier New',monospace" font-size="24" font-weight="700" fill="#0d9488">${c}</text>`);
-  s.push(`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="600" fill="#94a3b8">📦 − 🍬×${b} = 🍬×${c}</text>`);
+  s.push(`<text x="${W/2}" y="${H-3}" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="600" fill="#64748b">📦 − 🍬×${b} = 🍬×${c}</text>`);
   s.push(`</svg>`);
   return s.join('');
 }
@@ -849,7 +850,7 @@ function _advance() {
     const overlay = document.getElementById('fade-overlay');
     overlay.style.pointerEvents = 'all';
     overlay.style.opacity       = '1';
-    setTimeout(() => { window.location.href = 'a-equacions.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'a-equacions.html' + window.location.search; }, 1200);
     return;
   }
   if (isLastStep) { exIdx++; stepIdx = 0; }

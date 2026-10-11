@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Àlbum de paraules — versió adaptada per a diversitat" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Àlbum de paraules</title>
+
+        <!--
+    ============================================================
+    FITXER: album.html
+    ROL: «Àlbum de paraules»: totes les paraules amb imatge del lèxic
+         (js/lexicon/dades.js), per temes. Les que l'alumne ja ha vist (n'ha
+         obert la targeta «Aprèn la paraula») surten amb la paraula; les altres,
+         amb «?» fins que les toca (la targeta s'obre i la carta es desbloqueja).
+         Només es guarda al dispositiu de l'alumne (localStorage); no s'envia res.
+         No és una activitat de preguntes: no té motor ni intents ni punts.
+    JAVASCRIPT: js/album/album.js (pantalla), logica.js (les paraules per temes i
+         el progrés, lògica pura), vista.js (l'HTML) i textos.js; la targeta és a
+         js/targeta-paraula.js.
+
+    COM ES LLEGEIX (sense frases, a propòsit):
+      · Un encapçalament per tema, amb la seva icona i un ▶ per practicar-lo a
+        «Vocabulari» (a-vocabulari.html?tema=…).
+      · Cada carta: la imatge i la paraula amb article («la poma»), o «?».
+      · A dalt, «12 / 65» i una barra; si hi ha alguna paraula vista, el botó
+        «▶ Jugar» practica les vistes (a-vocabulari.html?vistes=1).
+    ============================================================
+    -->
+
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+
+        <style>
+            :root {
+                --bg-color: #f5f4ec;
+                --primary: #5a6a1e;
+                --primary-light: #e5e8c8;
+                --primary-hover: #3d4a14;
+                --primary-dark: #1c1f0e;
+            }
+            h1 {
+                color: #1c1f0e;
+                margin-bottom: 2px;
+            }
+            .title-row {
+                margin-bottom: 6px;
+            }
+            .panel {
+                border-top-color: var(--primary);
+                padding-bottom: 18px;
+            }
+
+            /* ── PROGRÉS I «JUGAR» ───────────────────────────────────── */
+            .album-cap {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 12px 18px;
+                padding: 16px 16px 6px;
+            }
+            #album-progres {
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .album-num {
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 1.5em;
+                font-weight: 800;
+                color: var(--primary-dark);
+            }
+            .album-barra {
+                display: inline-block;
+                width: 160px;
+                height: 14px;
+                background: #e2e8f0;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .album-barra-or {
+                display: block;
+                height: 100%;
+                background: var(--primary);
+            }
+            .btn-practica,
+            .album-tema-jugar {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 44px;
+                padding: 0 18px;
+                font-size: 1.1em;
+                font-weight: 800;
+                color: #fff;
+                background: var(--primary);
+                border-radius: 22px;
+                text-decoration: none;
+                touch-action: manipulation;
+            }
+            .btn-practica[hidden] {
+                display: none;
+            }
+            .btn-practica:focus-visible,
+            .album-tema-jugar:focus-visible {
+                outline: 3px solid var(--primary-dark);
+                outline-offset: 2px;
+            }
+            @media (hover: hover) {
+                .btn-practica:hover,
+                .album-tema-jugar:hover {
+                    background: var(--primary-hover);
+                }
+            }
+
+            /* ── ELS TEMES I LES CARTES ──────────────────────────────── */
+            #album-grups {
+                padding: 6px 14px 4px;
+            }
+            .album-grup {
+                margin-top: 14px;
+            }
+            .album-tema {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin: 0 0 8px;
+                font-size: 1em;
+            }
+            .album-icona {
+                font-size: 2.2rem;
+                line-height: 1;
+            }
+            .album-tema-jugar {
+                min-width: 48px;
+                min-height: 44px;
+                padding: 0 14px;
+                font-size: 0.95em;
+            }
+            .album-cartes {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .album-carta {
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                width: 118px;
+                min-height: 112px;
+                padding: 8px 6px;
+                text-align: center;
+                background: #fff;
+                border: 2px solid var(--border-color);
+                border-radius: 14px;
+            }
+            .album-carta .paraula-img {
+                font-size: 2.6rem;
+                line-height: 1;
+            }
+            .album-carta .paraula-img .pict {
+                width: 1.5em;
+                height: 1.5em;
+            }
+            .album-carta .paraula-text {
+                font-size: 1em;
+                font-weight: 700;
+                line-height: 1.15;
+                color: #1e293b;
+            }
+            .album-carta:focus-visible {
+                outline: 3px solid var(--primary-dark);
+                outline-offset: 2px;
+            }
+            /* Una paraula que encara no s'ha vist: la imatge atenuada i «?» */
+            .album-bloquejada {
+                background: #f1f5f9;
+                border-style: dashed;
+            }
+            .album-bloquejada .paraula-img {
+                opacity: 0.45;
+                filter: grayscale(0.7);
+            }
+            .album-bloquejada .paraula-text {
+                font-size: 1.6em;
+                color: #475569;
+            }
+            @media (max-width: 480px) {
+                .album-carta {
+                    width: calc(50% - 5px);
+                    min-height: 104px;
+                }
+                #album-grups {
+                    padding: 4px 10px 2px;
+                }
+            }
+        </style>
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <div class="title-row">
+            <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+                <img src="icon-green.png" alt="Inici" onerror="this.style.display = 'none'" />
+            </a>
+            <h1>Àlbum de paraules</h1>
+        </div>
+
+        <div class="panel" id="main-panel">
+            <!-- «12 / 65», la barra i «▶ Jugar» (les paraules vistes) -->
+            <div class="album-cap">
+                <div id="album-progres"></div>
+                <a class="btn-practica" id="album-jugar" href="a-vocabulari.html?vistes=1" hidden></a>
+            </div>
+            <!-- Les paraules, per temes -->
+            <div id="album-grups"></div>
+        </div>
+
+        <script type="module" src="js/album/album.js"></script>
+    </body>
+</html>

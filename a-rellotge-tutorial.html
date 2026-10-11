@@ -27,6 +27,7 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh;   /* mòbil: no tapat per la barra del navegador */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -175,7 +176,7 @@
       color: #1e293b;
     }
     .mock-input.empty {
-      color: #94a3b8;
+      color: #64748b;
       font-size: 0.7em;
     }
     .mock-colon {
@@ -257,6 +258,7 @@
       .title-row h1 { font-size: 1.05em; }
     }
   </style>
+  <link rel="stylesheet" href="css/accessibilitat.css">
   <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>

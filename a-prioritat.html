@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Prioritat d'operacions — versió adaptada per a diversitat" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Prioritat d'operacions</title>
+
+        <!--
+    ============================================================
+    FITXER: a-prioritat.html
+    ROL: «Prioritat d'operacions» per a l'aula d'acollida: resoldre una expressió
+         amb sumes, restes, multiplicacions, divisions, potències i parèntesis
+         operació a operació. Adaptació de prioritat.html d'operacions (només la
+         modalitat «Pas a pas»), sense frases.
+    JAVASCRIPT: js/a-prioritat/a-prioritat.js (pantalla i punts),
+         generador.js (les expressions i la resolució, lògica pura) i vista.js
+         (la taula i les marques); motor comú a js/game-core.js.
+
+    COM ES JUGA (poques paraules, a propòsit):
+      · 👆 L'alumne toca el signe (o la potència) de l'operació que es pot fer ara.
+      · Surt «4 · 5 = ?» i en tria el resultat entre quatre; el resultat s'escriu a
+        la línia següent, centrat sota l'operació d'on surt.
+      · Si l'operació encara no es pot fer: ✖ al signe tocat i ✔ a les que calia
+        fer abans («3 · 4 ✔ › + ✖»); si el resultat no és bo: «4 · 5 = 9 ✖».
+      · Si s'esgoten els intents, la resolució s'acaba sola (les línies que falten,
+        en gris). Quan acaba la pregunta es veu tota la resolució i el botó «Següent».
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: sumes, restes, multiplicacions i divisions.  (default)
+      Nivell 2: també potències.
+      Nivell 3: també parèntesis.
+      Nivell 4: parèntesis i potències junts.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 6)
+      ?maxintents=N       (default 3)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+        <script>
+            window.APP_CONFIG = {
+                defaultSessions: 1,
+                defaultOperations: 6,
+                defaultIntents: 3,
+            };
+        </script>
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+
+        <style>
+            /* ── PALETA VIOLETA ──────────────────────────────────────── */
+            :root {
+                --bg-color: #fafaf7;
+                --primary: #7c3aed;
+                --primary-light: #ede9fe;
+                --primary-hover: #6d28d9;
+                --primary-dark: #4c1d95;
+                --dest: #00008b; /* l'operació que es fa a la línia següent */
+            }
+            h1 {
+                color: var(--primary-dark);
+                margin-bottom: 2px;
+            }
+            .title-row {
+                margin-bottom: 6px;
+            }
+            .panel {
+                border-top-color: var(--primary);
+            }
+            .header-info {
+                background-color: #f5f3ff;
+            }
+            .level-text {
+                font-size: 1.1em;
+                color: var(--primary-dark);
+            }
+            .score-text {
+                color: var(--primary);
+            }
+            .level-row {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .nivell-badge {
+                font-size: 0.9em;
+                color: var(--text-muted);
+                font-weight: 600;
+            }
+            @media (max-width: 480px) {
+                .level-row {
+                    justify-content: center;
+                }
+                .level-row .level-text {
+                    width: auto;
+                }
+            }
+
+            /* ── LA RESOLUCIÓ: TAULA «CENTRADA» ──────────────────────
+             * Una columna per a cada nombre, signe, potència i parèntesi de l'enunciat: el resultat d'una operació
+             * queda centrat sota el que substitueix, i l'operació que es fa a la línia següent va en blau fosc i
+             * subratllada. A la línia de treball, els signes i les potències són botons. */
+            .steps-box {
+                padding: 28px 12px 14px 12px;
+            }
+            .taula-wrap {
+                max-width: 100%;
+                overflow-x: auto; /* una expressió massa llarga per a la pantalla es desplaça; no es trenca */
+            }
+            table.centrat {
+                border-collapse: collapse;
+                margin: 0 auto;
+                font-family: 'Courier New', Courier, monospace;
+                font-weight: bold;
+                color: #1e293b;
+                font-size: 1.7em;
+            }
+            table.centrat td {
+                padding: 0;
+                text-align: center;
+                vertical-align: baseline;
+                white-space: nowrap;
+                line-height: 1.9;
+            }
+            table.centrat td.tok-op,
+            table.centrat td.igual {
+                padding: 0 0.3em;
+            }
+            table.centrat td.igual {
+                color: var(--text-muted);
+            }
+            table.centrat td.tok-paren {
+                color: #475569;
+            }
+            table.centrat sup {
+                font-size: 0.62em;
+                line-height: 0;
+                position: relative;
+                top: -0.15em;
+                margin-left: 1px;
+            }
+            table.centrat td.dest {
+                color: var(--dest);
+                border-bottom: 0.09em solid currentColor;
+            }
+            table.centrat tr.auto td {
+                color: var(--text-muted);
+            }
+            .tok-btn {
+                font: inherit;
+                color: inherit;
+                line-height: 1.35;
+                margin: 0;
+                padding: 0 0.12em;
+                min-width: 1.35em;
+                background: var(--primary-light);
+                border: 2px solid #c4b5fd;
+                border-radius: 8px;
+                cursor: pointer;
+                touch-action: manipulation;
+            }
+            .tok-btn:focus-visible {
+                outline: 3px solid var(--primary-dark);
+                outline-offset: 2px;
+            }
+            @media (hover: hover) {
+                .tok-btn:hover {
+                    background: #ddd6fe;
+                    border-color: var(--primary);
+                }
+            }
+            .tok-btn.hl-red {
+                border-color: var(--danger);
+                background: var(--danger-light);
+                color: #991b1b;
+            }
+            .tok-btn.hl-green {
+                border-color: var(--success);
+                background: var(--success-light);
+                color: #065f46;
+            }
+
+            /* ── LA PREGUNTA, EL FEEDBACK I ELS RESULTATS ───────────── */
+            .step-instruction {
+                padding: 0 20px 10px 20px;
+                text-align: center;
+                font-size: 1.9em;
+                font-family: 'Courier New', Courier, monospace;
+                font-weight: bold;
+                color: var(--primary-dark);
+            }
+            .step-instruction:empty {
+                display: none;
+            }
+            .feedback {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin: 0 auto 14px auto;
+                padding: 0 12px;
+                animation: fadeIn 0.3s;
+            }
+            .feedback:empty {
+                display: none;
+            }
+            .part {
+                display: inline-flex;
+                align-items: center;
+                padding: 2px 14px;
+                border: 2px solid;
+                border-radius: 10px;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 1.5em;
+                font-weight: 800;
+            }
+            .part.bo {
+                color: #166534;
+                background: #f0fdf4;
+                border-color: #86efac;
+            }
+            .part.mal {
+                color: #b91c1c;
+                background: #fef2f2;
+                border-color: #fca5a5;
+            }
+            .fletxa {
+                font-size: 1.5em;
+                font-weight: 800;
+                color: #64748b;
+            }
+            #answer-zone-wrap {
+                padding: 8px 20px 22px 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            #chip-pool {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 14px;
+                justify-content: center;
+                max-width: 620px;
+            }
+            #chip-pool:empty {
+                display: none;
+            }
+            .num-chip {
+                background: var(--primary-light);
+                color: var(--primary-dark);
+                border: 2px solid var(--primary);
+                border-radius: 14px;
+                padding: 12px 22px;
+                min-height: 48px;
+                min-width: 64px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 1.3em;
+                font-weight: 700;
+                cursor: pointer;
+                touch-action: manipulation;
+                transition:
+                    transform 0.15s,
+                    background 0.15s;
+            }
+            .num-chip:focus-visible {
+                outline: 3px solid var(--primary-dark);
+                outline-offset: 2px;
+            }
+            .num-chip.chip-wrong {
+                opacity: 0.45;
+                background: #fee2e2;
+                border-color: #fca5a5;
+                color: #991b1b;
+                text-decoration: line-through;
+                pointer-events: none;
+            }
+            @media (hover: hover) {
+                .num-chip:not(.chip-wrong):hover {
+                    background: #e2e8f0;
+                    border-color: #94a3b8;
+                    color: #1e293b;
+                }
+            }
+
+            /* ── LA RESOLUCIÓ ACABADA + «SEGÜENT» ────────────────────── */
+            .solution-box {
+                display: none;
+                margin: 0 auto 20px auto;
+                padding: 4px 18px 10px;
+                max-width: 560px;
+                width: calc(100% - 40px);
+                animation: fadeIn 0.3s;
+            }
+            .btn-next {
+                display: block;
+                margin: 14px auto 2px auto;
+                background-color: var(--primary);
+                color: white;
+                border: none;
+                padding: 13px 34px;
+                min-height: 48px;
+                font-size: 1.05em;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                touch-action: manipulation;
+                box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+                animation: fadeIn 0.3s;
+            }
+            .btn-next:focus-visible {
+                outline: 3px solid var(--primary-dark);
+                outline-offset: 2px;
+            }
+            .btn-next:active {
+                transform: scale(0.96);
+            }
+            .btn-next:disabled {
+                opacity: 0.6;
+                cursor: default;
+            }
+            @media (hover: hover) {
+                .btn-next:hover:not(:disabled) {
+                    background-color: var(--primary-hover);
+                }
+            }
+
+            /* Botó «Nivell següent» (només puja; el 4 és el màxim) */
+            #btn-next-level {
+                display: none;
+                align-items: center;
+                gap: 5px;
+                padding: 5px 12px;
+                font-size: 0.85em;
+                font-weight: 700;
+                color: var(--primary);
+                background: var(--primary-light);
+                border: 2px solid var(--primary);
+                border-radius: 20px;
+                cursor: pointer;
+                white-space: nowrap;
+                touch-action: manipulation;
+            }
+            #btn-next-level.visible {
+                display: inline-flex;
+            }
+
+            /* ── ANIMACIÓ INTENTS ────────────────────────────────────── */
+            .attempts-counter.blink-error {
+                animation: blink-violet 0.25s step-end infinite;
+                border-color: #a855f7;
+            }
+            @keyframes blink-violet {
+                0%,
+                100% {
+                    background-color: #f3e8ff;
+                    color: #6b21a8;
+                }
+                50% {
+                    background-color: white;
+                    color: var(--text-muted);
+                }
+            }
+
+            /* ── RESPONSIU ───────────────────────────────────────────── */
+            @media (max-width: 480px) {
+                .step-instruction {
+                    font-size: 1.5em;
+                    padding: 0 12px 8px 12px;
+                }
+                .part {
+                    font-size: 1.15em;
+                    padding: 2px 10px;
+                }
+                .num-chip {
+                    padding: 9px 16px;
+                    font-size: 1.15em;
+                    min-height: 44px;
+                }
+                .steps-box {
+                    padding: 20px 4px 10px 4px;
+                }
+                table.centrat {
+                    font-size: 1.3em;
+                }
+                .tok-btn {
+                    min-width: 1.7em;
+                    padding: 0.1em 0.15em; /* prou grans per al dit */
+                }
+                table.centrat td.tok-op,
+                table.centrat td.igual {
+                    padding: 0 0.2em;
+                }
+                .solution-box {
+                    width: calc(100% - 24px);
+                    padding: 4px 8px 10px;
+                }
+                .solution-box table.centrat {
+                    font-size: 1.05em;
+                }
+                #btn-next-level {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        </style>
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <div class="title-row">
+            <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+                <img src="icon-green.png" alt="Inici" onerror="this.style.display = 'none'" />
+            </a>
+            <h1>Prioritat d'operacions</h1>
+        </div>
+
+        <div class="panel" id="main-panel">
+            <div id="game-screen" style="display: none">
+                <!-- Capçalera: Sessió | Repte X de Y · Nivell | Punts | Intents -->
+                <div class="header-info">
+                    <div class="header-left">
+                        <div class="session-text" id="session-display"></div>
+                        <div class="level-row">
+                            <div class="level-text" id="lvl-display"></div>
+                            <div class="nivell-badge" id="nivell-display"></div>
+                        </div>
+                    </div>
+                    <div class="score-text" id="score-display"></div>
+                    <!-- Botó per pujar de nivell (mai baixar). El nivell 4 és el màxim. -->
+                    <button id="btn-next-level"></button>
+                    <div id="attempts-display" class="attempts-counter"></div>
+                </div>
+
+                <!-- La resolució: una línia per pas; a la de sota, els signes i les potències són botons -->
+                <div class="steps-box" id="steps-box" role="group"></div>
+                <!-- 👆, o la pregunta del resultat («4 · 5 = ?») -->
+                <div class="step-instruction" id="step-instruction" aria-live="polite"></div>
+                <!-- L'error amb xifres i marques: «4 · 5 = 9 ✖», «3 · 4 ✔ › + ✖» -->
+                <div class="feedback" id="feedback" aria-live="polite"></div>
+                <div id="answer-zone-wrap">
+                    <div id="chip-pool" role="group"></div>
+                </div>
+                <div class="solution-box" id="solution-box" aria-live="polite"></div>
+            </div>
+            <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+        </div>
+
+        <script type="module" src="js/a-prioritat/a-prioritat.js"></script>
+    </body>
+</html>

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Escriure nombres — versió adaptada per a diversitat" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Escriure nombres</title>
+
+        <!--
+    ============================================================
+    FITXER: a-nombres-lletres.html
+    ROL: «Escriure nombres»: com s'escriuen en català els nombres del 0 al 100.
+         Surt el nombre en xifres («52») i 5 opcions escrites, d'on se'n tria la
+         correcta («cinquanta-dos»); les altres són errors versemblants
+         (castellanitzats, sense guionet, només la desena, els dígits dits un a
+         un, un altre nombre que se li sembla). Sense frases.
+    JAVASCRIPT: js/a-nombres-lletres/a-nombres-lletres.js (pantalla i punts),
+         generador.js (els noms i els distractors, lògica pura) i vista.js;
+         motor comú a js/game-core.js.
+
+    DUES OPORTUNITATS I PROU: si l'alumne falla, en té una altra; si falla també
+    la segona, surt la bona en verd. Aquest nombre d'intents és fix: ?maxintents=
+    no el canvia.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: del 0 al 20.  (default)
+      Nivell 2: del 21 al 69.
+      Nivell 3: del 70 al 100.
+      Nivell 4: tots, del 0 al 100.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 8)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+        <script>
+            window.APP_CONFIG = {
+                defaultSessions: 1,
+                defaultOperations: 8,
+                defaultIntents: 2,
+            };
+        </script>
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+
+        <style>
+            /* ── PALETA VERDA ────────────────────────────────────────── */
+            :root {
+                --primary: #5a6a1e;
+                --primary-light: #e5e8c8;
+                --primary-hover: #3d4a14;
+                --primary-dark: #1c1f0e;
+            }
+            h1 {
+                color: #1c1f0e;
+                margin-bottom: 2px;
+            }
+            .title-row {
+                margin-bottom: 6px;
+            }
+            .panel {
+                border-top-color: var(--primary);
+            }
+            .level-row {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .nivell-badge {
+                font-size: 0.9em;
+                color: var(--text-muted);
+                font-weight: 600;
+            }
+            @media (max-width: 480px) {
+                .level-row {
+                    justify-content: center;
+                }
+                .level-row .level-text {
+                    width: auto;
+                }
+            }
+
+            /* ── EL NOMBRE I LES OPCIONS ─────────────────────────────── */
+            .game-body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+                padding: 22px 16px 26px;
+            }
+            #question-prompt {
+                display: flex;
+                justify-content: center;
+            }
+            .nombre-gran {
+                min-width: 150px;
+                padding: 6px 28px;
+                text-align: center;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 4.2em;
+                font-weight: 800;
+                line-height: 1.2;
+                color: var(--primary-dark);
+                background: var(--primary-light);
+                border: 3px solid var(--primary);
+                border-radius: 16px;
+            }
+
+            /* ── OPCIONS ─────────────────────────────────────────────── */
+            .options-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 12px;
+                width: 100%;
+                max-width: 460px;
+            }
+            .btn-option {
+                min-height: 56px;
+                padding: 10px 12px;
+                font-size: 1.5em;
+                font-weight: 700;
+                color: #1e293b;
+                background: #ffffff;
+                border: 2px solid var(--border-heavy);
+                border-radius: 12px;
+                cursor: pointer;
+                transition:
+                    background 0.15s,
+                    border-color 0.15s,
+                    transform 0.1s;
+                touch-action: manipulation;
+            }
+            .btn-option:focus-visible {
+                outline: 3px solid var(--primary);
+                outline-offset: 2px;
+            }
+            @media (hover: hover) {
+                .btn-option:not(:disabled):hover {
+                    background: var(--primary-light);
+                    border-color: var(--primary);
+                }
+            }
+            .btn-option:active:not(:disabled) {
+                transform: scale(0.97);
+            }
+            .btn-option.correct {
+                background: #dcfce7;
+                border-color: var(--success);
+                color: #166534;
+            }
+            .btn-option.wrong::after {
+                content: ' ✖';
+            }
+            .btn-option.correct::after {
+                content: ' ✔';
+            }
+            .btn-option.wrong {
+                background: var(--danger-light);
+                border-color: var(--danger);
+                color: #b91c1c;
+                animation: shake 0.2s;
+            }
+            .btn-option.reveal-answer {
+                background: #dcfce7;
+                border-color: var(--success);
+                color: #166534;
+                box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.35);
+            }
+            .btn-option:disabled {
+                cursor: default;
+            }
+
+            @keyframes attemptsBlink {
+                0%,
+                100% {
+                    background-color: #fef3c7;
+                    border-color: #d1d5db;
+                    color: #334155;
+                }
+                50% {
+                    background-color: #e5e7eb;
+                    border-color: #f59e0b;
+                    color: #334155;
+                }
+            }
+            .attempts-counter.blink {
+                animation: attemptsBlink 0.2s linear 5;
+            }
+
+            @media (max-width: 480px) {
+                .game-body {
+                    padding: 14px 10px 18px;
+                }
+                .nombre-gran {
+                    font-size: 3.4em;
+                }
+                .btn-option {
+                    font-size: 1.3em;
+                }
+            }
+            /* Botó «Nivell següent» (només puja; el 4 és el màxim) */
+            #btn-next-level {
+                display: none;
+                align-items: center;
+                gap: 5px;
+                padding: 5px 12px;
+                font-size: 0.85em;
+                font-weight: 700;
+                color: var(--primary);
+                background: var(--primary-light);
+                border: 2px solid var(--primary);
+                border-radius: 20px;
+                cursor: pointer;
+                white-space: nowrap;
+                touch-action: manipulation;
+            }
+            #btn-next-level.visible {
+                display: inline-flex;
+            }
+            @media (max-width: 480px) {
+                #btn-next-level {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        </style>
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <div class="title-row">
+            <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+                <img src="icon-green.png" alt="Inici" onerror="this.style.display = 'none'" />
+            </a>
+            <h1>Escriure nombres</h1>
+        </div>
+
+        <div class="panel" id="main-panel">
+            <div id="game-screen" style="display: none">
+                <!-- Capçalera: Sessió | Repte X de Y · Nivell | Punts | Intents -->
+                <div class="header-info">
+                    <div class="header-left">
+                        <div class="session-text" id="session-display"></div>
+                        <div class="level-row">
+                            <div class="level-text" id="lvl-display"></div>
+                            <div class="nivell-badge" id="nivell-display"></div>
+                        </div>
+                    </div>
+                    <div class="score-text" id="score-display"></div>
+                    <button id="btn-next-level"></button>
+                    <div id="attempts-display" class="attempts-counter"></div>
+                </div>
+
+                <div class="game-body">
+                    <!-- El nombre en xifres -->
+                    <div id="question-prompt"></div>
+                    <!-- Les 5 opcions escrites -->
+                    <div id="options-container" class="options-grid"></div>
+                </div>
+            </div>
+            <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+        </div>
+
+        <script type="module" src="js/a-nombres-lletres/a-nombres-lletres.js"></script>
+    </body>
+</html>

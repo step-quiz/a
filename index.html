@@ -3,20 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Activitats interactives de matemàtiques per a ESO. Atenció a la diversitat." />
+  <meta name="description" content="Activitats interactives de matemàtiques d'ESO per a l'aula d'acollida." />
   <meta name="author" content="Step Quiz" />
   <meta name="robots" content="index, follow" />
   <link rel="icon" href="icon-green.png" />
   <title>Step Quiz Matemàtiques</title>
 
   <script>
-    const BASE_URL = 'https://a.step-quiz.net/';
+    // Adreça base: la carpeta d'aquesta mateixa pàgina. Així els enllaços apunten a la web
+    // on s'ha obert el generador (GitHub Pages, un domini propi o un servidor local).
+    const BASE_URL = new URL('.', window.location.href).href;
 
+    // `yt`: pàgina del tutorial (s'obre amb el botó «Tutorial»); buida si no n'hi ha cap per oferir.
+    // El tutorial del rellotge no s'ofereix: l'activitat el té amagat a propòsit.
+    // `fixed: true`: l'activitat admet sessions fixes (?fixed=A/B/C: tota la classe fa les mateixes
+    // preguntes). Només les que ja van amb el motor nou (mòduls ES); tests/check-repo.js ho vigila.
     const ACTIVITIES_ESO = [
-      { file: 'a-rellotge.html',    label: "Rellotge d'agulles",       yt: '' },
-      { file: 'a-enters.html',    label: 'Nombres enters',       yt: '' },
-      { file: 'a-decimals.html',    label: 'Nombres decimals',       yt: '' },
-      { file: 'a-equacions.html', label: 'Equacions de 1r grau', yt: '' }
+      { file: 'a-rellotge.html',         label: "Rellotge d'agulles",        yt: '', fixed: true },
+      { file: 'a-enters.html',           label: 'Nombres enters',            yt: 'a-enters-tutorial.html', fixed: true },
+      { file: 'a-decimals.html',         label: 'Diners i canvi (decimals)', yt: 'a-decimals-tutorial.html', fixed: true },
+      { file: 'a-proporciodirecta.html', label: 'Proporció directa',         yt: 'a-proporciodirecta-tutorial.html', fixed: true },
+      { file: 'a-equacions.html',        label: 'Equacions de 1r grau',      yt: 'a-equacions-tutorial.html', fixed: true },
+      { file: 'a-enters-ordenar.html',   label: 'Ordenar enters',            yt: '', fixed: true },
+      { file: 'a-recta-numerica.html',   label: 'Temperatura (gràfica)',     yt: '', fixed: true },
+      { file: 'a-mcd-mcm.html',          label: 'MCD i MCM',                 yt: '', fixed: true },
+      { file: 'a-factoritzar.html',      label: 'Factoritzar',               yt: '', fixed: true },
+      { file: 'a-fraccions.html',        label: 'Fraccions',                 yt: '', fixed: true },
+      { file: 'a-area-perimetre.html',   label: 'Àrea i perímetre',          yt: '', fixed: true },
+      { file: 'a-triangle-rectangle.html', label: 'Triangle rectangle',      yt: '', fixed: true },
+      { file: 'a-pla-cartesia.html',     label: 'Coordenades',               yt: '', fixed: true },
+      { file: 'a-potencies.html',        label: 'Potències',                 yt: '', fixed: true },
+      { file: 'a-nombres-lletres.html',  label: 'Escriure nombres (0–100)',  yt: '', fixed: true },
+      { file: 'a-prioritat.html',        label: "Prioritat d'operacions",    yt: '', fixed: true },
+      { file: 'a-vocabulari.html',       label: 'Vocabulari (paraules amb imatge)', yt: '', fixed: true }
     ];
 
     const DEFAULT_ESO = 'a-enters.html';
@@ -36,22 +55,19 @@
 
     * { box-sizing: border-box; }
 
-    html { overflow: hidden; }
-    @media (max-height: 600px) { html { overflow: auto; } }
     body {
       margin: 0;
       background: var(--bg-body);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       color: var(--text-main);
-      padding: 10px;
-      padding-bottom: 75px;
       min-height: 100vh;
+      min-height: 100dvh;
       overflow-x: hidden;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
+    /* El contingut queda centrat a l'espai que deixa el peu, que va sempre al final (mai fixat sobre el contingut). */
+    .page { margin-block: auto; width: 100%; padding: 10px; display: flex; flex-direction: column; align-items: center; }
 
     .title-container { text-align: center; margin-bottom: 20px; }
     .title-row-1 { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 36px; font-weight: 800; color: #1c1f0e; margin: 0; }
@@ -69,24 +85,33 @@
 
     h2 { margin: 0 0 10px 5px; font-size: 22px; font-weight: 800; color: #1c1f0e; }
 
+    /* L'enllaç a les targetes imprimibles, sota del generador d'enllaços */
+    .recursos { margin: 18px 0 4px; text-align: center; }
+    .recursos a {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px;
+      font-size: 15px; font-weight: 700; color: var(--accent); text-decoration: none;
+      background: var(--eso-bg); border: 1px solid var(--border-heavy); border-radius: 22px;
+    }
+    .recursos a:hover { background: #d4d9a8; }
+
     .row { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; padding: 4px 8px; }
     .row label { font-size: 14px; font-weight: 600; text-align: left; }
 
     select {
       appearance: none; background-color: #ffffff; height: 32px; padding: 0 10px;
-      font-size: 14px; border: 1px solid var(--border-heavy); border-radius: 6px;
+      font-size: 16px; border: 1px solid var(--border-heavy); border-radius: 6px;   /* 16 px: iOS no fa zoom en tocar-lo */
       cursor: pointer; text-align: center; width: 100%; transition: background-color 0.2s;
     }
     select:hover { background-color: #d4d9a8; }
 
     /* ── CUSTOM DROPDOWN ── */
-    .cd-wrap { position: relative; width: 100%; font-size: 14px; user-select: none; }
+    .cd-wrap { position: relative; width: 100%; font-size: 16px; user-select: none; }
 
     .cd-trigger {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
       height: 32px; padding: 0 10px; background: #fff;
       border: 1px solid var(--border-heavy); border-radius: 8px;
-      cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-main);
+      cursor: pointer; font-size: 16px; font-weight: 500; color: var(--text-main);
       transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
     }
     .cd-trigger:hover { border-color: #9aa45a; background: #e5e8c8; }
@@ -112,9 +137,10 @@
     .cd-option {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 10px; border-radius: 6px; cursor: pointer;
-      font-size: 14px; color: var(--text-main); transition: background 0.1s;
+      font-size: 16px; color: var(--text-main); transition: background 0.1s;
     }
-    .cd-option:hover { background: #eceee0; }
+    .cd-option:hover, .cd-option.active { background: #eceee0; }
+    .cd-option.active { box-shadow: inset 0 0 0 2px var(--accent); }
     .cd-option.selected { font-weight: 600; color: var(--accent); background: #eceee0; }
     .cd-check { width: 13px; height: 13px; flex-shrink: 0; color: var(--accent); opacity: 0; }
     .cd-option.selected .cd-check { opacity: 1; }
@@ -124,7 +150,7 @@
     .link-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; margin-bottom: 4px; display: block; }
     .link-output { width: 100%; min-height: 45px; height: 45px; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-heavy); background: #d4d9a8; word-break: break-all; user-select: all; -webkit-user-select: all; cursor: text; line-height: 1.3; display: flex; align-items: center; }
 
-    .btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
     .copy-btn, .open-btn, .help-btn { height: 38px; cursor: pointer; border-radius: 6px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; border: none; gap: 6px; transition: all 0.2s ease; }
     .copy-btn { flex: 0.8; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
     .help-btn { flex: 0.9; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
@@ -132,10 +158,38 @@
     .copy-btn:hover, .help-btn:hover { background-color: #d4d9a8; border-color: #9aa45a; }
     .open-btn:hover { background: #3d4a14; }
 
-    .yt-icon { height: 16px; width: auto; }
     .copy-status { font-size: 13px; color: #5a6a1e; margin-top: 0px; min-height: 0px; font-weight: 700; text-align: center; }
 
     .help-btn { display: none; }
+
+    /* Focus visible amb teclat (el selector d'activitat, els botons, els enllaços…) */
+    button:focus-visible, select:focus-visible, a:focus-visible,
+    .cd-trigger:focus-visible, .link-output:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    /* Peu: dins el flux de la pàgina, amb la icona de Step Quiz com un element més (no flotant) */
+    .site-footer {
+      width: 100%; background: var(--bg-body); border-top: 1px solid var(--border-heavy);
+      padding: 10px; display: flex; align-items: center; justify-content: center;
+      gap: 6px 15px; flex-wrap: wrap; text-align: center; font-size: 0.85em; color: var(--text-main);
+    }
+    .site-footer a { color: inherit; text-decoration: underline; white-space: nowrap; }
+    .footer-logo {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--eso-bg); border: 2px solid var(--border-heavy);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0.8; transition: opacity 0.2s, transform 0.2s;
+    }
+    .footer-logo:hover, .footer-logo:focus-visible { opacity: 1; transform: scale(1.2); }
+    .footer-logo img { width: 28px; height: 28px; object-fit: contain; }
+
+    @media (max-width: 480px) {
+      .title-container { margin-bottom: 10px; }
+      .inline-icon { height: 60px; }
+      .title-row-1 { font-size: 28px; }
+      .title-row-2 { font-size: 18px; margin-top: -10px; }
+      .copy-btn, .open-btn, .help-btn { font-size: 12px; }
+    }
 
     .select-atencio-shake { animation: select-shake-wave 1.2s ease-in-out; }
     @keyframes select-shake-wave {
@@ -144,14 +198,16 @@
       20%, 40%, 60%, 80% { transform: translateX(4px); background-color: #e5e8c8; }
     }
   </style>
+<link rel="stylesheet" href="css/accessibilitat.css">
 <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>
 
+  <main class="page">
   <div class="title-container">
     <h1 class="title-row-1">
       <span class="text-step">Step</span>
-      <img src="icon-green.png" alt="Icona" class="inline-icon">
+      <img src="icon-green.png" alt="" class="inline-icon">
       <span class="text-step">Quiz</span>
     </h1>
     <div class="title-row-2">Matemàtiques</div>
@@ -164,25 +220,29 @@
         <label>Activitat</label>
         <div class="cd-wrap" id="cd-eso">
           <div class="cd-trigger"><span class="cd-label"></span><svg class="cd-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 10 13 15 8"/></svg></div>
-          <div class="cd-list"></div>
+          <div class="cd-list" tabindex="-1"></div>
         </div>
       </div>
       <div class="row"><label for="s-eso">Sessions</label><select id="s-eso"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
       <div class="row"><label for="o-eso">Preguntes</label><select id="o-eso"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
       <div class="row"><label for="i-eso">Errors màx.</label><select id="i-eso"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
-      <div class="row"><label for="m-eso">Criteri</label><select id="m-eso"><option value="1">Nota màxima</option><option value="0">Nota mitjana</option></select></div>
+      <div class="row" id="row-fixed-eso" style="display:none"><label for="fix-eso">Sessió fixa</label><select id="fix-eso"><option value="">— Aleatòria —</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
       <div class="link-block">
         <div class="btn-row">
           <button id="c-eso" class="copy-btn">Copia</button>
-          <button id="h-eso" class="help-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" alt="YT" class="yt-icon">Ajuda</button>
+          <button id="h-eso" class="help-btn"><span aria-hidden="true">▶</span> Tutorial</button>
           <button id="p-eso" class="open-btn">Obre</button>
         </div>
-        <div id="st-eso" class="copy-status"></div>
+        <div id="st-eso" class="copy-status" role="status" aria-live="polite"></div>
         <div class="link-label">Enllaç:</div>
         <div id="l-eso" class="link-output" tabindex="0"></div>
       </div>
     </div>
   </div>
+
+  <!-- Per al professorat: les targetes de vocabulari per imprimir -->
+  <p class="recursos"><a href="targetes.html"><span aria-hidden="true">🖨️</span> Targetes de vocabulari per imprimir</a></p>
+  </main>
 
   <script>
     // ── Custom dropdown factory ──
@@ -192,26 +252,66 @@
       const list    = wrap.querySelector('.cd-list');
       const label   = wrap.querySelector('.cd-label');
       let currentFile = defaultFile;
+      let activeIdx   = -1;   // opció ressaltada amb les fletxes del teclat
+
+      // Accessibilitat: el disparador es comporta com un combobox (Tab, fletxes,
+      // Home/End, Intro/Espai, Esc) i la llista com un listbox per als lectors de pantalla.
+      list.id = wrapId + '-list';
+      trigger.setAttribute('tabindex', '0');
+      trigger.setAttribute('role', 'combobox');
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-controls', list.id);
+      trigger.setAttribute('aria-expanded', 'false');
+      const rowLabel = wrap.closest('.row')?.querySelector('label');
+      if (rowLabel) {
+        rowLabel.id = wrapId + '-label';
+        trigger.setAttribute('aria-labelledby', rowLabel.id);
+      }
+      list.setAttribute('role', 'listbox');
+      // La classe 'open' també la posen/treuen altres parts de la pàgina (clic fora):
+      // mantenim aria-expanded sincronitzat amb ella.
+      new MutationObserver(() => {
+        const isOpen = wrap.classList.contains('open');
+        trigger.setAttribute('aria-expanded', String(isOpen));
+        if (!isOpen) setActive(-1);
+      }).observe(wrap, { attributes: true, attributeFilter: ['class'] });
 
       function getValue() { return currentFile; }
 
+      function choose(a) {
+        currentFile = a.file;
+        label.textContent = a.label;
+        render();
+        wrap.classList.remove('open');
+        onChangeCallback();
+      }
+
+      function setActive(idx) {
+        activeIdx = idx;
+        list.querySelectorAll('.cd-option').forEach((el, i) => el.classList.toggle('active', i === idx));
+        if (idx >= 0) {
+          const el = document.getElementById(`${wrapId}-opt-${idx}`);
+          trigger.setAttribute('aria-activedescendant', el.id);
+          el.scrollIntoView({ block: 'nearest' });
+        } else {
+          trigger.removeAttribute('aria-activedescendant');
+        }
+      }
+
       function render() {
         list.innerHTML = '';
-        activities.forEach(a => {
+        activities.forEach((a, i) => {
           const div = document.createElement('div');
           div.className = 'cd-option' + (a.file === currentFile ? ' selected' : '');
+          div.id = `${wrapId}-opt-${i}`;
+          div.setAttribute('role', 'option');
+          div.setAttribute('aria-selected', String(a.file === currentFile));
           div.innerHTML = `
-            <svg class="cd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="cd-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="3 8 7 12 13 4"/>
             </svg>
             <span>${a.label}</span>`;
-          div.addEventListener('click', () => {
-            currentFile = a.file;
-            label.textContent = a.label;
-            render();
-            wrap.classList.remove('open');
-            onChangeCallback();
-          });
+          div.addEventListener('click', () => choose(a));
           list.appendChild(div);
         });
       }
@@ -220,8 +320,54 @@
       label.textContent = def.label;
       render();
 
-      trigger.addEventListener('click', e => { e.stopPropagation(); wrap.classList.toggle('open'); });
+      function openList() {
+        wrap.classList.add('open');
+        // La llista no ha de sortir de la pantalla: s'ajusta a l'espai que queda sota el disparador
+        const available = window.innerHeight - trigger.getBoundingClientRect().bottom - 12;
+        list.style.maxHeight = Math.min(320, Math.max(100, available)) + 'px';
+      }
+
+      trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        if (wrap.classList.contains('open')) wrap.classList.remove('open');
+        else openList();
+      });
       list.addEventListener('click', e => e.stopPropagation());
+
+      trigger.addEventListener('keydown', e => {
+        const isOpen = wrap.classList.contains('open');
+        const selIdx = activities.findIndex(a => a.file === currentFile);
+        switch (e.key) {
+          case 'ArrowDown':
+          case 'ArrowUp': {
+            e.preventDefault();
+            if (!isOpen) { openList(); setActive(selIdx); return; }
+            const from = activeIdx >= 0 ? activeIdx : selIdx;
+            const step = e.key === 'ArrowDown' ? 1 : -1;
+            setActive(Math.min(activities.length - 1, Math.max(0, from + step)));
+            break;
+          }
+          case 'Home':
+          case 'End':
+            if (!isOpen) return;
+            e.preventDefault();
+            setActive(e.key === 'Home' ? 0 : activities.length - 1);
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (isOpen && activeIdx >= 0) choose(activities[activeIdx]);
+            else if (isOpen) wrap.classList.remove('open');
+            else { openList(); setActive(selIdx); }
+            break;
+          case 'Escape':
+            if (isOpen) { e.preventDefault(); wrap.classList.remove('open'); }
+            break;
+          case 'Tab':
+            wrap.classList.remove('open');
+            break;
+        }
+      });
 
       return { getValue };
     }
@@ -232,7 +378,8 @@
         s:      document.getElementById('s-' + suffix),
         o:      document.getElementById('o-' + suffix),
         i:      document.getElementById('i-' + suffix),
-        m:      document.getElementById('m-' + suffix),
+        fix:    document.getElementById('fix-' + suffix),
+        rowFix: document.getElementById('row-fixed-' + suffix),
         link:   document.getElementById('l-' + suffix),
         copy:   document.getElementById('c-' + suffix),
         open:   document.getElementById('p-' + suffix),
@@ -242,14 +389,23 @@
 
       let timeout1, timeout2;
 
+      // El camp «Sessió fixa» només surt per a les activitats que l'admeten.
+      function manageFixedRow() {
+        const selected = activities.find(a => a.file === dropdown.getValue());
+        const admet = !!(selected && selected.fixed);
+        els.rowFix.style.display = admet ? '' : 'none';
+        // Quan s'amaga, es buida per no deixar un ?fixed= penjat a l'enllaç
+        if (!admet) els.fix.value = '';
+      }
+
       function build() {
         const file = dropdown.getValue();
         const qs = new URLSearchParams({
           totalsessions:    els.s.value,
           totaloperations:  els.o.value,
-          maxintents:       els.i.value,
-          maxenllocmitjana: els.m.value
+          maxintents:       els.i.value
         });
+        if (els.fix.value) qs.set('fixed', els.fix.value);
         els.link.textContent = `${BASE_URL}${file}?${qs.toString()}`;
       }
 
@@ -272,24 +428,40 @@
       }
 
       const dropdown = makeCustomDropdown('cd-' + suffix, activities, defaultFile, () => {
+        manageFixedRow();
         build();
         manageHelpButton(false);
       });
 
+      manageFixedRow();
       build();
       manageHelpButton(true);
 
-      [els.s, els.o, els.i, els.m].filter(Boolean).forEach(el => el.addEventListener('change', build));
+      [els.s, els.o, els.i, els.fix].forEach(el => el.addEventListener('change', build));
 
       els.copy.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(els.link.textContent);
-        els.status.textContent = 'Copiat ✅';
-        setTimeout(() => els.status.textContent = '', 2000);
+        // Si el navegador no deixa usar el porta-retalls (HTTP, navegador antic, permís denegat…)
+        // se selecciona l'enllaç (és un <div>, no un textarea) i es prova la còpia clàssica.
+        // Si tampoc funciona, l'enllaç queda seleccionat perquè es copiï a mà.
+        let copiat = false;
+        try {
+          await navigator.clipboard.writeText(els.link.textContent);
+          copiat = true;
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(els.link);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          try { copiat = document.execCommand('copy'); } catch { copiat = false; }
+        }
+        els.status.textContent = copiat ? 'Copiat ✅' : "Copia l'enllaç seleccionat (Ctrl+C)";
+        setTimeout(() => els.status.textContent = '', copiat ? 2000 : 5000);
       });
       els.open.addEventListener('click', () => window.open(els.link.textContent, '_blank'));
       els.help.addEventListener('click', () => {
         const selected = activities.find(a => a.file === dropdown.getValue());
-        if (selected && selected.yt) window.open(selected.yt, '_blank');
+        if (selected && selected.yt) window.open(new URL(selected.yt, BASE_URL).href, '_blank');
       });
     }
 
@@ -310,56 +482,15 @@
     });
   </script>
 
-  <footer style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #f5f4ec; border-top: 1px solid #b8be8a; padding: 10px; z-index: 9999; display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; box-sizing: border-box; text-align: center;">
-    <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.ca" style="flex-shrink: 0;">
-      <img alt="Llicència CC BY-SA" style="border-width:0; height: 31px;" src="https://licensebuttons.net/l/by-sa/4.0/88x31.png" />
+  <footer class="site-footer">
+    <a href="https://step-quiz.net/" class="footer-logo" title="Step Quiz" aria-label="Step Quiz">
+      <img src="icon.png" alt="" onerror="this.style.display='none'">
     </a>
-    <span style="font-size: 0.85em; color: #2e2f1e;">
-      © 2026 <strong>David Arso Civil</strong>. Ús educatiu lliure.
-      <br style="display: none;" /> Es pot compartir i adaptar citant-ne l'autoria (<a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/deed.ca" style="color: #2e2f1e; text-decoration: underline;">CC BY-NC-ND 4.0</a>).
+    <span>
+      © 2026 <strong>David Arso Civil</strong> · Departament de Matemàtiques, INS Miquel Tarradell.
+      Contingut: <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca">CC BY-NC-SA 4.0</a> · Codi: <a href="https://opensource.org/license/mit">MIT</a> · <a href="https://github.com/step-quiz2/a2/blob/main/LLICENCIA.md">Més informació</a>.
     </span>
   </footer>
-
-  <a href="https://step-quiz.net/" title="Step Quiz" aria-label="Step Quiz" class="bottom-icon"
-     style="position: fixed; bottom: 65px; left: 14px; z-index: 10000;
-            width: 48px; height: 48px; border-radius: 50%;
-            background: #eceee0; border: 2px solid #b8be8a;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;"
-     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.3)'"
-     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
-    <img src="icon.png" alt="Step Quiz"
-         style="width: 32px; height: 32px; object-fit: contain;"
-         onerror="this.style.display='none'">
-  </a>
-
-  <a href="https://cb.step-quiz.net/" title="CB Step Quiz" aria-label="CB Step Quiz" class="bottom-icon"
-     style="position: fixed; bottom: 65px; left: 72px; z-index: 10000;
-            width: 48px; height: 48px; border-radius: 50%;
-            background: #e2e8f0; border: 2px solid #b8be8a;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;
-            font-size: 14px; font-weight: 800; color: #000000;
-            text-decoration: none; letter-spacing: 0.5px;"
-     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.4)'"
-     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
-    CB
-  </a>
-
-  <a href="https://step-quiz.net/analitzador-stepquiz.html" title="Analitzador de resultats" aria-label="Analitzador de resultats" class="bottom-icon"
-     style="position: fixed; bottom: 65px; left: 130px; z-index: 10000;
-            width: 48px; height: 48px; border-radius: 50%;
-            background: #eceee0; border: 2px solid #b8be8a;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0.75; transition: opacity 0.2s, transform 0.2s;
-            font-size: 26px; text-decoration: none;"
-     onmouseover="this.style.opacity='1'; this.style.transform='scale(1.3)'"
-     onmouseout="this.style.opacity='0.75'; this.style.transform='scale(1)'">
-    📒
-  </a>
 
 </body>
 </html>

@@ -246,9 +246,11 @@ CARREGA'S: DESPRÉS de shared.css i del CSS específic de cada joc.
 @media (min-width: 1024px) and (max-width: 1400px) and (pointer: coarse) {
     .canvas-container {
         max-height: 55vh;
+        max-height: 55dvh;
     }
     #graph-canvas {
         max-height: 55vh;
+        max-height: 55dvh;
     }
 }
 

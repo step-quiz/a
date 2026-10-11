@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coordenades — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Coordenades</title>
+
+    <!--
+    ============================================================
+    FITXER: a-pla-cartesia.html
+    ROL: Activitat de coordenades al pla cartesià (situar punts, llegir-ne les
+         coordenades i els quadrants) per a l'aula d'acollida. Adaptació de
+         l'activitat pla-cartesia d'operacions (les seves dues seccions i els
+         menús passen a ser quatre tipus de pregunta barrejats dins de cada nivell).
+    JAVASCRIPT: js/a-pla-cartesia/a-pla-cartesia.js (pantalla, punts),
+         js/a-pla-cartesia/generador.js (punts i preguntes, lògica pura),
+         js/a-pla-cartesia/dibuix.js (el pla en un canvas) i
+         js/a-pla-cartesia/vista.js (les icones i el que es demana); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit): només hi ha el pla, punts, nombres i icones.
+      · «👆 A (3, −2)»  → cal tocar aquest punt al pla. Un toc equivocat surt en vermell amb les
+                           seves coordenades i ✖; el bo, en verd.
+      · punt «A»        → escriure'n les coordenades «( x , y )»; cada una amb ✔ o ✖, i la bona es bloqueja.
+      · punt «A» i icones → triar la icona del quadrant (o l'eix, o l'origen) on és el punt.
+      · icona gran      → escriure un punt que sigui en aquell quadrant: el punt escrit es dibuixa
+                           (verd si és bo, vermell amb ✖ si no).
+      · Si s'esgoten els intents, la resposta correcta es mostra en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: primer i segon quadrant (y positiva).  (default)
+      Nivell 2: els quatre quadrants.
+      Nivell 3: també els eixos i l'origen.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 6)
+      ?maxintents=N       (default 3)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    6,
+            defaultIntents:       3
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── EL PLA, LES ICONES I LES CASELLES ───────────────── */
+        .game-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 8px 18px;
+        }
+        .demana {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 48px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.9em;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        .demana-icona { font-size: 1.1em; }
+        .canvas-wrap { width: 100%; display: flex; justify-content: center; }
+        #canvas-pla { max-width: 100%; border: 2px solid var(--border-heavy); border-radius: 12px; touch-action: manipulation; }
+        #canvas-pla.tocable { cursor: crosshair; }
+        .llocs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .llocs[hidden], .coord-area[hidden] { display: none; }
+        .btn-lloc {
+            position: relative;
+            padding: 6px;
+            background: #ffffff;
+            border: 2px solid var(--border-heavy);
+            border-radius: 12px;
+            cursor: pointer;
+            line-height: 0;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-lloc:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+        @media (hover: hover) {
+            .btn-lloc:not(:disabled):hover { background: var(--primary-light); border-color: var(--primary); }
+        }
+        .btn-lloc:active:not(:disabled) { transform: scale(0.96); }
+        .btn-lloc.correct, .btn-lloc.reveal-answer { background: #dcfce7; border-color: var(--success); }
+        .btn-lloc.reveal-answer { box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.35); }
+        .btn-lloc.wrong { background: var(--danger-light); border-color: var(--danger); animation: shake 0.2s; }
+        .btn-lloc:disabled { cursor: default; }
+        .x-lloc { position: absolute; top: 2px; right: 6px; line-height: 1; font-size: 1.1rem; font-weight: 800; color: #b91c1c; }
+        .coord-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        input[type="text"].coord-input {
+            width: 78px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"].coord-input:focus { border-color: var(--primary); background: var(--primary-light); }
+        input[type="text"].coord-input.input-locked,
+        input[type="text"].coord-input.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+        #btn-ok {
+            font-size: 0.7em; font-weight: 700; padding: 0; width: 2.6rem; height: 2.6rem;
+            background-color: #cbd5e1; color: #334155; border-color: #94a3b8;
+            display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+        }
+        @media (hover: hover) { #btn-ok:hover { background-color: var(--primary); border-color: var(--primary-dark); color: white; } }
+        #btn-ok:focus-visible { outline: 3px solid var(--primary); }
+        .marca { min-height: 2.4rem; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .part {
+            display: inline-flex; align-items: center; gap: 0.4em; padding: 2px 14px; border: 2px solid; border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.4em; font-weight: 800; animation: fadeIn 0.2s ease;
+        }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        @media (max-width: 480px) {
+            .game-body { padding: 10px 4px 14px; }
+            .demana { font-size: 1.6em; }
+            .coord-area { font-size: 1.6em; }
+            input[type="text"].coord-input { width: 64px; }
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Coordenades</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Repte X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 3 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <div class="game-body">
+            <!-- El que es demana: «👆 A (3, −2)», el punt «A» o la icona d'un quadrant -->
+            <div class="demana" id="demana"></div>
+
+            <!-- El pla cartesià (a «situa», es toca) -->
+            <div class="canvas-wrap"><canvas id="canvas-pla" aria-label="Coordenades" role="img"></canvas></div>
+
+            <!-- Les icones dels quadrants (a «quadrant») -->
+            <div class="llocs" id="llocs" role="group" hidden></div>
+
+            <!-- Les coordenades: «( [ ] , [ ] )  OK» (a «coordenades» i «al-quadrant») -->
+            <div class="coord-area" id="coord-area" hidden>
+                <span aria-hidden="true">(</span>
+                <input type="text" id="input-x" class="coord-input" autocomplete="off" inputmode="none"
+                       aria-label="Escriu la resposta">
+                <span aria-hidden="true">,</span>
+                <input type="text" id="input-y" class="coord-input" autocomplete="off" inputmode="none"
+                       aria-label="Escriu la resposta">
+                <span aria-hidden="true">)</span>
+                <button class="btn-submit" id="btn-ok" onclick="checkCoords()">OK</button>
+            </div>
+
+            <!-- El que s'ha escrit o tocat malament, amb ✔ o ✖ -->
+            <div class="marca" id="marca" aria-live="polite"></div>
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-pla-cartesia/a-pla-cartesia.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "a2-lint",
+  "private": true,
+  "description": "Eines de revisió de codi (ESLint) i de format (Prettier). Només per al desenvolupament: el web no les fa servir. Vegeu tools/lint/README.md.",
+  "scripts": {
+    "lint": "cd ../.. && tools/lint/node_modules/.bin/eslint -c tools/lint/eslint.config.mjs .",
+    "format": "cd ../.. && tools/lint/node_modules/.bin/prettier --write .",
+    "format:check": "cd ../.. && tools/lint/node_modules/.bin/prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "prettier": "3.9.9"
+  }
+}

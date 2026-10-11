@@ -1,0 +1,398 @@
+/*
+============================================================================
+PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
+FITXER: css/targetes.css
+ROL: Estils de «Targetes de vocabulari» (targetes.html): el formulari del
+     professorat, la vista prèvia de les pàgines i la impressió en A4.
+ARQUITECTURA:
+- Les regles del paper són les del material de step-quiz/pi (docs/TARGETES.md):
+  blanc i negre estricte (només grisos; el color és una opció), la lletra
+  d'impremta Verdana (DejaVu Sans on no hi és: és gairebé igual d'ampla, i el
+  que es mesura és el que s'imprimeix), cap paraula per sota de 14 pt i molt
+  d'aire.
+- La mida de tot el que va DINS d'una targeta (la imatge, la paraula) és
+  relativa a l'amplada de la targeta (unitats cqw d'un contenidor): així una
+  targeta surt igual de ben proporcionada amb 1, 4 o 9 per pàgina, a la vista
+  prèvia i al paper. La imatge d'un terme de matemàtiques fa servir la mateixa
+  escala que les cartes de l'àlbum (js/album, 118 px de carta amb una imatge de
+  2,6 rem): tot el que hi cap a l'àlbum hi cap a la targeta.
+- La mida de la paraula la dona el seu tros més llarg: js/targetes/targetes.js
+  el mesura i el posa a --w (en em); aquí en surt la lletra que hi cap.
+- La pàgina és un full A4 (210 × 296 mm, 1 mm menys que l'A4 perquè cap
+  navegador no hi afegeixi una pàgina en blanc) amb 10 mm de marge dins del full
+  i @page sense marge: així el navegador no hi posa la capçalera ni el peu
+  (la data i l'adreça).
+DEPENDÈNCIES: css/tokens.css i css/shared.css (que porta els estils .mat* de
+  les imatges de matemàtiques i .pict dels pictogrames).
+PROVES: tests/navegador/targetes.test.js
+============================================================================
+*/
+
+:root {
+    --bg-color: #f5f4ec;
+    --primary: #5a6a1e;
+    --primary-light: #e5e8c8;
+    --primary-hover: #3d4a14;
+    --primary-dark: #1c1f0e;
+}
+
+h1 {
+    color: var(--primary-dark);
+    margin-bottom: 2px;
+}
+.title-row {
+    margin-bottom: 6px;
+}
+.panel {
+    border-top-color: var(--primary);
+}
+
+/* ---- EL FORMULARI ---- */
+.opcions {
+    display: grid;
+    gap: 16px;
+    padding: 16px 18px 18px;
+}
+.opcio-grup {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.opcio-grup legend {
+    padding: 0;
+    margin-bottom: 8px;
+    font-weight: 800;
+    color: var(--primary-dark);
+}
+.opcions-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.opcio-grup .opcions-fila + .opcions-fila {
+    margin-top: 10px;
+}
+
+/* Una opció (un tema, una mida, un contingut): tota la «píndola» és la casella, que és sota seu i s'hi pot tocar
+   (44 px d'alt com a mínim). Marcada, es veu per la icona ✔ i pel color. */
+.opcio {
+    position: relative;
+    display: inline-flex;
+}
+.opcio input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    appearance: none;
+    cursor: pointer;
+}
+.opcio input:focus-visible {
+    outline: 3px solid var(--primary-dark);
+    outline-offset: 2px;
+    border-radius: 24px;
+}
+.opcio-cos {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    background: #fff;
+    border: 2px solid var(--border-strong);
+    border-radius: 24px;
+}
+.opcio input:checked + .opcio-cos {
+    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary-dark);
+}
+.opcio input:checked + .opcio-cos::before {
+    content: '✔';
+}
+.opcio-icona {
+    font-size: 1.35em;
+    line-height: 1;
+}
+.opcio-n {
+    min-width: 1.7em;
+    padding: 0 6px;
+    font-size: 0.85em;
+    font-weight: 800;
+    text-align: center;
+    color: var(--text-muted);
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+.opcio input:checked + .opcio-cos .opcio-n {
+    color: var(--primary-dark);
+    background: #fff;
+}
+
+.btn-primari,
+.btn-secundari {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    font: inherit;
+    font-weight: 800;
+    border-radius: 24px;
+    cursor: pointer;
+}
+.btn-primari {
+    min-width: 160px;
+    font-size: 1.15em;
+    color: #fff;
+    background: var(--primary);
+    border: 2px solid var(--primary);
+}
+.btn-secundari {
+    color: var(--text-main);
+    background: #fff;
+    border: 2px solid var(--border-strong);
+}
+.btn-primari:disabled {
+    cursor: not-allowed;
+    color: var(--text-muted);
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+@media (hover: hover) {
+    .btn-primari:not(:disabled):hover {
+        background: var(--primary-hover);
+    }
+    .btn-secundari:hover {
+        background: var(--primary-light);
+    }
+}
+.opcions-imprimir {
+    gap: 8px 18px;
+}
+.resum {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 800;
+    color: var(--primary-dark);
+}
+.consell {
+    margin: 0;
+    font-size: 0.95em;
+    color: var(--text-muted);
+}
+
+/* ---- LA VISTA PRÈVIA: UN FULL PER PÀGINA ---- */
+#targetes-pagines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    padding: 18px 0 26px;
+}
+.targetes-full {
+    position: relative;
+    container-type: inline-size;
+    width: min(100%, 560px);
+    aspect-ratio: 210 / 296;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.28);
+    font-family: Verdana, 'DejaVu Sans', sans-serif;
+}
+.targetes-pagina {
+    display: grid;
+    grid-template-columns: repeat(var(--columnes), 1fr);
+    grid-template-rows: repeat(var(--files), 1fr);
+    width: 100%;
+    height: 100%;
+    padding: 4.76cqw; /* 10 mm d'un full de 210 mm */
+}
+/* El peu de la pàgina, per a qui les ordena (no és de l'alumnat): al marge de baix, fora de les targetes */
+.targetes-peu {
+    position: absolute;
+    right: 4.76cqw;
+    bottom: 1.9cqw;
+    left: 4.76cqw;
+    font-size: 1.76cqw; /* 10,5 pt en un full de 210 mm */
+    line-height: 1.2;
+    color: #475569;
+}
+
+/* ---- UNA TARGETA ----
+   Cada targeta és un contenidor (container-type): el que porta a dins té les mides en cqw, relatives a la seva amplada.
+   La línia discontínua és per retallar. */
+.targeta {
+    container-type: inline-size;
+    min-width: 0;
+    min-height: 0;
+    outline: 0.25mm dashed #64748b;
+    outline-offset: -0.125mm;
+}
+.targeta-buida {
+    outline: none;
+}
+.targeta-cos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3cqw;
+    width: 100%;
+    height: 100%;
+    padding: 4cqw;
+    overflow: hidden;
+    text-align: center;
+}
+/* La imatge. Cada mena té la seva mida: un emoji o un pictograma és una peça quadrada, i un terme de matemàtiques és un
+   mini-exemple o un dibuix més ample (amb la seva pròpia escala, .mat: 0,4 de la lletra de la imatge) */
+.targeta-imatge {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    font-size: 2.4rem;
+    line-height: 1;
+}
+.targeta-emoji {
+    font-size: 50cqw;
+    /* L'emoji de debò (en color), no el dibuix en línies que tenen algunes lletres (DejaVu Sans en té de gats, de gossos…) */
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+.targeta-pictograma {
+    font-size: 40cqw;
+}
+.targeta-mates {
+    font-size: 33cqw;
+}
+.targeta-imatge .pict {
+    width: 1.5em;
+    height: 1.5em;
+}
+/* La paraula (amb article). La lletra és la més gran que hi cap: --mot és el màxim, i --w, l'amplada (en em) del seu tros
+   més llarg, que mesura targetes.js. Si no s'ha mesurat, es posa que fa 9 em. */
+.targeta-mot {
+    --mot: 12cqw;
+    flex: none;
+    max-width: 100%;
+    font-size: 1.3rem;
+    font-size: min(var(--mot), calc(88cqw / var(--w, 9)));
+    font-weight: 800;
+    line-height: 1.1;
+    color: #0f172a;
+    text-wrap: balance;
+}
+/* Només la paraula: més gran, perquè no hi ha imatge */
+.targetes-pagina[data-contingut='paraula'] .targeta-mot {
+    --mot: 14cqw;
+}
+/* Una paraula sola, al mig de la targeta */
+.targetes-pagina[data-contingut='paraula'] .targeta-cos {
+    justify-content: center;
+}
+
+/* ---- EN BLANC I NEGRE ----
+   Només grisos (com els de step-quiz/pi): el que es distingeix per un color es distingeix també pel gruix o per un
+   subratllat. Un emoji és una imatge en color: es porta a gris. */
+#targetes-pagines[data-color='bn'] .targetes-full {
+    color: #000;
+}
+#targetes-pagines[data-color='bn'] .targeta {
+    outline-color: #5e5e5e;
+}
+#targetes-pagines[data-color='bn'] .targeta-mot {
+    color: #000;
+}
+#targetes-pagines[data-color='bn'] .targetes-peu {
+    color: #5e5e5e;
+}
+#targetes-pagines[data-color='bn'] .targeta-emoji,
+#targetes-pagines[data-color='bn'] .mat-emoji {
+    filter: grayscale(1);
+}
+#targetes-pagines[data-color='bn'] .mat,
+#targetes-pagines[data-color='bn'] .mat-svg,
+#targetes-pagines[data-color='bn'] .mat-pos,
+#targetes-pagines[data-color='bn'] .mat-neg {
+    color: #000;
+}
+#targetes-pagines[data-color='bn'] .mat-dest {
+    background: #d4d4d4;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .f {
+    fill: #f2f2f2;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .f2 {
+    fill: #d4d4d4;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .f3 {
+    fill: #8a8a8a;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .d {
+    stroke: #5e5e5e;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .df {
+    fill: #c4c4c4;
+}
+#targetes-pagines[data-color='bn'] .mat-svg .g {
+    stroke: #8a8a8a;
+}
+#targetes-pagines[data-color='bn'] .targeta-pictograma {
+    --paraula-destac: #8a8a8a;
+}
+/* La peça destacada d'un mini-exemple (groga en color) es veu també subratllada */
+.targeta .mat-dest {
+    text-decoration: underline;
+    text-decoration-thickness: 0.12em;
+}
+
+/* ---- IMPRESSIÓ: només els fulls, un per pàgina A4 ---- */
+@page {
+    size: A4 portrait;
+    margin: 0;
+}
+@media print {
+    html,
+    body {
+        display: block;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+    }
+    .no-imprimir {
+        display: none !important;
+    }
+    #targetes-pagines {
+        display: block;
+        gap: 0;
+        padding: 0;
+    }
+    .targetes-full {
+        width: 210mm;
+        height: 296mm;
+        aspect-ratio: auto;
+        break-after: page;
+        break-inside: avoid;
+        box-shadow: none;
+    }
+    .targetes-full:last-child {
+        break-after: auto;
+    }
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

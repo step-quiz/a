@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Triangle rectangle — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Triangle rectangle</title>
+
+    <!--
+    ============================================================
+    FITXER: a-triangle-rectangle.html
+    ROL: Activitat del teorema de Pitàgores en un triangle rectangle per a l'aula
+         d'acollida. Adaptació de l'activitat triangle-rectangle d'operacions.
+    JAVASCRIPT: js/a-triangle-rectangle/a-triangle-rectangle.js (pantalla, punts),
+         js/a-triangle-rectangle/generador.js (problemes i opcions, lògica pura) i
+         js/a-triangle-rectangle/vista.js (el triangle i l'ajuda); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · Només hi ha el triangle amb els seus costats («b = 3», «c = 4», «a = ?»; el costat que
+        es busca, en lila i discontinu) i quatre opcions. Cal triar el valor del «?».
+      · Una opció equivocada es marca amb ✖ i es desactiva; la bona es posa en verd.
+      · Botó 💡 (cada toc fa el següent): la fórmula («a² = b² + c²») → la fórmula amb els valors
+        («a² = 3² + 4²») → res.
+      · Si s'esgoten els intents, la resposta correcta es destaca en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: trobar la hipotenusa amb nombres enters.  (default)
+      Nivell 2: també trobar un catet (nombres enters).
+      Nivell 3: amb arrels quadrades (√2, 2√2…).
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 5)
+      ?maxintents=N       (default 3)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    5,
+            defaultIntents:       3
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── EL TRIANGLE I LES OPCIONS ───────────────────────── */
+        .game-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 12px 20px;
+        }
+        #triangle-container { width: 100%; max-width: 420px; }
+        .triangle-svg { width: 100%; height: auto; }
+        .help-text { font-family: 'Courier New', Courier, monospace; font-size: 1.4em; }
+        .ajuda-linia { margin: 2px 0; }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            width: 100%;
+            max-width: 460px;
+        }
+        .btn-option {
+            min-height: 56px;
+            padding: 10px 12px;
+            font-size: 1.5em;
+            font-weight: 800;
+            font-family: 'Courier New', Courier, monospace;
+            color: #1e293b;
+            background: #ffffff;
+            border: 2px solid var(--border-heavy);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        .btn-option:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+        @media (hover: hover) {
+            .btn-option:not(:disabled):hover { background: var(--primary-light); border-color: var(--primary); }
+        }
+        .btn-option:active:not(:disabled) { transform: scale(0.97); }
+        .btn-option.correct { background: #dcfce7; border-color: var(--success); color: #166534; }
+        .btn-option.wrong { background: var(--danger-light); border-color: var(--danger); color: #b91c1c; animation: shake 0.2s; }
+        .btn-option.reveal-answer { background: #dcfce7; border-color: var(--success); color: #166534; box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.35); }
+        .btn-option:disabled { cursor: default; }
+        .action-row { display: flex; justify-content: center; }
+        .action-row .btn-ajuda { font-size: 1.25em; }
+
+        /* Pantalles amples: el triangle a l'esquerra i les opcions a la dreta */
+        @media (min-width: 900px) {
+            .game-body { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .game-body { padding: 10px 8px 14px; }
+            .btn-option { font-size: 1.3em; }
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Triangle rectangle</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Repte X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 3 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <div class="game-body">
+            <!-- El triangle, amb «a = ?» (o «b = ?», «c = ?») -->
+            <div id="triangle-container"></div>
+
+            <!-- Les quatre opcions -->
+            <div id="options-container" class="options-grid" role="group"></div>
+
+            <div class="action-row">
+                <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+            </div>
+            <!-- L'ajuda: la fórmula i, després, la fórmula amb els valors -->
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-triangle-rectangle/a-triangle-rectangle.js"></script>
+</body>
+</html>

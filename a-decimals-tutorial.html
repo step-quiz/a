@@ -26,6 +26,7 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh;   /* mòbil: no tapat per la barra del navegador */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -153,7 +154,7 @@
     }
     .mock-plus {
       font-size: 1.6em; font-weight: bold;
-      color: #94a3b8; align-self: center;
+      color: #64748b; align-self: center;
     }
     .mock-bill {
       display: flex; align-items: center;
@@ -346,6 +347,7 @@
       .story-strip    { font-size: 1.3em; }
     }
   </style>
+  <link rel="stylesheet" href="css/accessibilitat.css">
   <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>
@@ -447,7 +449,7 @@ function svgIntro() {
     <!-- Subtítol -->
     <text x="130" y="118" text-anchor="middle"
           font-family="'Segoe UI',sans-serif" font-size="11"
-          font-weight="600" fill="#94a3b8">La botiga et torna la resta</text>
+          font-weight="600" fill="#64748b">La botiga et torna la resta</text>
   </svg>`;
 }
 
@@ -504,6 +506,65 @@ function svgVertical(a, b, result, isSum = false) {
     <text x="${X_RIGHT}" y="${Y2}" text-anchor="end"
           font-family="'Courier New',monospace" font-size="${FONT}"
           font-weight="800" fill="${resColor}">${rStr}</text>
+  </svg>`;
+}
+
+
+/**
+ * svgTwoSteps(p1, p2, total, bill, change, solved)
+ * Esquema dels dos passos d'una compra amb dos productes:
+ *   Pas 1: sumar els dos preus  → Total
+ *   Pas 2: pagament − Total     → Canvi
+ *
+ *   solved = false: els resultats surten com a «?» (el pas 1 pulsa i el pas 2 espera).
+ *   solved = true:  es mostren els dos resultats i el total dins la resta.
+ */
+function svgTwoSteps(p1, p2, total, bill, change, solved = false) {
+  const fmt = n => (Math.round(n * 100) % 100 === 0)
+    ? String(Math.round(n))
+    : n.toFixed(2).replace('.', ',');
+  const FONT = "font-family=\"'Courier New',monospace\" font-size=\"20\" font-weight=\"800\"";
+  const LABEL = "font-family=\"'Segoe UI',sans-serif\" font-size=\"11\" font-weight=\"700\"";
+
+  const expr1 = `${fmt(p1)} + ${fmt(p2)} =`;
+  const expr2 = `${fmt(bill)} − ${solved ? fmt(total) : 'Total'} =`;
+  const res1  = solved ? fmt(total)  : '?';
+  const res2  = solved ? fmt(change) : '?';
+  const pulse = solved ? '' :
+    '<animate attributeName="stroke-width" values="2;3.5;2" dur="1.5s" repeatCount="indefinite"/>';
+  const wait  = solved ? '1' : '0.55';   // el pas 2 espera mentre el pas 1 no està resolt
+
+  return `<svg viewBox="0 0 260 188" xmlns="http://www.w3.org/2000/svg"
+          style="max-width:260px;width:100%;height:auto;display:block;margin:0 auto;">
+
+    <!-- Pas 1: suma dels preus → Total -->
+    <rect x="8" y="6" width="244" height="72" rx="12"
+          fill="#f0fdf4" stroke="#5a6a1e" stroke-width="2.5"/>
+    <text x="20" y="26" ${LABEL} fill="#5a6a1e">Pas 1</text>
+    <text x="232" y="26" text-anchor="end" ${LABEL} fill="#64748b">Total</text>
+    <text x="20" y="62" ${FONT} fill="#1e293b">${expr1}</text>
+    <rect x="176" y="36" width="66" height="34" rx="8"
+          fill="#ffffff" stroke="#166534" stroke-width="2">${pulse}</rect>
+    <text x="209" y="60" text-anchor="middle" ${FONT} fill="#166534">${res1}</text>
+
+    <!-- Fletxa cap avall -->
+    <line x1="130" y1="82" x2="130" y2="100"
+          stroke="#5a6a1e" stroke-width="2.5" stroke-linecap="round">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.4s" repeatCount="indefinite"/>
+    </line>
+    <polygon points="130,108 122,98 138,98" fill="#5a6a1e"/>
+
+    <!-- Pas 2: pagament − Total → Canvi -->
+    <g opacity="${wait}">
+      <rect x="8" y="112" width="244" height="72" rx="12"
+            fill="#fffbeb" stroke="#f59e0b" stroke-width="2.5"/>
+      <text x="20" y="132" ${LABEL} fill="#92400e">Pas 2</text>
+      <text x="232" y="132" text-anchor="end" ${LABEL} fill="#64748b">Canvi</text>
+      <text x="20" y="168" ${FONT} fill="#1e293b">${expr2}</text>
+      <rect x="176" y="142" width="66" height="34" rx="8"
+            fill="#ffffff" stroke="#92400e" stroke-width="2"/>
+      <text x="209" y="166" text-anchor="middle" ${FONT} fill="#92400e">${res2}</text>
+    </g>
   </svg>`;
 }
 
@@ -798,7 +859,7 @@ function _advance() {
     const overlay = document.getElementById('fade-overlay');
     overlay.style.pointerEvents = 'all';
     overlay.style.opacity       = '1';
-    setTimeout(() => { window.location.href = 'a-decimals.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'a-decimals.html' + window.location.search; }, 1200);
     return;
   }
   if (isLastStep) { exIdx++; stepIdx = 0; }

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Targetes de vocabulari per imprimir: imatge i paraula, en blanc i negre o en color" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Targetes de vocabulari</title>
+
+        <!--
+    ============================================================
+    FITXER: targetes.html
+    ROL: «Targetes de vocabulari»: una eina del PROFESSORAT per imprimir les
+         paraules del banc del lèxic (js/lexicon/dades.js) com a targetes
+         (imatge + paraula), per penjar a l'aula, per fer jocs d'aparellar o
+         per fer targetes de doble cara (la imatge al davant, la paraula al
+         darrere). S'hi tria què s'imprimeix (els temes, quantes targetes per
+         pàgina, què porten i si van en blanc i negre o en color), es veu com
+         quedarà i s'imprimeix amb el navegador (que també permet desar-ho en
+         PDF). El que es tria queda a la URL (?temes=…&mida=…&contingut=…
+         &color=…). No es guarda res ni s'envia res.
+         Les regles del paper (blanc i negre, lletra de 14 pt o més, el full
+         A4 i la doble cara) són les del material de step-quiz/pi (vegeu
+         docs/TARGETES.md).
+         No és una activitat ni una pantalla de l'alumnat: els seus textos
+         (els de les etiquetes) són per al professorat i no passen pel control
+         del lèxic (tests/check-lexicon.js); les paraules de les targetes sí
+         que surten del lèxic.
+    JAVASCRIPT: js/targetes/targetes.js (pantalla), generador.js (els temes,
+         les pàgines i les mides: lògica pura) i vista.js (l'HTML).
+    ESTILS: css/targetes.css (pantalla i impressió A4).
+    ============================================================
+    -->
+
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+        <link rel="stylesheet" href="css/targetes.css" />
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <div class="title-row no-imprimir">
+            <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+                <img src="icon-green.png" alt="Inici" onerror="this.style.display = 'none'" />
+            </a>
+            <h1>Targetes de vocabulari</h1>
+        </div>
+
+        <div class="panel no-imprimir" id="main-panel">
+            <form id="targetes-opcions" class="opcions" autocomplete="off">
+                <fieldset class="opcio-grup">
+                    <legend>Temes</legend>
+                    <div class="opcions-fila" id="targetes-temes"></div>
+                    <div class="opcions-fila">
+                        <button type="button" class="btn-secundari" id="temes-tots">Tots</button>
+                        <button type="button" class="btn-secundari" id="temes-cap">Cap</button>
+                    </div>
+                </fieldset>
+
+                <fieldset class="opcio-grup">
+                    <legend>Targetes per pàgina</legend>
+                    <div class="opcions-fila">
+                        <label class="opcio"
+                            ><input type="radio" name="mida" value="1" /><span class="opcio-cos"
+                                ><span class="opcio-nom">1</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="mida" value="4" /><span class="opcio-cos"
+                                ><span class="opcio-nom">4</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="mida" value="9" /><span class="opcio-cos"
+                                ><span class="opcio-nom">9</span></span
+                            ></label
+                        >
+                    </div>
+                </fieldset>
+
+                <fieldset class="opcio-grup">
+                    <legend>Què porta cada targeta</legend>
+                    <div class="opcions-fila">
+                        <label class="opcio"
+                            ><input type="radio" name="contingut" value="tot" /><span class="opcio-cos"
+                                ><span class="opcio-icona" aria-hidden="true">🖼️</span
+                                ><span class="opcio-nom">Imatge i paraula</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="contingut" value="imatge" /><span class="opcio-cos"
+                                ><span class="opcio-icona" aria-hidden="true">🖼️</span
+                                ><span class="opcio-nom">Només la imatge</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="contingut" value="paraula" /><span class="opcio-cos"
+                                ><span class="opcio-icona" aria-hidden="true">🔤</span
+                                ><span class="opcio-nom">Només la paraula</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="contingut" value="doblecara" /><span class="opcio-cos"
+                                ><span class="opcio-icona" aria-hidden="true">🔄</span
+                                ><span class="opcio-nom">Doble cara: imatge i, al darrere, paraula</span></span
+                            ></label
+                        >
+                    </div>
+                </fieldset>
+
+                <fieldset class="opcio-grup">
+                    <legend>Color</legend>
+                    <div class="opcions-fila">
+                        <label class="opcio"
+                            ><input type="radio" name="color" value="bn" /><span class="opcio-cos"
+                                ><span class="opcio-nom">Blanc i negre</span></span
+                            ></label
+                        >
+                        <label class="opcio"
+                            ><input type="radio" name="color" value="color" /><span class="opcio-cos"
+                                ><span class="opcio-nom">Color</span></span
+                            ></label
+                        >
+                    </div>
+                </fieldset>
+
+                <div class="opcions-fila opcions-imprimir">
+                    <button type="button" class="btn-primari" id="btn-imprimir">
+                        <span aria-hidden="true">🖨️</span> Imprimeix
+                    </button>
+                    <p id="targetes-resum" class="resum" role="status" aria-live="polite"></p>
+                </div>
+                <p class="consell">
+                    A la finestra d'impressió, tria paper A4 i escala 100 % (o desa-ho en PDF). Doble cara: imprimeix a
+                    dues cares, girant el full per la vora llarga; després, retalla i plastifica. Jocs d'aparellar:
+                    imprimeix el mateix tema dues vegades, «Només la imatge» i «Només la paraula».
+                </p>
+            </form>
+        </div>
+
+        <!-- Les pàgines, tal com s'imprimiran -->
+        <main id="targetes-pagines" aria-label="Vista prèvia de les targetes"></main>
+
+        <script type="module" src="js/targetes/targetes.js"></script>
+    </body>
+</html>

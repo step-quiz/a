@@ -1,0 +1,39 @@
+/*
+============================================================================
+PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
+FITXER: css/tokens.css
+ROL: Colors comuns AMB SIGNIFICAT (text, vores, encert, error, avís).
+ARQUITECTURA:
+- Font única d'aquests colors per a totes les activitats. Cap altre fitxer els
+  ha de redefinir.
+- Els colors de TEMA de cada activitat (--primary, --primary-light,
+  --primary-dark, --primary-hover, --bg-color…) NO són aquí: cada activitat té
+  el seu i es defineixen al seu propi CSS.
+- Els valors compleixen el contrast WCAG AA (≥ 4,5:1): el text, també sobre els
+  fons grisos de la capçalera (#f1f5f9), i el text blanc sobre els botons de
+  color. tests/navegador/accessibilitat.test.js ho comprova a cada pantalla.
+- Adaptat de css/tokens.css d'operacions (vegeu UPSTREAM.md). Diferència:
+  --text-muted és més fosc (#475569) perquè el d'operacions (#64748b) només
+  fa 4,34:1 sobre la capçalera de les activitats.
+DEPENDÈNCIES: Cap. S'ha de carregar ABANS de qualsevol altre CSS.
+============================================================================
+*/
+:root {
+    /* Text */
+    --text-main: #1e293b;
+    --text-muted: #475569; /* 7,58:1 sobre blanc, 6,92:1 sobre #f1f5f9 */
+
+    /* Fons i vores */
+    --panel-bg: #ffffff;
+    --border-light: #e2e8f0;
+    --border-color: #e2e8f0;
+    --border-heavy: #cbd5e1;
+    --border-strong: #94a3b8; /* vores de controls que s'han de distingir bé */
+
+    /* Estats */
+    --success: #047857; /* 5,48:1 sobre blanc; també amb text blanc a sobre */
+    --success-light: #d1fae5;
+    --danger: #dc2626; /* 4,83:1 sobre blanc; també amb text blanc a sobre */
+    --danger-light: #fef2f2;
+    --warning: #d97706;
+}

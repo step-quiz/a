@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Potències — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Potències</title>
+
+    <!--
+    ============================================================
+    FITXER: a-potencies.html
+    ROL: Activitat de potències per a l'aula d'acollida: propietats (producte,
+         quocient, potència d'una potència), base negativa i notació científica.
+         Versió adaptada de potencies.html (operacions), ja amb el motor nou.
+    JAVASCRIPT: js/a-potencies/a-potencies.js (pantalla, teclat, punts),
+         js/a-potencies/generador.js (preguntes i comprovació, lògica pura) i
+         js/a-potencies/vista.js (l'HTML de cada peça); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · La pregunta en gran («3² · 3⁴») i, a sota, «= 3 [ ]», amb el camp a lloc
+        de l'exponent; o «= [ ]» quan cal escriure el valor.
+      · Si la resposta no és bona, no hi ha cap frase: surt comprovada amb xifres
+        («3⁵ = 243 ≠ 729 ✖»), o el signe i el valor per separat («+ ✖  8 ✔»).
+      · Botó 💡 (cada toc fa el següent): la potència escrita com a producte
+        («(3·3) · (3·3·3·3)») → el pas següent (factors tatxats, productes
+        parcials o els 10 un a un) i l'operació dels exponents («2 + 4 = ?») → res.
+      · Si s'esgoten els intents, la solució surt al camp, en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: aᵐ · aⁿ i aᵐ ÷ aⁿ, escrivint l'exponent.  (default)
+      Nivell 2: també (aᵐ)ⁿ.
+      Nivell 3: també base negativa: (−a)ⁿ i −aⁿ, escrivint el valor.
+      Nivell 4: també notació científica: 34000 = 3,4 · 10^[ ] i 3,4 · 10⁵ = [ ].
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5
+        };
+    </script>
+
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA ESPECÍFICA DE POTÈNCIES ────────────────────── */
+        :root {
+            --bg-color:      #f5f4ec;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+            --var-color:     #3d4a14;   /* color de la x */
+            --var-bg:        #e5e8c8;
+            --var-border:    #9aa45a;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── EQUACIÓ PRINCIPAL ────────────────────────────────── */
+        .equation-display {
+            padding: 28px 20px 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 2.4em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            min-height: 100px;
+        }
+
+        /* Peces de la pregunta */
+        .pt {
+            padding: 8px 14px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            color: #334155;
+            line-height: 1;
+        }
+        .pt sup { font-size: 0.65em; }
+        .po {
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 8px 16px;
+            color: #64748b;
+            font-weight: bold;
+        }
+
+        /* ── PANELL DE RESOLUCIÓ ──────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 20px 20px 22px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        /* Fila: x = [input] */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .answer-x-label {
+            color: var(--var-color);
+            background: var(--var-bg);
+            border: 2px solid var(--var-border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            line-height: 1;
+        }
+        .answer-eq { color: var(--primary); padding: 0 4px; }
+        .answer-x-label:empty { display: none; }
+        /* Quan la resposta és un exponent, el camp va aixecat, com un superíndex */
+        .answer-row.exponent input[type="text"]#value-input {
+            position: relative;
+            top: -0.7em;
+            left: -4px;
+            width: 76px;
+            font-size: 0.6em;
+            padding: 6px;
+        }
+        .answer-row.exponent .answer-x-label { margin-right: -4px; }
+
+        input[type="text"]#value-input {
+            width: 130px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 12px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* ── FILA BOTONS: OK + Ajuda ──────────────────────────── */
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #btn-submit-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0;
+            width: 2.4rem;
+            height: 2.4rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ AJUDA ───────────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* ── CAIXA D'AJUDA ────────────────────────────────────── */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 1.05em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            width: fit-content;
+            max-width: min(800px, 95%);
+            white-space: normal;
+            line-height: 1.4;
+            animation: fadeIn 0.25s ease;
+        }
+        @media (max-width: 640px) {
+            .help-text { max-width: 95%; }
+        }
+        .help-text.visible { display: block; }
+
+        /* ── NIVELL A LA CAPÇALERA ────────────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .equation-display { font-size: 1.8em; padding: 18px 10px 14px; gap: 8px; min-height: 80px; }
+            .pt, .po { padding: 6px 10px; border-radius: 8px; }
+            .answer-row { font-size: 1.6em; gap: 10px; }
+            input[type="text"]#value-input { width: 110px; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text { font-size: 0.97em; padding: 12px 14px; }
+        }
+        /* En pantalles estretes el nivell es queda al costat del número de la pregunta (no es parteix en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+        @media (max-width: 350px) {
+            .equation-display { font-size: 1.5em; }
+        }
+
+        /* ── L'AJUDA: la potència escrita com a producte ───────── */
+        .ajuda-dibuix { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-size: 1.5em; }
+        .ajuda-dibuix sup { font-size: 0.65em; }
+        .ajuda-dibuix .po, .ajuda-dibuix .pt { padding: 2px 8px; }
+        .fac { white-space: nowrap; }
+        .fac-tatxat { color: #b91c1c; text-decoration-thickness: 2px; }
+        .ajuda-operacio { margin-top: 6px; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-size: 1.5em; color: #78350f; }
+
+        /* ── LA RESPOSTA EQUIVOCADA, SUBSTITUÏDA ────────────────── */
+        .part-feedback { display: flex; justify-content: center; }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex; align-items: center; gap: 0.4em; padding: 2px 14px; border: 2px solid; border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.5em; font-weight: 800; animation: fadeIn 0.2s ease;
+        }
+        @media (max-width: 480px) { .part { font-size: 1.1em; text-align: center; } }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        .part-feedback { gap: 8px; flex-wrap: wrap; }
+        .part sup { font-size: 0.65em; }
+        input[type="text"]#value-input.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 4 és el màxim i no el té. */
+        #btn-next-level {
+            display: none; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.85em; font-weight: 700;
+            color: var(--primary); background: var(--primary-light); border: 2px solid var(--primary);
+            border-radius: 20px; cursor: pointer; white-space: nowrap; touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) { #btn-next-level:hover { background: #d4d9a8; } }
+        @media (max-width: 480px) { #btn-next-level { width: 100%; justify-content: center; } }
+        /* ── ANIMACIÓ INTENTS ─────────────────────────────────── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+    </style>
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Potències</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text"  id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 4 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <!-- La pregunta en gran -->
+        <div class="equation-display" id="equation-display" role="group"></div>
+
+        <!-- Panell de resposta -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Fila: = [etiqueta] [camp] -->
+            <div class="answer-row" id="answer-row">
+                <span class="answer-eq">=</span>
+                <span class="answer-x-label" id="answer-x-label"></span>
+                <input type="text"
+                       id="value-input"
+                       autocomplete="off"
+                       aria-label="Escriu la resposta">
+            </div>
+
+            <!-- OK + Ajuda -->
+            <div class="action-row">
+                <button class="btn-submit" id="btn-submit-val" onclick="checkValue()">OK</button>
+                <button class="btn-ajuda"  onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+            </div>
+
+            <!-- La resposta equivocada, comprovada amb xifres: «3⁵ = 243 ≠ 729 ✖» -->
+            <div class="part-feedback" id="part-feedback" aria-live="polite"></div>
+
+            <!-- L'ajuda: la potència escrita com a producte -->
+            <div class="help-text" id="help-text" aria-live="polite"></div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-potencies/a-potencies.js"></script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Factoritzar — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Factoritzar</title>
+
+    <!--
+    ============================================================
+    FITXER: a-factoritzar.html
+    ROL: Activitat de factorització (descomposició en factors primers) per a
+         l'aula d'acollida. Adaptació de l'activitat factoritzar d'operacions.
+    JAVASCRIPT: js/a-factoritzar/a-factoritzar.js (pantalla, teclat, punts),
+         js/a-factoritzar/generador.js (nombres i arbre, lògica pura) i
+         js/a-factoritzar/vista.js (l'HTML de cada peça); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · Només hi ha nombres i símbols. Es parteix cada nombre de l'arbre en dos
+        factors («12 = ? · ?») fins que tots són primers (es posen en verd).
+      · Si la parella no és bona, no hi ha cap frase: surt la parella amb el seu
+        producte i ✖ («3 · 5 = 15 ✖») o, si un factor és 1, amb ✖ al costat
+        («1 ✖ · 12 = 12»).
+      · Botó 💡: els primers del nivell amb ✔ si divideixen el nombre i ✖ si no
+        («12: 2 ✔  3 ✔  5 ✖  7 ✖»).
+      · Si s'esgoten els intents, una parella correcta surt als camps, en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: nombres amb factors 2, 3 i 5.  (default)
+      Nivell 2: també el 7.
+      Nivell 3: també l'11.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── L'ARBRE DE FACTORS ──────────────────────────────── */
+        :root {
+            --node-active: #f59e0b;
+            --node-prime:  #15803d;
+            --node-done:   #94a3b8;
+        }
+        .tree-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        .tree-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+        .node-value {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 48px;
+            min-height: 48px;
+            padding: 6px 14px;
+            border-radius: 50%;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.3em;
+            font-weight: bold;
+            border: 3px solid var(--border-heavy);
+            background: white;
+            transition: all 0.3s;
+        }
+        .node-value.prime      { border-color: var(--node-prime); background: #dcfce7; color: #065f46; }
+        .node-value.prime-done { border-color: var(--node-done);  background: #f1f5f9; color: var(--text-muted); }
+        .node-value.active     { border-color: var(--node-active); background: #fef3c7; color: #92400e; animation: pulse 1.5s infinite; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        .node-value.decomposed { border-color: var(--node-done); background: #f1f5f9; color: var(--text-muted); }
+        .node-children {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+            position: relative;
+        }
+        .node-children::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            width: 0;
+            height: 8px;
+            border-left: 2px dashed var(--border-heavy);
+        }
+        .split-symbol {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            color: var(--text-muted);
+            font-weight: bold;
+            padding-top: 20px;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.08); }
+        }
+        .factorization-display {
+            text-align: center;
+            padding: 15px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #166534;
+            background: #dcfce7;
+            border-radius: 8px;
+            margin: 10px 20px;
+            animation: fadeIn 0.4s;
+        }
+        sup {
+            font-size: 0.7em; vertical-align: baseline; position: relative;
+            top: -0.55em; line-height: 0; margin-left: -0.1em;
+        }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .step-done-val        { font-family: 'Courier New', Courier, monospace; font-weight: 800; margin-left: 0.2em; }
+
+        /* La paraula del pas («total» o «canvi»): gran i ben visible */
+        .step-prompt {
+            font-size: 1.25em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+        .step-prompt .paraula-img { font-size: 1.4em; }
+
+        /* ── PAS: INPUT NUMÈRIC ──────────────────────────────── */
+        .step-container { display: none; flex-direction: column; align-items: center; width: 100%; gap: 12px; animation: fadeIn 0.3s; }
+        .step-container.active { display: flex; }
+
+        /* Input + € + OK + ajuda en una sola fila (sense scroll vertical) */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type="text"].factor-input {
+            width: 130px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"].factor-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        /* Quan s'esgoten els intents, la resposta correcta surt dins del mateix camp, en verd */
+        input[type="text"].factor-input.reveal {
+            border-color: var(--success);
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        /* ── BOTÓ OK (compacte, neutre) ──────────────────────── */
+        #btn-factor-submit {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #btn-factor-submit:focus-visible { outline: 3px solid var(--primary); }
+        #btn-factor-submit:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-factor-submit:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-factor-submit.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── LES PARTS DE LA RESPOSTA (després d'una resposta equivocada) ──
+         * Els euros i els cèntims, cadascun amb ✔ (bo) o ✖ (no): sense cap frase. */
+        .part-feedback {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            padding: 2px 14px;
+            border: 2px solid;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6em;
+            font-weight: 800;
+            animation: fadeIn 0.2s ease;
+        }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        .part.pista { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+        /* ── L'AJUDA: els primers que divideixen el nombre ───── */
+        .ajuda-fila { display: flex; gap: 12px; justify-content: center; align-items: baseline; flex-wrap: wrap; }
+        .ajuda-nombre { font-weight: 800; font-family: 'Courier New', Courier, monospace; color: #4d7c0f; }
+        .ajuda-nombre::after { content: ':'; }
+        .ajuda-primer { font-family: 'Courier New', Courier, monospace; font-weight: 800; white-space: nowrap; }
+        .ajuda-primer.divideix    { color: #166534; background: #dcfce7; border-radius: 6px; padding: 0 6px; }
+        .ajuda-primer.no-divideix { color: #94a3b8; }
+        .input-multiply { font-size: 0.8em; color: #64748b; }
+        .input-target   { color: #1c1f0e; }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .tree-container   { padding: 12px 6px; }
+            .node-value       { min-width: 40px; min-height: 40px; font-size: 1.1em; padding: 5px 10px; }
+            .answer-row       { font-size: 1.4em; gap: 6px; }
+            input[type="text"].factor-input { width: 72px; padding: 8px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text        { font-size: 1.05em; padding: 10px 14px; }
+            .part             { font-size: 1.3em; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Factoritzar</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Repte X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 3 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <!-- L'arbre de factors -->
+        <div class="tree-container" id="tree-container"></div>
+        <!-- El resultat: «✅ 12 = 2² · 3» -->
+        <div id="factorization-result" style="display:none;"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+            <div class="step-container active" id="step-active">
+                <!-- «12 = [ ] · [ ]  OK 💡» -->
+                <div class="answer-row" id="answer-row">
+                    <span class="input-target" id="step-target"></span>
+                    <span class="input-equals">=</span>
+                    <input type="text" id="factor-a-input" class="factor-input" autocomplete="off" inputmode="none"
+                           aria-label="Escriu la resposta">
+                    <span class="input-multiply">·</span>
+                    <input type="text" id="factor-b-input" class="factor-input" autocomplete="off" inputmode="none"
+                           aria-label="Escriu la resposta">
+                    <button class="btn-submit" id="btn-factor-submit" onclick="checkFactors()">OK</button>
+                    <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+                </div>
+
+                <!-- La parella equivocada: amb el seu producte i ✖ -->
+                <div class="part-feedback" id="part-feedback" aria-live="polite"></div>
+
+                <!-- L'ajuda: els primers que divideixen el nombre -->
+                <div class="help-text" id="help-text" aria-live="polite"></div>
+            </div>
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-factoritzar/a-factoritzar.js"></script>
+</body>
+</html>

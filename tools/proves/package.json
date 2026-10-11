@@ -1,0 +1,12 @@
+{
+  "name": "a2-proves",
+  "private": true,
+  "description": "Eines per executar els tests de navegador (Playwright). Només per al desenvolupament: el web no les fa servir. Vegeu COM-TREBALLAR.md.",
+  "scripts": {
+    "navegador": "node ../../tests/navegador/run.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "playwright": "1.56.1"
+  }
+}

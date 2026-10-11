@@ -1,0 +1,67 @@
+/*
+============================================================================
+PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
+FITXER: css/accessibilitat.css
+ROL: Fonaments d'accessibilitat comuns a TOTES les pàgines (activitats,
+     tutorials i portada):
+  1. Moviment reduït: si el sistema ho demana (prefers-reduced-motion), cap
+     animació ni transició dura res.
+  2. Focus visible: qui navega amb el teclat sempre veu on és.
+  3. Zones de toc: 24 px com a mínim per a tothom (WCAG 2.2, 2.5.8) i 44 px en
+     pantalles tàctils.
+DEPENDÈNCIES: Cap. S'ha de carregar a totes les pàgines.
+PROVES: tests/navegador/accessibilitat.test.js
+============================================================================
+*/
+
+/* ---- 1. MOVIMENT REDUÏT ----
+   Les animacions no s'esborren, es porten a la seva darrera imatge a l'instant:
+   així, el que apareix amb una animació (una entrada, un missatge) apareix igualment. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ---- 2. FOCUS VISIBLE ----
+   Base per a qualsevol element. Té poca especificitat: els components que ja
+   tenen el seu focus (botons, camps de resposta) la tenen per sobre. */
+:focus-visible {
+    outline: 3px solid var(--primary, #1d4ed8);
+    outline-offset: 2px;
+}
+
+/* ---- 3. ZONES DE TOC ---- */
+button,
+[role='button'],
+select,
+.cd-trigger {
+    min-width: 24px;
+    min-height: 24px;
+}
+@media (pointer: coarse) {
+    button,
+    [role='button'],
+    select,
+    .cd-trigger,
+    a.home-icon-link,
+    a.footer-logo {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+/* El botó de pausa dels tutorials s'ha de trobar d'una ullada, sense llegir res (R20, TODO-2):
+   gran, amb la icona ben visible */
+button.btn-pause {
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 1.7em;
+    line-height: 1;
+}

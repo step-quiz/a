@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Temperatura — versió adaptada per a diversitat" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Temperatura</title>
+
+        <!--
+    ============================================================
+    FITXER: a-recta-numerica.html
+    ROL: «Temperatura»: llegir un gràfic de la temperatura (ºC) de fins a 8 dies
+         (avui és el 0) per a l'aula d'acollida. Adaptació de recta-numerica.html
+         d'operacions: recta numèrica doble, sense frases i sense lletres de Google.
+    JAVASCRIPT: js/a-recta-numerica/a-recta-numerica.js (pantalla i punts),
+         generador.js (el gràfic i les preguntes, lògica pura) i vista.js (el gràfic i
+         la pregunta en HTML); motor comú a js/game-core.js.
+
+    LES PREGUNTES (només xifres i símbols; es tria una opció):
+      ☀️ avui → 🌡️ ? ºC     la temperatura d'avui (Q1)
+      📅 ahir → 🌡️ ? ºC     la d'un altre dia: «ahir», «demà» o el nombre del dia («−3», «+2») (Q2)
+      🌡️ 3 ºC → 📅 ?        quants dies hi ha amb aquesta temperatura (Q3; nivells 2 i 3)
+      📅 ? → 🥵 / 🥶         quin dia fa més calor o més fred (Q4; nivell 3)
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: Q1 i Q2, eix de −6 a 6 i el dia de la pregunta ressaltat al gràfic.
+      Nivell 2: + Q3; de tant en tant, l'eix de −5 a 20. (default)
+      Nivell 3: + Q4; de tant en tant, l'eix de −10 a 40; distractors subtils.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 6)
+      ?maxintents=N       (default 3)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+        <script>
+            window.APP_CONFIG = {
+                defaultSessions: 1,
+                defaultOperations: 6,
+                defaultIntents: 3,
+            };
+        </script>
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+
+        <style>
+            /* ── PALETA VERDA ────────────────────────────────────────── */
+            :root {
+                --primary: #5a6a1e;
+                --primary-light: #e5e8c8;
+                --primary-hover: #3d4a14;
+                --primary-dark: #1c1f0e;
+            }
+            h1 {
+                color: #1c1f0e;
+                margin-bottom: 2px;
+            }
+            .title-row {
+                margin-bottom: 6px;
+            }
+            .panel {
+                border-top-color: var(--primary);
+            }
+            .level-row {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+            }
+            .nivell-badge {
+                font-size: 0.9em;
+                color: var(--text-muted);
+                font-weight: 600;
+            }
+            @media (max-width: 480px) {
+                .level-row {
+                    justify-content: center;
+                }
+                .level-row .level-text {
+                    width: auto;
+                }
+            }
+
+            /* ── GRÀFIC + PREGUNTA ───────────────────────────────────── */
+            .game-body {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                padding: 16px 16px 18px;
+            }
+            #graph-container {
+                width: 100%;
+                max-width: 560px;
+                aspect-ratio: 560 / 420;
+                margin: 0 auto;
+                background: #fff;
+                border: 2px solid var(--border-color);
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            .game-left {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                align-items: center;
+            }
+            #question-prompt {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                font-size: 1.6em;
+                font-family: 'Courier New', Courier, monospace;
+                font-weight: bold;
+            }
+            .xip {
+                padding: 6px 14px;
+                border-radius: 10px;
+                border: 2px solid transparent;
+                white-space: nowrap;
+            }
+            .xip-dia {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+                color: #1e3a8a;
+            }
+            .xip-temp {
+                background: var(--primary-light);
+                border-color: var(--primary);
+                color: var(--primary-dark);
+            }
+            .fletxa {
+                color: #64748b;
+            }
+
+            /* ── OPCIONS ─────────────────────────────────────────────── */
+            .options-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+                width: 100%;
+                max-width: 460px;
+            }
+            .btn-option {
+                min-height: 56px;
+                padding: 10px 12px;
+                font-size: 1.5em;
+                font-weight: 800;
+                font-family: 'Courier New', Courier, monospace;
+                color: #1e293b;
+                background: #ffffff;
+                border: 2px solid var(--border-heavy);
+                border-radius: 12px;
+                cursor: pointer;
+                transition:
+                    background 0.15s,
+                    border-color 0.15s,
+                    transform 0.1s;
+                touch-action: manipulation;
+            }
+            .btn-option:focus-visible {
+                outline: 3px solid var(--primary);
+                outline-offset: 2px;
+            }
+            @media (hover: hover) {
+                .btn-option:not(:disabled):hover {
+                    background: var(--primary-light);
+                    border-color: var(--primary);
+                }
+            }
+            .btn-option:active:not(:disabled) {
+                transform: scale(0.97);
+            }
+            .btn-option.correct {
+                background: #dcfce7;
+                border-color: var(--success);
+                color: #166534;
+            }
+            .btn-option.wrong {
+                background: var(--danger-light);
+                border-color: var(--danger);
+                color: #b91c1c;
+                animation: shake 0.2s;
+            }
+            .btn-option.reveal-answer {
+                background: #dcfce7;
+                border-color: var(--success);
+                color: #166534;
+                box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.35);
+            }
+            .btn-option:disabled {
+                cursor: default;
+            }
+
+            @keyframes attemptsBlink {
+                0%,
+                100% {
+                    background-color: #fef3c7;
+                    border-color: #d1d5db;
+                    color: #334155;
+                }
+                50% {
+                    background-color: #e5e7eb;
+                    border-color: #f59e0b;
+                    color: #334155;
+                }
+            }
+            .attempts-counter.blink {
+                animation: attemptsBlink 0.2s linear 5;
+            }
+
+            /* Pantalles amples: el gràfic a l'esquerra i la pregunta amb les opcions a la dreta */
+            @media (min-width: 900px) {
+                .game-body {
+                    flex-direction: row;
+                    align-items: center;
+                }
+                #graph-container {
+                    flex: 1 1 62%;
+                    margin: 0;
+                }
+                .game-left {
+                    flex: 1 1 38%;
+                }
+                #question-prompt {
+                    font-size: 1.4em;
+                }
+            }
+            @media (max-width: 480px) {
+                .game-body {
+                    padding: 10px 8px 14px;
+                }
+                #question-prompt {
+                    font-size: 1.3em;
+                    gap: 6px;
+                }
+                .btn-option {
+                    font-size: 1.3em;
+                }
+            }
+        </style>
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <div class="title-row">
+            <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+                <img src="icon-green.png" alt="Inici" onerror="this.style.display = 'none'" />
+            </a>
+            <h1>Temperatura</h1>
+        </div>
+
+        <div class="panel" id="main-panel">
+            <div id="game-screen" style="display: none">
+                <!-- Capçalera: Sessió | Repte X de Y · Nivell | Punts | Intents -->
+                <div class="header-info">
+                    <div class="header-left">
+                        <div class="session-text" id="session-display"></div>
+                        <div class="level-row">
+                            <div class="level-text" id="lvl-display"></div>
+                            <div class="nivell-badge" id="nivell-display"></div>
+                        </div>
+                    </div>
+                    <div class="score-text" id="score-display"></div>
+                    <div id="attempts-display" class="attempts-counter"></div>
+                </div>
+
+                <div class="game-body">
+                    <!-- El gràfic -->
+                    <div id="graph-container"></div>
+                    <!-- La pregunta i les opcions -->
+                    <div class="game-left">
+                        <div id="question-prompt"></div>
+                        <div id="options-container" class="options-grid"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+        </div>
+
+        <script type="module" src="js/a-recta-numerica/a-recta-numerica.js"></script>
+    </body>
+</html>

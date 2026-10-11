@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MCD i MCM — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>MCD i MCM</title>
+
+    <!--
+    ============================================================
+    FITXER: a-mcd-mcm.html
+    ROL: Activitat de MCD i MCM (màxim comú divisor i mínim comú múltiple) per a
+         l'aula d'acollida. Adaptació de l'activitat mcd-mcm d'operacions.
+    JAVASCRIPT: js/a-mcd-mcm/a-mcd-mcm.js (pantalla, teclat, punts),
+         js/a-mcd-mcm/generador.js (parells, MCD i MCM, lògica pura) i
+         js/a-mcd-mcm/vista.js (l'HTML de cada peça); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · Només hi ha nombres i les sigles MCD i MCM. Cada pregunta té dos passos:
+        primer «MCD (12, 18) =» i, quan s'encerta, «MCM (12, 18) =».
+      · Si la resposta no és bona, no hi ha cap frase: surten dues divisions amb ✔ o ✖
+        que diuen si és divisor (MCD) o múltiple (MCM) dels dos nombres («12 ÷ 4 ✔  27 ÷ 4 ✖»).
+        Si les dues són ✔ la resposta serveix però no és la millor: ⬆ n'hi ha una de més
+        gran (MCD) o ⬇ una de més petita (MCM).
+      · Botó 💡: els divisors de cada nombre (MCD, amb els comuns en destacat) o els
+        seus múltiples fins al MCM (amb el primer comú en destacat).
+      · Si s'esgoten els intents, la resposta correcta surt al camp, en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: nombres amb factors 2, 3 i 5; la factorització és sempre a la vista.  (default)
+      Nivell 2: també el 7; la factorització només surt amb l'ajuda 💡.
+      Nivell 3: també l'11; la factorització només surt amb l'ajuda 💡.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── ELS DOS NOMBRES ─────────────────────────────────── */
+        .numbers-display {
+            padding: 24px 20px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .nombre-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+            padding: 10px 18px 12px;
+            border: 2px solid;
+            border-radius: 14px;
+            animation: fadeIn 0.3s;
+        }
+        .nombre-a { background: #ecfccb; border-color: #bef264; color: #365314; }
+        .nombre-b { background: #e0f2fe; border-color: #7dd3fc; color: #0c4a6e; }
+        .nombre-gran {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2.6em;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+        .nombre-factors, .ajuda-factors {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.15em;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .nombre-factors strong, .ajuda-factors strong { font-weight: 800; }
+        sup {
+            font-size: 0.7em; vertical-align: baseline; position: relative;
+            top: -0.55em; line-height: 0; margin-left: -0.1em;
+        }
+        /* Les sigles MCD i MCM */
+        .sigla { font-weight: 800; letter-spacing: 0.03em; }
+        .sigla-mcd { color: #3f6212; }
+        .sigla-mcm { color: #5b21b6; }
+        .pas-nombres { font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .step-done-val        { font-family: 'Courier New', Courier, monospace; font-weight: 800; margin-left: 0.2em; }
+
+        /* La paraula del pas («total» o «canvi»): gran i ben visible */
+        .step-prompt {
+            font-size: 1.25em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+        .step-prompt .paraula-img { font-size: 1.4em; }
+
+        /* ── PAS: INPUT NUMÈRIC ──────────────────────────────── */
+        .step-container { display: none; flex-direction: column; align-items: center; width: 100%; gap: 12px; animation: fadeIn 0.3s; }
+        .step-container.active { display: flex; }
+
+        /* Input + € + OK + ajuda en una sola fila (sense scroll vertical) */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        input[type="text"]#value-input {
+            width: 130px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"]#value-input:focus {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        /* Quan s'esgoten els intents, la resposta correcta surt dins del mateix camp, en verd */
+        input[type="text"]#value-input.reveal {
+            border-color: var(--success);
+            background: #dcfce7;
+            color: #166534;
+        }
+
+
+        /* ── BOTÓ OK (compacte, neutre) ──────────────────────── */
+        #btn-submit-val {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #btn-submit-val:focus-visible { outline: 3px solid var(--primary); }
+        #btn-submit-val:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-submit-val:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-submit-val.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── LES PARTS DE LA RESPOSTA (després d'una resposta equivocada) ──
+         * Els euros i els cèntims, cadascun amb ✔ (bo) o ✖ (no): sense cap frase. */
+        .part-feedback {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            padding: 2px 14px;
+            border: 2px solid;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6em;
+            font-weight: 800;
+            animation: fadeIn 0.2s ease;
+        }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        .part.pista { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+        /* ── L'AJUDA: divisors i múltiples ──────────────────── */
+        .ajuda-fila { display: flex; gap: 10px; justify-content: center; align-items: baseline; flex-wrap: wrap; }
+        .ajuda-nombre { font-weight: 800; font-family: 'Courier New', Courier, monospace; }
+        .ajuda-nombre::after { content: ':'; }
+        .ajuda-llista { font-family: 'Courier New', Courier, monospace; font-weight: 600; }
+        .ajuda-a .ajuda-nombre { color: #4d7c0f; }
+        .ajuda-b .ajuda-nombre { color: #0369a1; }
+        .comu {
+            background: #fde68a; color: #78350f; border-radius: 6px; padding: 0 5px;
+            font-weight: 800;
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .numbers-display  { padding: 16px 12px 12px; gap: 10px; }
+            .nombre-card      { min-width: 100px; padding: 8px 12px 10px; }
+            .nombre-gran      { font-size: 2.1em; }
+            .nombre-factors   { font-size: 1em; }
+            .answer-row       { font-size: 1.6em; }
+            input[type="text"]#value-input { width: 110px; padding: 10px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .step-prompt      { font-size: 1.1em; }
+            .help-text        { font-size: 1.05em; padding: 10px 14px; }
+            .part             { font-size: 1.4em; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>MCD i MCM</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Repte X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 3 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <!-- Els dos nombres (i, al nivell 1, la seva factorització) -->
+        <div class="numbers-display" id="numbers-display"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+
+            <!-- Passos ja fets (el MCD, quan es demana el MCM) -->
+            <div id="steps-done"></div>
+
+            <!-- Pas actiu -->
+            <div class="step-container active" id="step-active">
+                <!-- El pas: «MCD (12, 18) =» -->
+                <div class="step-prompt" id="step-prompt"></div>
+
+                <!-- Input + OK + ajuda en una sola fila -->
+                <div class="answer-row" id="answer-row">
+                    <input type="text" id="value-input" autocomplete="off" inputmode="numeric"
+                           aria-label="Escriu la resposta" aria-describedby="step-prompt">
+                    <button class="btn-submit" id="btn-submit-val" onclick="checkValue()">OK</button>
+                    <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+                </div>
+
+                <!-- La resposta equivocada: les dues divisions amb ✔ o ✖ -->
+                <div class="part-feedback" id="part-feedback" aria-live="polite"></div>
+
+                <!-- L'ajuda: divisors o múltiples -->
+                <div class="help-text" id="help-text" aria-live="polite"></div>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-mcd-mcm/a-mcd-mcm.js"></script>
+</body>
+</html>

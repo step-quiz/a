@@ -9,24 +9,19 @@ ARQUITECTURA:
 - Inclou disseny responsiu (Mobile First) i accessibilitat (@media hover, 
   focus-visible).
 - Conté els estils del teclat numèric customitzat i les pantalles finals.
-DEPENDÈNCIES: S'ha de carregar PRIMER a l'HTML, abans del CSS específic.
+DEPENDÈNCIES: css/tokens.css (colors comuns: text, vores, encert, error), que s'ha
+  de carregar ABANS. Aquest fitxer va abans del CSS específic de cada activitat.
 ============================================================================
 */
-/* ---- VARIABLES BASE (fallbacks si el joc no les defineix) ---- */
+/* ---- VARIABLES DE TEMA (fallbacks si el joc no les defineix) ----
+   Els colors comuns (--text-main, --text-muted, --danger, --success, les vores…)
+   són a css/tokens.css. */
 :root {
     --bg-color:      #f8fafc;
-    --panel-bg:      #ffffff;
-    --text-main:     #1e293b;
-    --text-muted:    #64748b;
     --primary:       #0369a1;
     --primary-light: #e0f2fe;
     --primary-hover: #2563eb;
     --primary-dark:  #0f172a;
-    --danger:        #ef4444;
-    --danger-light:  #fef2f2;
-    --success:       #10b981;
-    --border-color:  #e2e8f0;
-    --border-heavy:  #cbd5e1;
 }
 
 /* ---- RESET BASE ---- */
@@ -127,7 +122,7 @@ h1 {
 .header-left       { display: flex; flex-direction: column; gap: 2px; }
 .session-text      { font-size: 1em;  color: var(--text-muted); }
 .level-text        { font-size: 1.2em; color: #334155; }
-.score-text        { font-size: 1.2em; color: #059669; font-family: monospace; }
+.score-text        { font-size: 1.2em; color: var(--success); font-family: monospace; }
 
 .attempts-counter {
     font-family: monospace;
@@ -169,7 +164,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* ---- BOTÓ VERD (sessió completada) ---- */
 .btn-green {
-    background-color: #059669;
+    background-color: var(--success);
     color: white;
     border: none;
     padding: 15px 35px;
@@ -183,7 +178,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .btn-green:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 .btn-green:active        { transform: scale(0.95); }
-@media (hover: hover) { .btn-green:hover { background-color: #047857; } }
+@media (hover: hover) { .btn-green:hover { background-color: #065f46; } }
 
 /* ---- BOTÓ FINALITZAR ---- */
 .btn-finalitzar {
@@ -239,11 +234,27 @@ input[type="number"] { -moz-appearance: textfield; }
 .final-summary .session-line {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 10px;
     padding: 4px 0;
     border-bottom: 1px solid var(--border-color);
     font-family: monospace;
     font-size: 1.1em;
 }
+.final-summary .session-line--total {
+    font-weight: 800;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 2px solid var(--border-heavy);
+    border-bottom: none;
+}
+
+/* ---- ESTRELLES I PUNTS (pantalla final) ---- */
+.final-score  { text-align: center; }
+.final-points { font-size: 1.5em; font-family: monospace; color: var(--text-main); margin-top: 6px; }
+.stars        { display: inline-flex; gap: 4px; font-size: 2.2em; line-height: 1; }
+.session-line .stars { font-size: 1.3em; gap: 2px; }
+.star.off     { filter: grayscale(1); opacity: 0.25; }
 
 /* ---- ICONA TROFEU ---- */
 .trophy-icon { font-size: 6em; margin-bottom: 10px; animation: bounce 1.5s infinite; }
@@ -283,7 +294,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 .mini-vic-points {
-    color: #059669;
+    color: var(--success);
     font-size: 1.3em;
     font-weight: bold;
     font-family: monospace;
@@ -329,6 +340,8 @@ input[type="number"] { -moz-appearance: textfield; }
     .mini-vic-points{ font-size: 1.1em; }
     .final-layout   { gap: 15px; }
     .final-layout .trophy-icon { font-size: 4em; }
+    .stars          { font-size: 1.9em; }
+    .session-line .stars { font-size: 1.1em; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -499,47 +512,171 @@ input[type="number"] { -moz-appearance: textfield; }
     padding: 10px 14px;
     font-size: 0.95em;
 }
-
-.btn-action-primary { background-color: var(--primary); }
-.btn-action-copy    { background-color: #a84359; color: white; }
-
-.history-summary-screen { display: none; }
-.history-summary {
-    text-align: left;
+/* Botons un al costat de l'altre (pantalla final) */
+.final-actions--row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
 }
-.history-summary h2 {
-    text-align: center;
-    color: var(--primary);
-    margin: 0 0 18px 0;
-}
-.history-title {
-    margin: 18px 0 10px 0;
-    padding-bottom: 6px;
-    border-bottom: 2px solid;
-    font-size: 1.1em;
-}
-.history-title--ok  { color: var(--success); border-color: var(--success); }
-.history-title--bad { color: var(--danger);  border-color: var(--danger); }
+.final-actions--row > button { width: auto; max-width: none; }
+.final-actions--row .btn-submit,
+.history-actions .btn-submit { text-transform: none; }
 
+/* ---- REVISIÓ VISUAL DE LES RESPOSTES ---- */
+.history-summary { text-align: left; }
+.history-heading { text-align: center; font-size: 2em; margin: 0 0 14px 0; }
 .history-list {
     list-style: none;
     padding: 0;
     margin: 0 0 8px 0;
 }
 .history-item {
-    margin-bottom: 12px;
-    padding: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
+    border-left-width: 6px;
 }
-.history-item--ok  { background: #f0fdf4; border-color: #bbf7d0; }
-.history-item--bad { background: #fef2f2; border-color: #fecaca; }
+.history-item--ok  { background: #f0fdf4; border-color: #bbf7d0; border-left-color: #047857; }
+.history-item--bad { background: #fef2f2; border-color: #fecaca; border-left-color: #b91c1c; }
 
-.history-q { margin-bottom: 6px; color: #334155; }
-.history-mono { font-family: monospace; font-size: 1.05em; }
-.history-a--ok  { color: #059669; }
-.history-a--bad { color: #dc2626; }
+.history-q    { margin-bottom: 4px; color: #475569; font-size: 0.95em; }
+.history-mono { font-family: monospace; }
+.history-a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25em;
+    font-weight: 700;
+    color: var(--text-main);
+}
+.history-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 0.85em;
+    line-height: 1;
+}
+.history-item--ok  .history-icon { background: #047857; }
+.history-item--bad .history-icon { background: #b91c1c; }
 
-.history-empty { color: var(--text-muted); font-style: italic; margin: 6px 0 0; }
+.history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 18px;
+}
 
-.history-actions { text-align: center; margin-top: 18px; }
+/* ---- PARAULES AMB IMATGE (lèxic, js/lexicon/paraula.js) ----
+   Una paraula del lèxic dins d'un text, amb la seva imatge davant: «[imatge] al pis».
+   La imatge és decorativa (aria-hidden): el text ja diu la paraula. Els colors es poden
+   canviar des de cada activitat amb --paraula-vora, --paraula-fons i --paraula-destac. */
+.paraula {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.05em 0.55em 0.05em 0.3em;
+    border: 1px solid var(--paraula-vora, #cbd5e1);
+    border-radius: 999px;
+    background: var(--paraula-fons, #ffffff);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.paraula-img {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+.pict { width: 1.5em; height: 1.5em; }
+.pict rect, .pict line, .pict circle, .pict path { stroke: currentColor; stroke-width: 1.2; }
+.pict-fons    { fill: var(--paraula-fons, #ffffff); }
+.pict-destac  { fill: var(--paraula-destac, #f59e0b); }
+.pict-negre   { fill: currentColor; }
+.pict-linia   { fill: none; }
+.pict-apagat  { opacity: 0.4; }
+.pict line.pict-terra { stroke-width: 2; }
+
+/* ---- APRÈN LA PARAULA (js/targeta-paraula.js) ----
+   Una paraula amb imatge es pot tocar: n'obre la targeta (la imatge gran i la paraula). Mentre
+   l'alumne no n'ha obert la targeta, la píndola porta el distintiu «paraula nova»: la vora d'un
+   altre color i un punt (sense text: no cal llegir res). */
+.paraula[role='button'] { cursor: pointer; }
+.paraula[role='button']:hover { border-color: var(--paraula-destac, #f59e0b); }
+.paraula-nova {
+    position: relative;
+    border-color: var(--paraula-destac, #f59e0b);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+.paraula-nova::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: -5px;
+    width: 12px;
+    height: 12px;
+    box-sizing: border-box;
+    border: 2px solid var(--paraula-fons, #ffffff);
+    border-radius: 50%;
+    background: var(--paraula-destac, #f59e0b);
+}
+.targeta-paraula {
+    width: min(90vw, 22rem);
+    padding: 1.6rem 1.4rem 1.4rem;
+    border: none;
+    border-radius: 24px;
+    background: var(--panel-bg, #ffffff);
+    color: var(--text-main, #1e293b);
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+}
+.targeta-paraula::backdrop { background: rgba(15, 23, 42, 0.55); }
+.targeta-img { display: flex; justify-content: center; font-size: 6rem; line-height: 1; }
+.targeta-img .pict { width: 1.5em; height: 1.5em; }
+.targeta-nom { margin: 0.6rem 0 0; font-size: 2rem; font-weight: 800; line-height: 1.15; }
+.targeta-plural { margin: 0.3rem 0 0; font-size: 1.25rem; font-weight: 600; color: var(--text-muted, #475569); }
+.targeta-plural[hidden] { display: none; }
+.targeta-ok { margin-top: 1.3rem; min-width: 8rem; min-height: 48px; font-size: 1.2em; }
+
+/* ---- MINI-EXEMPLES MATEMÀTICS (imatge { mates } del lèxic: «equació» → x + 3 = 8) ----
+   Els termes de matemàtiques no es poden dibuixar amb un emoji: la seva imatge és un petit exemple. El tamany és
+   relatiu al de la imatge on van (l'emoji d'una carta, la targeta…). */
+.mat { display: inline-flex; flex-direction: column; align-items: center; gap: 0.15em; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-size: 0.4em; line-height: 1.15; color: #1e293b; text-align: center; }
+.mat-linia { display: inline-flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 0.3em; white-space: nowrap; }
+.mat-frac { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.mat-frac > span:first-child { padding: 0 0.3em 0.05em; border-bottom: 0.1em solid currentColor; }
+.mat-frac > span:last-child { padding: 0.05em 0.3em 0; }
+.mat sup { font-size: 0.62em; line-height: 0; position: relative; top: -0.1em; }
+.mat-dest { padding: 0 0.15em; background: #fde68a; border-radius: 0.2em; }
+.mat-caixa { padding: 0 0.4em; font-size: 1.8em; border: 0.1em dashed currentColor; border-radius: 0.25em; }
+.mat-p { font-size: 0.3em; }
+.mat .mat { font-size: 1em; }
+.mat-emoji { font-size: 2.6em; line-height: 1; font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }
+/* Dibuixos de geometria (js/lexicon/mates.js): l = línia, f/f2/f3 = farcits, d/df = destacat, g = guia, p = punt */
+.mat-svg { width: 5em; height: 3.75em; overflow: visible; color: #1e293b; }
+.mat-svg .l { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.mat-svg .f { fill: #e2e8f0; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; }
+.mat-svg .f2 { fill: #cbd5e1; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; }
+.mat-svg .f3 { fill: #94a3b8; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; }
+.mat-svg .d { fill: none; stroke: #d97706; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.mat-svg .df { fill: #fde68a; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; }
+.mat-svg .g { fill: none; stroke: #64748b; stroke-width: 1.8; stroke-dasharray: 3 3; stroke-linecap: round; }
+.mat-svg .t { fill: none; stroke: currentColor; stroke-width: 0.9; }
+.mat-svg .p { fill: currentColor; stroke: none; }
+.mat-svg text { font: 800 9px 'Courier New', Courier, monospace; fill: currentColor; }
+.mat-pos { color: #166534; }
+.mat-neg { color: #b91c1c; }
+
+/* Alt contrast del sistema (forced-colors): els colors fixos s'hi veurien malament; es fan servir els del sistema. */
+@media (forced-colors: active) {
+    .pict-fons   { fill: Canvas; }
+    .pict-destac { fill: Highlight; }
+    .paraula-nova::after { background: Highlight; border-color: Canvas; }
+    .mat-dest { background: Highlight; color: HighlightText; }
+}

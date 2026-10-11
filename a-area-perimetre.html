@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Àrea i perímetre — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Àrea i perímetre</title>
+
+    <!--
+    ============================================================
+    FITXER: a-area-perimetre.html
+    ROL: Activitat d'àrea i perímetre de figures de quadrats d'1 cm (triominós,
+         tetrominós i pentominós) per a l'aula d'acollida. Adaptació de l'activitat
+         area-perimetre d'operacions.
+    JAVASCRIPT: js/a-area-perimetre/a-area-perimetre.js (pantalla, teclat, punts),
+         js/a-area-perimetre/generador.js (figures, àrea i perímetre, lògica pura) i
+         js/a-area-perimetre/vista.js (el dibuix i les peces); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · Només hi ha la figura, nombres i símbols. Dues caselles, cada una amb la seva icona i
+        la seva unitat: «▦ àrea (cm²)» (els quadrats de dins) i «▢ perímetre (cm)» (la vora).
+      · Si una resposta no és bona, no hi ha cap frase: surt ✖ al costat de la casella; la que
+        és bona es queda bloquejada en verd amb ✔. Si l'àrea i el perímetre estan canviats, surt ⇄.
+      · Botó 💡 (cada toc fa el següent): els quadrats numerats (àrea) → els costats de la vora
+        numerats, donant la volta (perímetre) → res.
+      · Si s'esgoten els intents, les respostes correctes surten a les caselles, en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: figures de 3 i 4 quadrats.  (default)
+      Nivell 2: figures de 3, 4 i 5 quadrats (sobretot de 4 i 5).
+      Nivell 3: sobretot figures de 5 quadrats.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── LA FIGURA I ELS CONTROLS ────────────────────────── */
+        .game-content {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 16px 32px;
+            padding: 20px 16px;
+        }
+        .figura-container { display: flex; justify-content: center; flex: 0 0 auto; max-width: 100%; }
+        .figura-svg { max-width: 100%; height: auto; }
+        .col-controls { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        .mesura-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .etiqueta { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.15em; color: #334155; min-width: 11.5em; }
+        .etiqueta-icona { display: inline-flex; }
+        .unitat { font-family: 'Courier New', Courier, monospace; color: #64748b; font-weight: 600; }
+        input[type="text"].mesura-input {
+            width: 90px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6em;
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            border: 2px solid var(--border-heavy);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"].mesura-input:focus { border-color: var(--primary); background: var(--primary-light); }
+        /* Una casella encertada es queda bloquejada, en verd */
+        input[type="text"].mesura-input.input-locked,
+        input[type="text"].mesura-input.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+        .marca { display: inline-flex; width: 1.6em; justify-content: center; font-size: 1.5em; font-weight: 800; }
+        .marca.bo { color: #166534; }
+        .marca.mal { color: #b91c1c; }
+        .marca.canvi { color: #92400e; }
+        .canviats { min-height: 1.6em; font-size: 1.4em; }
+        .action-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 2em; }
+
+        /* ── BOTÓ OK (compacte, neutre) ──────────────────────── */
+        #btn-ok {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #btn-ok:focus-visible { outline: 3px solid var(--primary); }
+        #btn-ok:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-ok:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-ok.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── LES PARTS DE LA RESPOSTA (després d'una resposta equivocada) ──
+         * Els euros i els cèntims, cadascun amb ✔ (bo) o ✖ (no): sense cap frase. */
+        .part-feedback {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            padding: 2px 14px;
+            border: 2px solid;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6em;
+            font-weight: 800;
+            animation: fadeIn 0.2s ease;
+        }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        .part.pista { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .game-content     { padding: 12px 8px; gap: 12px; }
+            .etiqueta         { min-width: 10.5em; font-size: 1.05em; }
+            input[type="text"].mesura-input { width: 76px; font-size: 1.4em; }
+            .action-row       { font-size: 1.6em; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Àrea i perímetre</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Figura X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 3 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <div class="game-content" id="game-content">
+
+            <!-- La figura, amb les cotes d'1 cm (i, amb el 💡, els quadrats o els costats numerats) -->
+            <div class="figura-container" id="figura-container"></div>
+
+            <div class="col-controls">
+                <!-- Àrea i perímetre: la icona, la paraula, la unitat, la casella i la marca ✔/✖ -->
+                <div class="mesura-row">
+                    <label class="etiqueta" id="area-etiqueta" for="area-input"></label>
+                    <input type="text" id="area-input" class="mesura-input" autocomplete="off" maxlength="2"
+                           aria-labelledby="area-etiqueta">
+                    <span id="area-marca" aria-live="polite"></span>
+                </div>
+                <div class="canviats" id="canviats" aria-live="polite"></div>
+                <div class="mesura-row">
+                    <label class="etiqueta" id="perim-etiqueta" for="perim-input"></label>
+                    <input type="text" id="perim-input" class="mesura-input" autocomplete="off" maxlength="2"
+                           aria-labelledby="perim-etiqueta">
+                    <span id="perim-marca" aria-live="polite"></span>
+                </div>
+
+                <div class="action-row">
+                    <button class="btn-submit" id="btn-ok" onclick="checkAnswers()">OK</button>
+                    <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-area-perimetre/a-area-perimetre.js"></script>
+</body>
+</html>

@@ -23,6 +23,7 @@
       background: var(--bg);
       color: var(--text);
       height: 100vh;
+      height: 100dvh;   /* mòbil: no tapat per la barra del navegador */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -181,7 +182,7 @@
       padding: 5px 12px; background: #dcfce7;
       border: 2px solid #86efac; border-radius: 9px; color: #166534;
     }
-    .prob-arrow { color: #94a3b8; font-size: 0.75em; }
+    .prob-arrow { color: #64748b; font-size: 0.75em; }
 
     .step-done-mock {
       color: #166534; font-weight: 700;
@@ -312,6 +313,7 @@
       .prob-row      { font-size: 1.2em; }
     }
   </style>
+  <link rel="stylesheet" href="css/accessibilitat.css">
   <link rel="stylesheet" href="css/chromebook.css">
 </head>
 <body>
@@ -590,7 +592,7 @@ function _advance() {
     const overlay = document.getElementById('fade-overlay');
     overlay.style.pointerEvents = 'all';
     overlay.style.opacity       = '1';
-    setTimeout(() => { window.location.href = 'a-proporciodirecta.html'; }, 1200);
+    setTimeout(() => { window.location.href = 'a-proporciodirecta.html' + window.location.search; }, 1200);
     return;
   }
   if (isLastStep) { exIdx++; stepIdx = 0; }

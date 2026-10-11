@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fraccions — versió adaptada per a diversitat">
+    <link rel="icon" href="icon-green.png">
+    <title>Fraccions</title>
+
+    <!--
+    ============================================================
+    FITXER: a-fraccions.html
+    ROL: Activitat d'operacions amb fraccions (suma, resta, producte i divisió) per
+         a l'aula d'acollida. Adaptació de l'activitat fraccions d'operacions.
+    JAVASCRIPT: js/a-fraccions/a-fraccions.js (pantalla, teclat, punts),
+         js/a-fraccions/generador.js (problemes i avaluació dels passos, lògica pura) i
+         js/a-fraccions/vista.js (l'HTML de cada peça); motor comú a js/game-core.js.
+
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · Només hi ha fraccions, nombres i símbols. L'expressió va creixent amb una línia
+        «= …» per cada pas bo. Els passos, amb caselles:
+          «4 → [ ] ← 6»   un denominador comú (múltiple dels dos)
+          «3/4 = [ ]/12»  els numeradors equivalents
+          «[ ]/[ ]»       la segona fracció girada (només a la divisió)
+          «= [ ]/[ ]»     el resultat
+          «✂️ = [ ]/[ ]»  el resultat simplificat (si encara es pot)
+      · Si no és bo, no hi ha cap frase: el que s'ha escrit surt amb ✔ o ✖ («12 ÷ 4 ✔  12 ÷ 6 ✖»,
+        «9 ✔», «5 ✔  7 ✖»). Una fracció bona però simplificable surt amb ⟳ i es torna a provar.
+      · Botó 💡: els múltiples dels denominadors, els factors «×3», la fracció girada, l'operació
+        amb els numeradors o els primers que divideixen el resultat («2 ✔  3 ✖»).
+      · Si s'esgoten els intents, la solució del pas surt a les caselles, en verd.
+
+    NIVELLS (via ?nivell=):
+      Nivell 1: suma i resta amb el mateix denominador.  (default)
+      Nivell 2: suma i resta; un denominador és múltiple de l'altre.
+      Nivell 3: suma i resta amb denominadors diferents.
+      Nivell 4: producte i divisió.
+
+    PARÀMETRES URL COMPARTITS (via config.js):
+      ?totalsessions=N    (default 1)
+      ?totaloperations=N  (default 4)
+      ?maxintents=N       (default 5)
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
+    ============================================================
+    -->
+
+    <script>
+        window.APP_CONFIG = {
+            defaultSessions:      1,
+            defaultOperations:    4,
+            defaultIntents:       5
+        };
+    </script>
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
+
+    <style>
+        /* ── PALETA VERDA (coherent amb a-enters / a-equacions) ── */
+        :root {
+            --bg-color:      #f8fafc;
+            --primary:       #5a6a1e;
+            --primary-light: #e5e8c8;
+            --primary-hover: #3d4a14;
+            --primary-dark:  #1c1f0e;
+        }
+
+        h1         { color: #1c1f0e; margin-bottom: 2px; }
+        .title-row { margin-bottom: 6px; }
+        .panel     { border-top-color: var(--primary); }
+
+        /* ── L'EXPRESSIÓ, QUE VA CREIXENT ────────────────────── */
+        .expression-box {
+            padding: 24px 16px 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .expr-line, .step-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            gap: 3px;
+        }
+        .math-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 46px;
+            height: 46px;
+            font-size: 1.6rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+        input[type="text"].math-cell {
+            display: inline-block;
+            width: 56px;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            line-height: 42px;
+            border: 2px solid var(--border-heavy);
+            border-radius: 6px;
+            outline: none;
+            background-color: white;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        input[type="text"].math-cell:focus { border-color: var(--primary); background: var(--primary-light); }
+        /* Quan s'esgoten els intents, la solució surt a les caselles, en verd */
+        input[type="text"].math-cell.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+        .operator {
+            color: var(--primary);
+            margin: 0 4px;
+            font-size: 1.6rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .fraction hr {
+            width: 100%;
+            border: none;
+            border-top: 2px solid var(--text-main);
+            margin: 0;
+        }
+
+        /* ── PANELL DE RESOLUCIÓ ─────────────────────────────── */
+        .resolution-panel {
+            background: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+            padding: 24px 20px 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .step-done {
+            color: var(--success);
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .step-done-val        { font-family: 'Courier New', Courier, monospace; font-weight: 800; margin-left: 0.2em; }
+
+        /* La paraula del pas («total» o «canvi»): gran i ben visible */
+        .step-prompt {
+            font-size: 1.25em;
+            font-weight: 700;
+            color: #334155;
+            text-align: center;
+        }
+        .step-prompt .paraula-img { font-size: 1.4em; }
+
+        /* ── PAS: INPUT NUMÈRIC ──────────────────────────────── */
+        .step-container { display: none; flex-direction: column; align-items: center; width: 100%; gap: 12px; animation: fadeIn 0.3s; }
+        .step-container.active { display: flex; }
+
+        /* Les caselles del pas, i a sota «OK» i 💡 */
+        .answer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 2em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* ── BOTÓ OK (compacte, neutre) ──────────────────────── */
+        #btn-step-submit {
+            font-size: 0.75em;
+            font-weight: 700;
+            padding: 0;
+            width: 2.6rem;
+            height: 2.6rem;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-color: #94a3b8;
+            transition: background-color 0.15s, color 0.15s;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        #btn-step-submit:focus-visible { outline: 3px solid var(--primary); }
+        #btn-step-submit:active        { transform: scale(0.95); }
+        @media (hover: hover) {
+            #btn-step-submit:hover {
+                background-color: var(--primary);
+                border-color: var(--primary-dark);
+                color: white;
+            }
+        }
+        #btn-step-submit.error-shake {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: white;
+            animation: shake 0.2s;
+        }
+
+        /* ── BOTÓ 💡 AJUDA ───────────────────────────────────── */
+        .btn-ajuda {
+            background: #fffbeb;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 0.65em;    /* relatiu al font-size 2em d'answer-row */
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-ajuda:hover  { background: #fef3c7; }
+        .btn-ajuda:active { transform: scale(0.96); }
+
+        /* L'ajuda: l'operació amb símbols («💶 5 € − 🥛 3,40 € = ?») */
+        .help-text {
+            display: none;
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1.15em;
+            color: #78350f;
+            font-weight: 600;
+            text-align: center;
+            max-width: min(860px, 95%);
+            line-height: 1.7;
+            animation: fadeIn 0.25s ease;
+        }
+        .help-text.visible { display: block; }
+        .ajuda-img    { font-size: 1.4em; vertical-align: middle; }
+        .ajuda-terme  { white-space: nowrap; font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-op     { font-weight: 800; padding: 0 0.15em; }
+
+        /* ── LES PARTS DE LA RESPOSTA (després d'una resposta equivocada) ──
+         * Els euros i els cèntims, cadascun amb ✔ (bo) o ✖ (no): sense cap frase. */
+        .part-feedback {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4em;
+            padding: 2px 14px;
+            border: 2px solid;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6em;
+            font-weight: 800;
+            animation: fadeIn 0.2s ease;
+        }
+        .part.bo  { color: #166534; background: #f0fdf4; border-color: #86efac; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        .part.pista { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+
+        /* ── ANIMACIÓ BLINK INTENTS (feedback visual extra) ── */
+        @keyframes attemptsBlink {
+            0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
+            50%       { background-color: #e5e7eb; border-color: #f59e0b; color: #334155; }
+        }
+        .attempts-counter.blink { animation: attemptsBlink 0.2s linear 5; }
+
+        /* ── NIVELL BADGE A LA CAPÇALERA ─────────────────────── */
+        .level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        .nivell-badge {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        /* En pantalles estretes, el nivell es queda al costat del número de pregunta
+           (amb el .level-text a tot l'ample, «· Nivell 1» es partia en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 3 és el màxim i no el té. */
+        #btn-next-level {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, transform 0.1s;
+            touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) {
+            #btn-next-level:hover { background: #d4d9a8; }
+        }
+        #btn-next-level:active { transform: scale(0.96); }
+        @media (max-width: 480px) {
+            #btn-next-level { width: 100%; justify-content: center; }
+        }
+
+        /* ── L'AJUDA ──────────────────────────────────────────── */
+        .ajuda-fila { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+        .ajuda-fila .math-cell { min-width: 30px; height: 30px; font-size: 1.1rem; }
+        .ajuda-nombre { font-weight: 800; font-family: 'Courier New', Courier, monospace; color: #4d7c0f; }
+        .ajuda-nombre::after { content: ':'; }
+        .ajuda-terme, .ajuda-factor { font-family: 'Courier New', Courier, monospace; font-weight: 800; }
+        .ajuda-primer { font-family: 'Courier New', Courier, monospace; font-weight: 800; white-space: nowrap; }
+        .ajuda-primer.divideix    { color: #166534; background: #dcfce7; border-radius: 6px; padding: 0 6px; }
+        .ajuda-primer.no-divideix { color: #94a3b8; }
+        .comu { background: #fde68a; color: #78350f; border-radius: 6px; padding: 0 5px; font-weight: 800; }
+        .part.pista { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+
+        /* ── RESPONSIU ────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            .math-cell        { min-width: 38px; height: 38px; font-size: 1.3rem; }
+            input[type="text"].math-cell { width: 46px; line-height: 34px; }
+            .operator         { font-size: 1.3rem; }
+            .expr-line, .step-row { gap: 8px; }
+            .answer-row       { font-size: 1.4em; gap: 6px; }
+            .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
+            .help-text        { font-size: 1.05em; padding: 10px 14px; }
+            .part             { font-size: 1.3em; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+<!-- Títol -->
+<div class="title-row">
+    <a href="index.html" class="home-icon-link" title="Tornar a l'inici" aria-label="Tornar a l'inici">
+        <img src="icon-green.png" alt="Inici" onerror="this.style.display='none'">
+    </a>
+    <h1>Fraccions</h1>
+</div>
+
+<div class="panel" id="main-panel">
+    <div id="game-screen" style="display:none;">
+
+        <!-- Capçalera: Sessió | [Repte X de Y · Nivell N] | Punts | Nivell següent | Intents -->
+        <div class="header-info">
+            <div class="header-left">
+                <div class="session-text" id="session-display"></div>
+                <div class="level-row">
+                    <div class="level-text"   id="lvl-display"></div>
+                    <div class="nivell-badge" id="nivell-display"></div>
+                </div>
+            </div>
+            <div class="score-text" id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 4 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
+        </div>
+
+        <!-- L'expressió, que va creixent amb cada pas bo -->
+        <div class="expression-box" id="expression-box"></div>
+
+        <!-- Panell de resolució -->
+        <div class="resolution-panel" id="resolution-panel">
+            <div class="step-container active" id="step-active">
+                <!-- Les caselles del pas (les posa el controlador) -->
+                <div id="step-area"></div>
+
+                <div class="answer-row" id="answer-row">
+                    <button class="btn-submit" id="btn-step-submit" onclick="checkValue()">OK</button>
+                    <button class="btn-ajuda" onclick="toggleHelp()" aria-label="Ajuda">💡</button>
+                </div>
+
+                <!-- El que s'ha escrit malament, amb ✔ o ✖ -->
+                <div class="part-feedback" id="part-feedback" aria-live="polite"></div>
+
+                <!-- L'ajuda -->
+                <div class="help-text" id="help-text" aria-live="polite"></div>
+            </div>
+        </div>
+
+    </div>
+    <!-- #mini-victory-overlay, #session-end-screen, #final-screen
+         s'injecten via injectSharedHTML() de game-core.js -->
+</div>
+
+<script type="module" src="js/a-fraccions/a-fraccions.js"></script>
+</body>
+</html>

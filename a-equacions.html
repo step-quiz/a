@@ -5,40 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Equacions — versió adaptada per a diversitat">
     <link rel="icon" href="icon-green.png">
-    <title>Equacions (adaptat)</title>
+    <title>Equacions</title>
 
     <!--
     ============================================================
     FITXER: a-equacions.html
-    ROL: Versió adaptada de equacions.html per a alumnes amb
-         retard d'aprenentatge, discapacitat intel·lectual lleu o TDAH.
+    ROL: Activitat d'equacions de primer grau d'un sol pas per a l'aula d'acollida.
+         Versió adaptada d'equacions.html (operacions), ja amb el motor nou.
+    JAVASCRIPT: js/a-equacions/a-equacions.js (pantalla, teclat, punts),
+         js/a-equacions/generador.js (equacions i comprovació, lògica pura) i
+         js/a-equacions/vista.js (l'HTML de cada peça); motor comú a js/game-core.js.
 
-    DIFERÈNCIES RESPECTE A equacions.html:
-      · Sempre 1 sol pas: trobar x directament.
-      · Sense historial d'equacions equivalents (eq-history).
-      · Sense "pas X de Y" ni coeficients ni reorganitzacions.
-      · Quatre tipus d'equació, un per nivell:
-          Nivell 1: a·x = b   (a ∈ [2..5], x ∈ [1..9], tot positiu)
-          Nivell 2: x + b = c  (b ∈ [1..5], x ∈ [1..9])
-          Nivell 3: x + b = c  i  x − b = c  (b ∈ [1..8], x ∈ [1..12])
-          Nivell 4: Tot l'anterior + b + x = c
-      · La x es mostra com "3 · x" (punt de multiplicació explícit).
-      · La x apareix sempre en color verd fosc (--var-color).
-      · Botó Ajuda amb metàfora de la caixa de caramels.
-      · Si s'esgoten els intents, es mostra la resposta correcta.
-      · Paràmetres per defecte més conservadors.
+    COM ES LLEGEIX (poques paraules, a propòsit):
+      · L'equació en gran («x + 3 = 8») i, a sota, «x = [ ]». Només hi ha nombres,
+        la x i símbols.
+      · Si la resposta no és bona, no hi ha cap frase: surt l'equació amb la resposta
+        substituïda («4 + 3 = 7 ≠ 8 ✖»).
+      · Botó 💡 (cada toc fa el següent): l'equació dibuixada amb caixes i caramels
+        («🎁x + 3🍬 = 8🍬») → el dibuix i l'operació que dona la x («8 − 3 = ?») → res.
+      · Si s'esgoten els intents, la solució surt al camp, en verd.
 
-    PARÀMETRES URL (específics):
-      ?nivell=1|2|3|4     Nivell (default 2)
+    NIVELLS (via ?nivell=):
+      Nivell 1: a·x = b  (a de 2 a 5, x d'1 a 9).  (default)
+      Nivell 2: també x + b = c i x − b = c.
+      Nivell 3: els mateixos amb nombres més grans.
+      Nivell 4: també b + x = c.
 
     PARÀMETRES URL COMPARTITS (via config.js):
       ?totalsessions=N    (default 1)
       ?totaloperations=N  (default 4)
       ?maxintents=N       (default 5)
-      ?maxenllocmitjana=  (default 1)
-
-    EXEMPLE:
-      a-equacions.html?nivell=1&totaloperations=4&maxintents=6
+      ?fixed=A|B|C        Sessió fixa (js/fixed-sessions.js)
     ============================================================
     -->
 
@@ -46,15 +43,13 @@
         window.APP_CONFIG = {
             defaultSessions:      1,
             defaultOperations:    4,
-            defaultIntents:       5,
-            defaultEnllocMitjana: 1
+            defaultIntents:       5
         };
     </script>
 
-    <script src="js/utils.js"></script>
-    <script src="js/config.js"></script>
-
+    <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/accessibilitat.css">
 
     <style>
         /* ── PALETA ESPECÍFICA D'EQUACIONS ────────────────────── */
@@ -355,19 +350,45 @@
             .resolution-panel { padding: 16px 14px 18px; gap: 12px; }
             .help-text { font-size: 0.97em; padding: 12px 14px; }
         }
+        /* En pantalles estretes el nivell es queda al costat del número de l'equació (no es parteix en tres línies) */
+        @media (max-width: 480px) {
+            .level-row { justify-content: center; }
+            .level-row .level-text { width: auto; }
+        }
         @media (max-width: 350px) {
             .equation-display { font-size: 1.5em; }
         }
 
-        /* ── SVG CAIXA DE CARAMELS (ax=b) ────────────────────── */
-        .box-hint {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            animation: fadeIn 0.3s ease;
+        /* ── L'AJUDA: caixes i caramels dibuixats ───────────────── */
+        .ajuda-dibuix { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-size: 1.5em; }
+        .ajuda-grup { display: inline-flex; flex-wrap: nowrap; gap: 4px; }
+        .ajuda-caixa { display: inline-flex; align-items: center; gap: 2px; font-size: 1.3em; }
+        .ajuda-caixa i { font-size: 0.6em; color: var(--var-color); }
+        .ajuda-caramels { white-space: nowrap; color: #78350f; }
+        .ajuda-caramels span { font-size: 0.9em; margin-left: 2px; }
+        .ajuda-op { color: #475569; }
+        .ajuda-operacio { margin-top: 6px; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-size: 1.5em; color: #78350f; }
+
+        /* ── LA RESPOSTA EQUIVOCADA, SUBSTITUÏDA ────────────────── */
+        .part-feedback { display: flex; justify-content: center; }
+        .part-feedback:empty { display: none; }
+        .part {
+            display: inline-flex; align-items: center; gap: 0.4em; padding: 2px 14px; border: 2px solid; border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.5em; font-weight: 800; animation: fadeIn 0.2s ease;
         }
-        .box-hint.visible { display: flex; }
+        .part.mal { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+        input[type="text"]#value-input.reveal { border-color: var(--success); background: #dcfce7; color: #166534; }
+
+        /* ── BOTÓ «NIVELL SEGÜENT» ───────────────────────────────
+         * Només puja de nivell (mai baixa); el nivell 4 és el màxim i no el té. */
+        #btn-next-level {
+            display: none; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.85em; font-weight: 700;
+            color: var(--primary); background: var(--primary-light); border: 2px solid var(--primary);
+            border-radius: 20px; cursor: pointer; white-space: nowrap; touch-action: manipulation;
+        }
+        #btn-next-level.visible { display: inline-flex; }
+        @media (hover: hover) { #btn-next-level:hover { background: #d4d9a8; } }
+        @media (max-width: 480px) { #btn-next-level { width: 100%; justify-content: center; } }
         /* ── ANIMACIÓ INTENTS ─────────────────────────────────── */
         @keyframes attemptsBlink {
             0%, 100% { background-color: #fef3c7; border-color: #d1d5db; color: #334155; }
@@ -397,55 +418,45 @@
 
         <div class="header-info">
             <div class="header-left">
-                <div class="session-text" id="session-display">Sessió 1 de 1</div>
+                <div class="session-text" id="session-display"></div>
                 <div class="level-row">
-                    <div class="level-text"   id="lvl-display">Equació 1 de 4</div>
+                    <div class="level-text"   id="lvl-display"></div>
                     <div class="nivell-badge" id="nivell-display"></div>
                 </div>
             </div>
-            <div class="score-text"  id="score-display">Punts: 0</div>
-            <div id="attempts-display" class="attempts-counter">Intents: 5</div>
+            <div class="score-text"  id="score-display"></div>
+            <!-- Botó per pujar de nivell (mai baixar). El nivell 4 és el màxim. -->
+            <button id="btn-next-level"></button>
+            <div id="attempts-display" class="attempts-counter"></div>
         </div>
 
-        <!-- Equació en gran -->
-        <div class="equation-display" id="equation-display"
-             role="group" aria-label="Equació"></div>
-
-        <!-- "Quin número és la x?" -->
-        <div class="question-label" id="question-label"></div>
+        <!-- L'equació en gran -->
+        <div class="equation-display" id="equation-display" role="group"></div>
 
         <!-- Panell de resposta -->
         <div class="resolution-panel" id="resolution-panel">
 
             <!-- Fila: x = [input] -->
             <div class="answer-row" id="answer-row">
-                <span class="answer-x-label">x</span>
+                <span class="answer-x-label" id="answer-x-label"></span>
                 <span class="answer-eq">=</span>
                 <input type="text"
                        id="value-input"
                        autocomplete="off"
-                       aria-label="Escriu el valor de x">
+                       aria-label="Escriu la resposta">
             </div>
 
             <!-- OK + Ajuda -->
             <div class="action-row">
                 <button class="btn-submit" id="btn-submit-val" onclick="checkValue()">OK</button>
-                <button class="btn-ajuda"  onclick="toggleHelp()">💡 Ajuda</button>
+                <button class="btn-ajuda"  onclick="toggleHelp()" aria-label="Ajuda">💡</button>
             </div>
 
-            <!-- Frase de suport -->
+            <!-- La resposta equivocada, substituïda: «4 + 3 = 7 ≠ 8 ✖» -->
+            <div class="part-feedback" id="part-feedback" aria-live="polite"></div>
+
+            <!-- L'ajuda: caixes i caramels dibuixats -->
             <div class="help-text" id="help-text" aria-live="polite"></div>
-
-            <!-- Esquema gràfic caixes (ax=b, ~50%) -->
-            <div class="box-hint" id="box-hint" aria-live="polite">
-                <div id="box-hint-svg"></div>
-            </div>
-
-            <!-- Resposta correcta si s'esgoten els intents -->
-            <div class="answer-reveal" id="answer-reveal" aria-live="assertive">
-                La resposta correcta era:
-                <span class="ans-val" id="answer-correct-val"></span>
-            </div>
 
         </div>
 
@@ -454,389 +465,6 @@
          s'injecten via injectSharedHTML() de game-core.js -->
 </div>
 
-<script src="js/game-core.js"></script>
-<script>
-'use strict';
-
-// ============================================================
-// PARÀMETRES URL ESPECÍFICS
-// ============================================================
-
-const _aParams = new URLSearchParams(window.location.search);
-
-/**
- * ?nivell=1  a·x = b                        (tot positiu)
- * ?nivell=2  x + b = c                       (default)
- * ?nivell=3  x + b = c  i  x − b = c
- * ?nivell=4  tot l'anterior + b + x = c
- */
-const NIVELL = getIntParam(_aParams, 'nivell', 2, 1, 4);
-
-// ============================================================
-// ELEMENTS DOM
-// ============================================================
-
-const els = {
-    body:             document.body,
-    gameScreen:       document.getElementById('game-screen'),
-    sessionDisplay:   document.getElementById('session-display'),
-    lvlDisplay:       document.getElementById('lvl-display'),
-    nivellDisplay:    document.getElementById('nivell-display'),
-    scoreDisplay:     document.getElementById('score-display'),
-    attemptsDisplay:  document.getElementById('attempts-display'),
-    equationDisplay:  document.getElementById('equation-display'),
-    questionLabel:    document.getElementById('question-label'),
-    resolutionPanel:  document.getElementById('resolution-panel'),
-    valueInput:       document.getElementById('value-input'),
-    btnSubmitVal:     document.getElementById('btn-submit-val'),
-    helpText:         document.getElementById('help-text'),
-    answerReveal:     document.getElementById('answer-reveal'),
-    answerCorrectVal: document.getElementById('answer-correct-val'),
-};
-
-// ============================================================
-// ESTAT LOCAL
-// ============================================================
-
-let isPenalizing    = false;
-let currentEq       = null;   // { type, a, b, c, xSol }
-let expectedAnswer  = 0;
-let _helpVisible    = false;
-
-// ============================================================
-// GENERACIÓ D'EQUACIONS
-// ============================================================
-
-/**
- * Retorna els tipus d'equació disponibles per al nivell actiu.
- * type:
- *   'ax_b'   →  a·x = b          (nivell 1+)
- *   'xpb_c'  →  x + b = c        (nivell 2+)
- *   'xmb_c'  →  x − b = c        (nivell 3+)
- *   'bpx_c'  →  b + x = c        (nivell 4)
- */
-function getAvailableTypes() {
-    const t = [];
-    if (NIVELL >= 1) t.push('ax_b');
-    if (NIVELL >= 2) t.push('xpb_c');
-    if (NIVELL >= 2) t.push('xmb_c');   // x−a=b disponible des de nivell 2
-    if (NIVELL >= 4) t.push('bpx_c');
-    return t;
-}
-
-function generateEquation() {
-    const types = getAvailableTypes();
-    const type  = pick(types);
-    let a, b, c, xSol;
-
-    if (type === 'ax_b') {
-        // a·x = b, a ∈ [2..5], x ∈ [1..9], b = a·x (positiu)
-        a    = randInt(2, 5);
-        xSol = randInt(1, 9);
-        b    = a * xSol;
-        return { type, a, b, xSol };
-
-    } else if (type === 'xpb_c') {
-        // x + b = c, b ∈ [1..5], x ∈ [1..9]
-        b    = randInt(1, NIVELL >= 3 ? 8 : 5);
-        xSol = randInt(1, NIVELL >= 3 ? 12 : 9);
-        c    = xSol + b;
-        return { type, b, c, xSol };
-
-    } else if (type === 'xmb_c') {
-        // x − b = c, b ∈ [1..8], x ∈ [2..12], c = x − b > 0
-        b    = randInt(1, 8);
-        xSol = randInt(b + 1, 12);   // x > b perquè c > 0
-        c    = xSol - b;
-        return { type, b, c, xSol };
-
-    } else {
-        // b + x = c, b ∈ [1..8], x ∈ [1..12]
-        b    = randInt(1, 8);
-        xSol = randInt(1, 12);
-        c    = b + xSol;
-        return { type, b, c, xSol };
-    }
-}
-
-// ============================================================
-// RENDERITZACIÓ DE L'EQUACIÓ
-// ============================================================
-
-/**
- * Retorna l'HTML del token de la x (amb coeficient si n'hi ha).
- * Exemples: "x", "3 · x"
- */
-function xToken(coeff = 1) {
-    if (coeff === 1) {
-        return `<span class="eq-var-token"><span class="eq-x">x</span></span>`;
-    }
-    return `<span class="eq-var-token">
-        <span class="eq-coeff">${coeff}</span>
-        <span class="eq-dot">·</span>
-        <span class="eq-x">x</span>
-    </span>`;
-}
-
-function numToken(n) {
-    return `<span class="eq-num-token">${n}</span>`;
-}
-
-function opToken(op) {
-    return `<span class="eq-op">${op}</span>`;
-}
-
-function renderEquation(eq) {
-    const EQ = `<span class="eq-sign">=</span>`;
-    if (eq.type === 'ax_b') {
-        return xToken(eq.a) + EQ + numToken(eq.b);
-    } else if (eq.type === 'xpb_c') {
-        return xToken() + opToken('+') + numToken(eq.b) + EQ + numToken(eq.c);
-    } else if (eq.type === 'xmb_c') {
-        return xToken() + opToken('−') + numToken(eq.b) + EQ + numToken(eq.c);
-    } else {
-        // bpx_c: b + x = c
-        return numToken(eq.b) + opToken('+') + xToken() + EQ + numToken(eq.c);
-    }
-}
-
-// ============================================================
-// AJUDA CONTEXTUAL — metàfora de la caixa de caramels
-// ============================================================
-
-// ============================================================
-// ESQUEMA GRÀFIC DE CAIXES (per a ax=b)
-// Mostra 'a' caixes, cadascuna amb '?' caramels,
-// i una etiqueta "Total: b caramels" a sota.
-// ============================================================
-
-function buildBoxSVG(a, b) {
-    const BOX_W  = 44;   // amplada de cada caixa
-    const BOX_H  = 36;   // alçada de cada caixa
-    const GAP    = 8;    // espai entre caixes
-    const PAD    = 10;   // marge lateral
-    const W      = a * (BOX_W + GAP) - GAP + PAD * 2;
-    const H      = BOX_H + 28;  // caixa + espai per a l'etiqueta total
-    const s      = [];
-
-    s.push(`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
-             style="max-width:${Math.min(W, 320)}px;width:100%;height:auto;display:block;">`);
-
-    for (let i = 0; i < a; i++) {
-        const x = PAD + i * (BOX_W + GAP);
-        const y = 4;
-        // Caixa
-        s.push(`<rect x="${x}" y="${y}" width="${BOX_W}" height="${BOX_H}"
-                 fill="#e5e8c8" stroke="#5a6a1e" stroke-width="2" rx="6"/>`);
-        // Interrogant dins la caixa
-        s.push(`<text x="${x + BOX_W/2}" y="${y + BOX_H/2 + 6}"
-                 text-anchor="middle" font-family="'Courier New',monospace"
-                 font-size="16" font-weight="800" fill="#3d4a14" font-style="italic">x</text>`)
-    }
-
-    // Clau/fletxa sota les caixes → total
-    const lineY = 4 + BOX_H + 6;
-    s.push(`<line x1="${PAD}" y1="${lineY}" x2="${W - PAD}" y2="${lineY}"
-             stroke="#94a3b8" stroke-width="1.5"/>`);
-    s.push(`<line x1="${PAD}" y1="${lineY}" x2="${PAD}" y2="${lineY - 5}"
-             stroke="#94a3b8" stroke-width="1.5"/>`);
-    s.push(`<line x1="${W - PAD}" y1="${lineY}" x2="${W - PAD}" y2="${lineY - 5}"
-             stroke="#94a3b8" stroke-width="1.5"/>`);
-    s.push(`<text x="${W/2}" y="${lineY + 16}"
-             text-anchor="middle" font-family="'Segoe UI',sans-serif"
-             font-size="12" font-weight="700" fill="#475569">Total: ${b} caramels</text>`);
-
-    s.push(`</svg>`);
-    return s.join('');
-}
-
-function getHelpText(eq) {
-    if (eq.type === 'ax_b') {
-        return `🎁 Tinc ${eq.a} caixes iguals. En total hi ha ${eq.b} caramels. Quants n'hi ha a cada caixa?`;
-    } else if (eq.type === 'xpb_c') {
-        return `🎁 Tinc una caixa amb uns quants caramels.<br>N'afegeixo ${eq.b} caramels, i ara en tinc ${eq.c}.<br>Quants n'hi havia al principi?`;
-    } else if (eq.type === 'xmb_c') {
-        return `🎁 En una caixa amb uns quants caramels, traiem ${eq.b} caramels.<br>Mirem la caixa i queden ${eq.c} caramels a dins.<br>Quants caramels hi havia al principi?`;
-    } else {
-        return `🎁 Tinc ${eq.b} caramels i una caixa amb X. En total en tinc ${eq.c}. Quants n'hi ha a la caixa?`;
-    }
-}
-
-function toggleHelp() {
-    _helpVisible = !_helpVisible;
-    const boxHint    = document.getElementById('box-hint');
-    const boxHintSvg = document.getElementById('box-hint-svg');
-
-    if (_helpVisible) {
-        els.helpText.innerHTML = getHelpText(currentEq);
-        els.helpText.classList.add('visible');
-
-        // Esquema gràfic: ~50% de vegades, i només per a ax=b
-        if (boxHint && currentEq.type === 'ax_b' && Math.random() < 0.5) {
-            boxHintSvg.innerHTML = buildBoxSVG(currentEq.a, currentEq.b);
-            boxHint.classList.add('visible');
-        }
-    } else {
-        els.helpText.classList.remove('visible');
-        if (boxHint) boxHint.classList.remove('visible');
-    }
-}
-
-function resetHelp() {
-    _helpVisible = false;
-    els.helpText.classList.remove('visible');
-    els.helpText.textContent = '';
-    const boxHint = document.getElementById('box-hint');
-    if (boxHint) boxHint.classList.remove('visible');
-}
-
-// ============================================================
-// UPDATE CAPÇALERA
-// ============================================================
-
-function updateHeader() {
-    els.sessionDisplay.innerText  = `Sessió ${currentSession + 1} de ${TOTAL_SESSIONS}`;
-    els.lvlDisplay.innerText      = `Equació ${currentOperation + 1} de ${TOTAL_OPERATIONS}`;
-    els.nivellDisplay.innerText   = `· Nivell ${NIVELL}`;
-    els.scoreDisplay.innerText    = `Punts: ${sessionScore}`;
-    els.attemptsDisplay.innerText = `Intents: ${attemptsLeft}`;
-    els.attemptsDisplay.className = 'attempts-counter' +
-        (attemptsLeft <= 2 ? ' danger' : '');
-}
-
-// ============================================================
-// LÒGICA PRINCIPAL
-// ============================================================
-
-/** Cridat per game-core.js via startSession(). */
-function buildLevel() {
-    attemptsLeft    = MAX_INTENTS;
-    isPenalizing    = false;
-    isTransitioning = false;
-
-    currentEq      = generateEquation();
-    expectedAnswer = currentEq.xSol;
-
-    els.body.style.backgroundColor =
-        bgColors[(currentSession * TOTAL_OPERATIONS + currentOperation) % bgColors.length];
-
-    resetHelp();
-    els.answerReveal.classList.remove('visible');
-    els.valueInput.value              = '';
-    els.resolutionPanel.style.display = 'none';
-
-    updateHeader();
-
-    // Mostrar l'equació i la pregunta
-    els.equationDisplay.innerHTML = renderEquation(currentEq);
-    els.questionLabel.textContent = 'Troba quant val la x';
-
-    // Obrir el panell de resposta
-    els.resolutionPanel.style.display = 'flex';
-
-    if (isTouchDevice()) showCustomKeyboard(els.valueInput);
-    else                 els.valueInput.focus();
-}
-
-function checkValue() {
-    if (isTransitioning || isPenalizing) return;
-    const raw = els.valueInput.value.trim();
-    if (raw === '') return;
-    if (!/^-?\d+$/.test(raw)) { shakeInput(); penalize(); return; }
-
-    const userAnswer = parseInt(raw, 10);
-    const question   = `Equació ${currentOperation + 1}`;
-
-    if (userAnswer !== expectedAnswer) {
-        shakeInput();
-        recordAnswerToHistory(question, raw, false);
-        penalize();
-        if (isTouchDevice()) kbMarkForOverwrite(els.valueInput);
-        else { els.valueInput.value = ''; els.valueInput.focus(); }
-        return;
-    }
-
-    recordAnswerToHistory(question, raw, true);
-    hideCustomKeyboard();
-    finishEquation(true);
-}
-
-function shakeInput() {
-    els.btnSubmitVal.classList.add('error-shake');
-    setTimeout(() => els.btnSubmitVal.classList.remove('error-shake'), 200);
-}
-
-function penalize() {
-    if (isPenalizing || isTransitioning) return;
-    isPenalizing = true;
-    els.attemptsDisplay.classList.add('blink');
-
-    setTimeout(() => {
-        els.attemptsDisplay.classList.remove('blink');
-        attemptsLeft--;
-        updateHeader();
-
-        if (attemptsLeft <= 0) {
-            isTransitioning = true;
-            hideCustomKeyboard();
-            els.answerCorrectVal.textContent = expectedAnswer;
-            els.answerReveal.classList.add('visible');
-            setTimeout(() => finishEquation(false), 2400);
-        }
-
-        isPenalizing = false;
-    }, 700);
-}
-
-function finishEquation(success) {
-    recordResult(success ? Math.min(MAX_INTENTS - attemptsLeft + 1, 3) : 4);
-    const fails       = MAX_INTENTS - attemptsLeft;
-    const levelPoints = success ? Math.max(0, 10 - fails * 2) : 0;
-    sessionScore += levelPoints;
-
-    const waitTime = showMiniOverlay(levelPoints, {
-        successColor: 'var(--primary-dark)',
-        pointsColor:  'var(--primary)'
-    });
-
-    setTimeout(() => {
-        hideMiniOverlay();
-        if (currentOperation + 1 >= TOTAL_OPERATIONS) {
-            endSession();
-        } else {
-            currentOperation++;
-            buildLevel();
-        }
-    }, waitTime);
-}
-
-// ── Teclat físic ────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    if (els.gameScreen.style.display === 'none') return;
-    if (els.resolutionPanel.style.display === 'none') return;
-    e.preventDefault();
-    if (!isTransitioning) checkValue();
-});
-
-function checkCurrentCell() { checkValue(); }
-
-// ── Botó Tutorial ───────────────────────────────────────────
-document.getElementById('btn-tutorial').addEventListener('click', () => {
-    const overlay = document.getElementById('fade-overlay');
-    overlay.style.pointerEvents = 'all';
-    overlay.style.opacity       = '1';
-    setTimeout(() => { window.location.href = 'a-equacions-tutorial.html'; }, 800);
-});
-
-// ============================================================
-// INICI
-// ============================================================
-
-injectSharedHTML();
-validateConfig();
-initCustomKeyboard({ allowNegative: false });   // x sempre positiu
-startGame();
-</script>
+<script type="module" src="js/a-equacions/a-equacions.js"></script>
 </body>
 </html>
