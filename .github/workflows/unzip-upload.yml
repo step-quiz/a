@@ -1,0 +1,54 @@
+# Desempaqueta els zip que es pugen a _uploads/ i en desa el contingut.
+#
+# Dues proteccions (30/9/2026):
+#  · concurrency: si es pugen dos zip seguits, el segon espera que acabi el primer.
+#    Abans corrien alhora i l'últim a acabar esborrava la feina de l'altre
+#    («l'últim zip guanya»).
+#  · Abans de desar, passa les comprovacions dels dos cursos. Si alguna falla, no es
+#    desa res: el zip es queda a _uploads/ i l'acció surt amb una creu vermella que
+#    diu quina comprovació ha fallat. Es corregeix i es torna a pujar.
+name: Extract and commit zip uploads
+
+on:
+  push:
+    paths:
+      - '_uploads/**.zip'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: unzip-uploads
+  cancel-in-progress: false
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # El que hi hagi hagut de nou mentre aquesta acció esperava el seu torn.
+      - name: Bring the branch up to date
+        run: git pull --ff-only origin "${GITHUB_REF_NAME}"
+
+      - name: Unzip uploaded files
+        run: |
+          shopt -s nullglob
+          for z in _uploads/*.zip; do
+            echo "Processing $z"
+            unzip -o "$z" -d .
+            rm "$z"
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Auto-extract uploaded zip"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
