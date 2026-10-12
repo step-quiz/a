@@ -87,6 +87,32 @@
         }
         .demana-icona { font-size: 1.1em; }
         .canvas-wrap { width: 100%; display: flex; justify-content: center; }
+        /* Pantalla estreta o vertical (mòbil, tauleta): una sola columna, en l'ordre de sempre
+           (el que es demana, el pla, i després les icones o les caselles). «display: contents» deixa cada peça
+           de la dreta com a fill directe de .game-body, i «order» les posa al seu lloc. */
+        .game-dreta { display: contents; }
+        .demana { order: 1; }
+        .canvas-wrap { order: 2; }
+        .llocs { order: 3; }
+        .coord-area { order: 4; }
+        .marca { order: 5; }
+        /* Pantalla ampla i apaïsada (ordinador portàtil): el pla a l'esquerra i, a la dreta, el que es demana i on
+           s'escriu. Així tot es veu sense baixar: el pla s'adapta a l'alçada de la finestra (a-pla-cartesia.js) i el
+           títol i la capçalera s'estrenyen una mica quan la finestra és baixa. */
+        @media (min-width: 820px) and (orientation: landscape) {
+            .game-body { flex-direction: row; justify-content: center; align-items: center; gap: 28px; padding: 12px 20px 16px; }
+            .canvas-wrap { order: -1; width: auto; flex: 0 0 auto; }
+            .game-dreta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; flex: 1 1 260px; min-width: 260px; max-width: 400px; }
+            .game-dreta > * { order: 0; }
+            .coord-area { font-size: 1.7em; }
+        }
+        @media (min-width: 820px) and (orientation: landscape) and (max-height: 820px) {
+            body { padding-top: 8px; padding-bottom: 8px; }
+            .title-row { margin-bottom: 2px; }
+            h1 { font-size: 1.3em; margin-bottom: 0; }
+            .header-info { padding: 8px 20px; }
+            .instruccio { padding-top: 6px; font-size: 1.1em; }
+        }
         #canvas-pla { max-width: 100%; border: 2px solid var(--border-heavy); border-radius: 12px; touch-action: manipulation; }
         #canvas-pla.tocable { cursor: crosshair; }
         .llocs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
@@ -280,31 +306,30 @@
         </div>
 
         <div class="game-body">
-            <!-- El que es demana: «👆 A (3, −2)», el punt «A» o la icona d'un quadrant -->
-            <div class="demana" id="demana"></div>
-
+            <!-- El que es demana i com es respon. En pantalles amples i apaïsades és la columna de la dreta; en les altres
+                 (mòbil, vertical) és «display: contents» i cada peça va al seu lloc (vegeu «order» al CSS) -->
+            <div class="game-dreta">
+                <!-- El que es demana: «👆 A (3, −2)», el punt «A» o la icona d'un quadrant -->
+                <div class="demana" id="demana"></div>
+                <!-- Les icones dels quadrants (a «quadrant») -->
+                <div class="llocs" id="llocs" role="group" hidden></div>
+                <!-- Les coordenades: «( [ ] , [ ] )  OK» (a «coordenades» i «al-quadrant») -->
+                <div class="coord-area" id="coord-area" hidden>
+                    <span aria-hidden="true">(</span>
+                    <input type="text" id="input-x" class="coord-input" autocomplete="off" inputmode="none"
+                           aria-label="Escriu la resposta">
+                    <span aria-hidden="true">,</span>
+                    <input type="text" id="input-y" class="coord-input" autocomplete="off" inputmode="none"
+                           aria-label="Escriu la resposta">
+                    <span aria-hidden="true">)</span>
+                    <button class="btn-submit" id="btn-ok" onclick="checkCoords()">OK</button>
+                </div>
+                <!-- El que s'ha escrit o tocat malament, amb ✔ o ✖ -->
+                <div class="marca" id="marca" aria-live="polite"></div>
+            </div>
             <!-- El pla cartesià (a «situa», es toca) -->
             <div class="canvas-wrap"><canvas id="canvas-pla" aria-label="Coordenades" role="img"></canvas></div>
-
-            <!-- Les icones dels quadrants (a «quadrant») -->
-            <div class="llocs" id="llocs" role="group" hidden></div>
-
-            <!-- Les coordenades: «( [ ] , [ ] )  OK» (a «coordenades» i «al-quadrant») -->
-            <div class="coord-area" id="coord-area" hidden>
-                <span aria-hidden="true">(</span>
-                <input type="text" id="input-x" class="coord-input" autocomplete="off" inputmode="none"
-                       aria-label="Escriu la resposta">
-                <span aria-hidden="true">,</span>
-                <input type="text" id="input-y" class="coord-input" autocomplete="off" inputmode="none"
-                       aria-label="Escriu la resposta">
-                <span aria-hidden="true">)</span>
-                <button class="btn-submit" id="btn-ok" onclick="checkCoords()">OK</button>
-            </div>
-
-            <!-- El que s'ha escrit o tocat malament, amb ✔ o ✖ -->
-            <div class="marca" id="marca" aria-live="polite"></div>
         </div>
-
     </div>
     <!-- #mini-victory-overlay, #session-end-screen, #final-screen
          s'injecten via injectSharedHTML() de game-core.js -->

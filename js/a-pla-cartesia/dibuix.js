@@ -13,7 +13,7 @@ import { X_MAX, X_MIN, Y_MAX, Y_MIN } from './generador.js';
 const COLUMNES = X_MAX - X_MIN;
 const FILES = Y_MAX - Y_MIN;
 
-/** Crea el tauler d'un canvas: { ajusta(amplada), dibuixa(punts), aCoordenades(clientX, clientY), aPixels(x, y) }. */
+/** Crea el tauler d'un canvas: { ajusta(amplada, alcada), dibuixa(punts), aCoordenades(clientX, clientY), aPixels(x, y) }. */
 export function crearTauler(canvas) {
     const ctx = canvas.getContext('2d');
     let cel = 40;
@@ -26,10 +26,15 @@ export function crearTauler(canvas) {
     const px = x => origenX + x * cel;
     const py = y => origenY - y * cel;
 
-    /** Ajusta la mida del canvas a l'amplada disponible (fins a 560 px), amb tota la resolució de la pantalla. */
-    function ajusta(amplada) {
+    let ultims = null; // els punts dibuixats l'última vegada: en canviar la mida, es tornen a dibuixar
+
+    /**
+     * Ajusta la mida del canvas a l'amplada disponible (fins a 560 px) i, si es dona, a l'alçada disponible, amb tota la
+     * resolució de la pantalla. El pla fa 12,4 cel·les d'ample i 10,4 d'alt (comptant els marges); la cel·la no baixa de 20 px.
+     */
+    function ajusta(amplada, alcada = Infinity) {
         const dpr = window.devicePixelRatio || 1;
-        cel = Math.max(20, Math.floor(Math.min(amplada, 560) / (COLUMNES + 2.4)));
+        cel = Math.max(20, Math.floor(Math.min(Math.min(amplada, 560) / (COLUMNES + 2.4), alcada / (FILES + 2.4))));
         marge = Math.round(cel * 1.2);
         ample = cel * COLUMNES + 2 * marge;
         alt = cel * FILES + 2 * marge;
@@ -40,6 +45,7 @@ export function crearTauler(canvas) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         origenX = marge - X_MIN * cel;
         origenY = marge + Y_MAX * cel;
+        if (ultims) dibuixa(ultims);
     }
 
     function quadricula() {
@@ -102,6 +108,7 @@ export function crearTauler(canvas) {
 
     /** Dibuixa el pla i, a sobre, els punts [{ x, y, color, etiqueta }]. */
     function dibuixa(punts = []) {
+        ultims = punts;
         quadricula();
         for (const p of punts) {
             const r = Math.max(7, Math.round(cel * 0.2));

@@ -91,6 +91,95 @@ module.exports = async function ({ browser, base }) {
         await page.context().close();
     }
 
+    suite(
+        "Coordenades: en un ordinador portàtil tot es veu sense baixar (pla a l'esquerra, pregunta i resposta a la dreta)"
+    );
+    for (const [w, h] of [
+        [1366, 650],
+        [1280, 600],
+        [1024, 600],
+        [1536, 730],
+        [1920, 950],
+    ]) {
+        const page = await obre(browser, base, RUTA(3), { w, h, rapid: false });
+        await esperaLliure(page);
+        const problemes = [];
+        let mides = '';
+        for (const tipus of ['situa', 'coordenades', 'quadrant', 'al-quadrant']) {
+            await page.evaluate(t => {
+                for (let i = 0; i < 500; i++) {
+                    window.buildLevel();
+                    if (window.__prova().pregunta.tipus === t) break;
+                }
+            }, tipus);
+            const m = await page.evaluate(() => {
+                const r = s => {
+                    const e = document.querySelector(s);
+                    if (!e || e.hidden || getComputedStyle(e).display === 'none') return null;
+                    const b = e.getBoundingClientRect();
+                    return { top: b.top, bottom: b.bottom, left: b.left, right: b.right };
+                };
+                return {
+                    vh: innerHeight,
+                    vw: innerWidth,
+                    canvas: r('#canvas-pla'),
+                    demana: r('#demana'),
+                    llocs: r('#llocs'),
+                    coord: r('#coord-area'),
+                    instr: r('#instruccio'),
+                    capcalera: r('.header-info'),
+                    scrollV: document.documentElement.scrollHeight - innerHeight,
+                    scrollH: document.documentElement.scrollWidth - innerWidth,
+                };
+            });
+            mides = `${Math.round(m.canvas.right - m.canvas.left)}×${Math.round(m.canvas.bottom - m.canvas.top)}`;
+            for (const [nom, e] of Object.entries({
+                pla: m.canvas,
+                demana: m.demana,
+                llocs: m.llocs,
+                caselles: m.coord,
+                instruccio: m.instr,
+                capçalera: m.capcalera,
+            }))
+                if (e && (e.bottom > m.vh + 0.5 || e.top < -0.5 || e.right > m.vw + 0.5))
+                    problemes.push(`${tipus}: ${nom} no es veu sencer (baix ${Math.round(e.bottom)} de ${m.vh})`);
+            if (m.scrollH > 1) problemes.push(`${tipus}: desborda ${m.scrollH} px en horitzontal`);
+            // dues columnes: el pla a l'esquerra i la resposta a la dreta, sense tapar-se
+            const dreta = m.llocs || m.coord;
+            if (dreta && !(dreta.left >= m.canvas.right - 1))
+                problemes.push(`${tipus}: la resposta no és a la dreta del pla`);
+        }
+        ok(
+            problemes.length === 0,
+            `${w}×${h}: les quatre preguntes es veuen senceres, amb el pla de ${mides} px`,
+            problemes.slice(0, 4).join('\n')
+        );
+        await page.context().close();
+    }
+    {
+        // En canviar la mida de la finestra el pla s'adapta i es dibuixa igual (el punt A continua al mateix lloc)
+        const page = await obre(browser, base, RUTA(1), { w: 1366, h: 700, rapid: false });
+        await esperaLliure(page);
+        await page.evaluate(() => {
+            for (let i = 0; i < 500; i++) {
+                window.buildLevel();
+                if (window.__prova().pregunta.tipus === 'coordenades') break;
+            }
+        });
+        const abans = await page.evaluate(() => document.getElementById('canvas-pla').getBoundingClientRect().height);
+        await page.setViewportSize({ width: 1366, height: 520 });
+        await page.waitForTimeout(250);
+        const despres = await page.evaluate(() => {
+            const b = document.getElementById('canvas-pla').getBoundingClientRect();
+            return { alt: b.height, baix: b.bottom, vh: innerHeight };
+        });
+        ok(
+            despres.alt < abans && despres.baix <= despres.vh + 0.5 && page.errors.length === 0,
+            `en fer la finestra més baixa (700 → 520 px) el pla passa de ${Math.round(abans)} a ${Math.round(despres.alt)} px i hi cap`
+        );
+        await page.context().close();
+    }
+
     suite('Coordenades: respostes equivocades i solució revelada de cada tipus de pregunta');
     for (const tipus of ['situa', 'coordenades', 'quadrant', 'al-quadrant']) {
         const page = await obre(browser, base, RUTA(3), { congela: 2000 });

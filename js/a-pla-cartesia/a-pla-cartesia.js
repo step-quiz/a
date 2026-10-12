@@ -95,6 +95,37 @@ let yEncertada = false;
 
 const punt = (p, color, etiqueta = '') => ({ x: p.x, y: p.y, color, etiqueta });
 
+// ── LA MIDA DEL PLA ──────────────────────────────────────────────────────────
+
+/** Pantalla ampla i apaïsada: el pla és a l'esquerra i el que es demana, a la dreta (vegeu el CSS de la pàgina). */
+const DUES_COLUMNES = window.matchMedia('(min-width: 820px) and (orientation: landscape)');
+
+/**
+ * Posa el pla a la mida que cap a la finestra. En dues columnes, que cap en amplada (la dreta té 260 px com a mínim) i en
+ * alçada (de dalt del pla a baix de la finestra): així el pla i la resposta es veuen sense baixar. En una sola columna,
+ * l'amplada disponible (la resposta queda sota el pla i es baixa si cal, sobretot amb el teclat de la pantalla).
+ */
+function ajustaTauler() {
+    const caixa = els.canvas.parentElement;
+    if (!DUES_COLUMNES.matches) {
+        tauler.ajusta(caixa.clientWidth || 320);
+        return;
+    }
+    const cos = caixa.parentElement;
+    const ample = cos.clientWidth - 2 * 20 - 28 - 260;
+    const dalt = caixa.getBoundingClientRect().top + window.scrollY;
+    tauler.ajusta(Math.max(240, ample), Math.max(240, window.innerHeight - dalt - 16));
+}
+
+// En girar el mòbil o canviar la mida de la finestra, el pla es torna a posar a la mida que toca (i es dibuixa igual)
+let tornaAAjustar = 0;
+window.addEventListener('resize', () => {
+    cancelAnimationFrame(tornaAAjustar);
+    tornaAAjustar = requestAnimationFrame(() => {
+        if (pregunta) ajustaTauler();
+    });
+});
+
 // ── CAPÇALERA ────────────────────────────────────────────────────────────────
 
 function updateHeader() {
@@ -139,7 +170,7 @@ function buildLevel() {
         bgColors[(state.currentSession * TOTAL_OPERATIONS + state.currentOperation) % bgColors.length];
 
     // El pla, de l'amplada de la pantalla; es veu el punt si la pregunta el mostra
-    tauler.ajusta(els.canvas.parentElement.clientWidth || 320);
+    ajustaTauler();
     dibuixa(
         pregunta.tipus === 'coordenades' || pregunta.tipus === 'quadrant'
             ? [punt(pregunta.punt, BLAU, pregunta.etiqueta)]
