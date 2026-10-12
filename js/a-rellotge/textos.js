@@ -7,7 +7,7 @@
  *      el títol, són a a-rellotge.html.) Cada paraula ha de ser al lèxic
  *      (js/lexicon/dades.js): ho comprova tests/check-lexicon.js. Només dades.
  *      Els `{noms}` són les parts que canvien (vegeu format() a js/textos.js).
- *      L'activitat no té frases: el rellotge, les xifres i les quatre expressions
+ *      L'única frase és la instrucció de cada pregunta; per a la resta, el rellotge, les xifres i les quatre expressions
  *      de l'ajuda («en punt», «i quart», «i mitja», «menys quart») són tot el que es llegeix.
  * ============================================================================
  */
@@ -21,4 +21,7 @@ export const TEXTOS = {
     iQuart: 'i quart',
     iMitja: 'i mitja',
     menysQuart: 'menys quart',
+
+    // La instrucció de la pregunta (a sota de la capçalera)
+    instruccio: "Escriu l'hora.",
 };

@@ -22,6 +22,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -113,6 +114,7 @@ function buildLevel() {
     els.stepDone.style.display = 'none';
     els.valueInput.classList.remove('reveal', 'kb-selected');
     updateHeader();
+    mostraInstruccio(TEXTOS.instruccio);
     mostraPas();
 }
 

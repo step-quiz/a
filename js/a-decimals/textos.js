@@ -22,4 +22,8 @@ export const TEXTOS = {
     // Després d'una resposta equivocada: cada part de la resposta (els euros i els cèntims) diu si és bona o no
     partCorrecta: '{part}: correcte',
     partIncorrecta: '{part}: incorrecte',
+
+    // La instrucció de cada pas (a sota de la capçalera): al nivell 3 primer el total i després el canvi
+    escriuTotal: 'Escriu el total.',
+    escriuCanvi: 'Escriu el canvi.',
 };

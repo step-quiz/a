@@ -98,6 +98,34 @@ export function showScreen(id) {
     if (target) target.style.display = 'block';
 }
 
+// ── LA INSTRUCCIÓ DE LA PREGUNTA ─────────────────────────────────────────────
+/**
+ * Posa la frase que diu què cal fer («Escriu el resultat.»). Sempre és al mateix lloc a totes les activitats:
+ * just sota la capçalera (.header-info) de #game-screen, en negreta i centrada. L'element #instruccio es crea la
+ * primera vegada. Amb un text buit s'amaga. `nota` és una segona línia més petita (només Factoritzar).
+ * Els textos són a js/<activitat>/textos.js (i a la vista, si porten un valor que canvia: format()).
+ */
+export function mostraInstruccio(text, nota = '') {
+    let el = document.getElementById('instruccio');
+    if (!el) {
+        const capcalera = document.querySelector('#game-screen .header-info');
+        if (!capcalera) return;
+        el = document.createElement('p');
+        el.id = 'instruccio';
+        el.className = 'instruccio';
+        el.setAttribute('aria-live', 'polite');
+        capcalera.insertAdjacentElement('afterend', el);
+    }
+    el.textContent = text;
+    if (nota) {
+        const n = document.createElement('span');
+        n.className = 'instruccio-nota';
+        n.textContent = nota;
+        el.appendChild(n);
+    }
+    el.hidden = !text;
+}
+
 // ── INICI I FI DEL JOC ──────────────────────────────────────────────────────
 export function startGame() {
     // Sessions fixes (?fixed=A/B/C): cada crida a buildLevel() torna a sembrar l'atzar amb

@@ -6,7 +6,7 @@
  *      (Els del motor comú són a js/textos.js; el títol és a a-nombres-lletres.html
  *      i els noms dels nombres surten de generador.js.) Cada paraula ha de ser
  *      al lèxic (js/lexicon/dades.js): ho comprova tests/check-lexicon.js.
- *      L'activitat no té frases: es llegeix amb el nombre en xifres i les opcions.
+ *      L'única frase és la instrucció de cada pregunta; per a la resta, es llegeix amb el nombre en xifres i les opcions.
  * ============================================================================
  */
 
@@ -16,4 +16,7 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de la pregunta (a sota de la capçalera)
+    instruccio: 'Tria el nom del nombre.',
 };

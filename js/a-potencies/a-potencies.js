@@ -24,6 +24,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -120,6 +121,7 @@ function buildLevel() {
     els.valueInput.classList.remove('reveal', 'kb-selected');
 
     updateHeader();
+    mostraInstruccio(pregunta.kind === 'exp' ? TEXTOS.escriuExponent : TEXTOS.escriuResultat);
     els.preguntaDisplay.innerHTML = htmlPregunta(pregunta);
     els.etiqueta.innerHTML = etiquetaResposta(pregunta);
     els.answerRow.classList.toggle('exponent', pregunta.kind === 'exp');

@@ -22,6 +22,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -138,6 +139,7 @@ function buildLevel() {
 /** Posa a la pantalla el pas actual: la sigla amb els nombres, els passos fets i el camp de resposta. */
 function mostraPas() {
     expectedAnswer = respostaDelPas(pregunta, pasActual());
+    mostraInstruccio(pasActual() === 'mcd' ? TEXTOS.escriuMcd : TEXTOS.escriuMcm);
     els.stepPrompt.innerHTML = htmlEtiquetaPas(pasActual(), pregunta);
     els.stepsDone.innerHTML = pasosFets.join('');
     els.resolutionPanel.style.display = 'flex';

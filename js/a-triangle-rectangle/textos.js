@@ -6,7 +6,7 @@
  *      junts. (Els del motor comú són a js/textos.js; el títol és a
  *      a-triangle-rectangle.html.) Cada paraula ha de ser al lèxic
  *      (js/lexicon/dades.js): ho comprova tests/check-lexicon.js.
- *      L'activitat no té frases: es llegeix amb el triangle, nombres i símbols.
+ *      L'única frase és la instrucció de cada pregunta; per a la resta, es llegeix amb el triangle, nombres i símbols.
  * ============================================================================
  */
 
@@ -16,4 +16,7 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de la pregunta (a sota de la capçalera); {costat}: la lletra del costat que falta (a, b o c)
+    instruccio: 'Tria la mesura del costat {costat}.',
 };

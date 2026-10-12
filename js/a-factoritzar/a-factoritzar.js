@@ -21,6 +21,7 @@ import {
     initCustomKeyboard,
     injectSharedHTML,
     isTouchDevice,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -147,6 +148,7 @@ function mostraPas() {
         mostraResultat();
         return;
     }
+    mostraInstruccio(TEXTOS.instruccio, TEXTOS.nota);
     els.stepTarget.textContent = String(pendent.valor);
     els.resolutionPanel.style.display = 'flex';
     els.inpA.value = '';
@@ -213,6 +215,7 @@ function preparaNovaResposta() {
 /** L'arbre és complet: surt «✅ 12 = 2² · 3» i es tanca la pregunta. */
 function mostraResultat() {
     hideCustomKeyboard();
+    mostraInstruccio('');
     els.resolutionPanel.style.display = 'none';
     els.factResult.innerHTML = `<div class="factorization-display">${htmlResultat(nombre)}</div>`;
     els.factResult.style.display = 'block';

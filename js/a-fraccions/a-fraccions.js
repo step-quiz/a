@@ -25,6 +25,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -91,6 +92,15 @@ let estat = {}; // el que se sap de la resolució: el denominador comú i els nu
 let pas = null; // el pas actual: 'den', 'equiv', 'inversa', 'resultat' o 'simplifica'
 let _helpVisible = false;
 
+/** La instrucció de cada pas. */
+const INSTRUCCIO_PAS = {
+    den: TEXTOS.escriuDenominador,
+    equiv: TEXTOS.escriuEquivalents,
+    inversa: TEXTOS.escriuInversa,
+    resultat: TEXTOS.escriuResultat,
+    simplifica: TEXTOS.simplifica,
+};
+
 /** Les caselles del pas actual, en ordre. */
 const caselles = () => [...els.stepArea.querySelectorAll('input.math-cell')];
 
@@ -147,6 +157,7 @@ function buildLevel() {
 /** Posa a la pantalla les caselles d'un pas. */
 function mostraPas(nouPas) {
     pas = nouPas;
+    mostraInstruccio(INSTRUCCIO_PAS[pas]);
     resetHelp();
     els.partFeedback.innerHTML = '';
     els.stepArea.innerHTML = htmlPas(problema, estat, pas);

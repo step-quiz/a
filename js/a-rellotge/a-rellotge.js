@@ -20,6 +20,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -178,6 +179,7 @@ function buildLevel() {
         input.classList.remove('reveal', 'kb-selected');
     }
     updateHeader();
+    mostraInstruccio(TEXTOS.instruccio);
     dibuixaAgulles(currentHours, currentMinutes);
     els.resolutionPanel.style.display = 'flex';
     if (isTouchDevice()) showCustomKeyboard(els.inputHores);

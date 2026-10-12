@@ -23,6 +23,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -142,6 +143,7 @@ function buildLevel() {
 function mostraPas() {
     const pas = pasActual();
     expectedAnswer = respostaDelPas(compra, pas) / 100;
+    mostraInstruccio(pas === 'total' ? TEXTOS.escriuTotal : TEXTOS.escriuCanvi);
 
     // Al nivell 3 el bitllet no es veu mentre es demana el total: surt en passar al canvi
     els.shopDisplay.innerHTML = htmlBotiga(compra, pas !== 'total');

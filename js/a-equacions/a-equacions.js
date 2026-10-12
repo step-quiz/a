@@ -23,6 +23,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -110,6 +111,7 @@ function buildLevel() {
     els.valueInput.classList.remove('reveal', 'kb-selected');
 
     updateHeader();
+    mostraInstruccio(format(TEXTOS.instruccio, { x: 'x' }));
     els.equationDisplay.innerHTML = htmlEquacio(equacio);
     els.resolutionPanel.style.display = 'flex';
 

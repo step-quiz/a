@@ -114,7 +114,7 @@ function textDeLaPagina(html) {
         );
         // Control de la mateixa prova: una paraula fora del lèxic sí que es detecta
         ok(
-            desconegudes('Mira aquest dinosaure, si us plau').join() === 'mira,aquest,dinosaure,us,plau',
+            desconegudes('Mira aquell dinosaure, si us plau').join() === 'mira,aquell,dinosaure,us,plau',
             'la prova detecta les paraules que no hi són'
         );
         ok(

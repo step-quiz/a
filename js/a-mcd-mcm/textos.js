@@ -6,7 +6,7 @@
  *      (Els del motor comú són a js/textos.js; el títol i les sigles «MCD» i
  *      «MCM» són a a-mcd-mcm.html i a vista.js.) Cada paraula ha de ser al
  *      lèxic (js/lexicon/dades.js): ho comprova tests/check-lexicon.js.
- *      L'activitat no té frases: es llegeix amb nombres, sigles i símbols.
+ *      L'única frase és la instrucció de cada pregunta; per a la resta, es llegeix amb nombres, sigles i símbols.
  * ============================================================================
  */
 
@@ -16,4 +16,8 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de cada pas (a sota de la capçalera): primer el MCD i després el MCM
+    escriuMcd: 'Escriu el MCD.',
+    escriuMcm: 'Escriu el MCM.',
 };

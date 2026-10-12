@@ -2016,6 +2016,40 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
         );
     }
 
+    suite('Instruccions: quina frase toca a Coordenades i a Temperatura (formaInstruccio)');
+    {
+        const C = await carrega('js/a-pla-cartesia/generador.js');
+        const T = await carrega('js/a-recta-numerica/generador.js');
+        const f = (tipus, lloc = 'Q1', nivell = 1) => C.formaInstruccio({ tipus, lloc }, nivell);
+        ok(
+            f('situa') === 'situa' && f('coordenades') === 'coordenades',
+            'Coordenades: «situa» i «coordenades» diuen cada una la seva'
+        );
+        ok(
+            f('quadrant', 'Q2', 1) === 'quadrant' &&
+                f('quadrant', 'Q2', 2) === 'quadrant' &&
+                f('quadrant', 'eixX', 3) === 'on',
+            'Coordenades: «en quin quadrant» als nivells 1 i 2 i «on» al 3 (amb eixos i origen)'
+        );
+        ok(
+            f('al-quadrant', 'Q3', 2) === 'al-quadrant' &&
+                f('al-quadrant', 'eixY', 3) === 'al-eix' &&
+                f('al-quadrant', 'eixX', 3) === 'al-eix' &&
+                f('al-quadrant', 'origen', 3) === 'a-lorigen',
+            "Coordenades: escriure un punt d'un quadrant, d'un eix o l'origen"
+        );
+        const t = (tipus, x, extrem) => T.formaInstruccio({ tipus, x, extrem });
+        ok(t('Q1', 0) === 'avui' && t('Q2', -1) === 'ahir' && t('Q2', 1) === 'dema', 'Temperatura: avui, ahir i demà');
+        ok(
+            [-5, -4, -3, -2].every(x => t('Q2', x) === 'passat') && [2, 3, 4, 5].every(x => t('Q2', x) === 'futur'),
+            'Temperatura: un dia passat és «feia» i un de futur és «farà»'
+        );
+        ok(
+            t('Q3') === 'recompte' && t('Q4', 0, 'calent') === 'calent' && t('Q4', 0, 'fred') === 'fred',
+            'Temperatura: el recompte de dies i el dia més calent o més fred'
+        );
+    }
+
     finish();
 })().catch(e => {
     console.error(e);

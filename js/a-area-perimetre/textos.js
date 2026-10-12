@@ -6,7 +6,7 @@
  *      junts. (Els del motor comú són a js/textos.js; el títol i les
  *      etiquetes «àrea» i «perímetre» són a a-area-perimetre.html.) Cada
  *      paraula ha de ser al lèxic (js/lexicon/dades.js): ho comprova
- *      tests/check-lexicon.js. L'activitat no té frases: es llegeix amb la
+ *      tests/check-lexicon.js. L'única frase és la instrucció de cada pregunta; per a la resta, es llegeix amb la
  *      figura, nombres i símbols.
  * ============================================================================
  */
@@ -17,4 +17,7 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de la pregunta (a sota de la capçalera)
+    instruccio: "Escriu l'àrea i el perímetre.",
 };

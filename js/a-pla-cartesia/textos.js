@@ -16,4 +16,13 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de cada tipus de pregunta (a sota de la capçalera); {punt} és la lletra del punt (A, B, C…)
+    situa: 'Marca on és el punt {punt}.',
+    coordenades: 'Escriu les coordenades del punt {punt}.',
+    quadrant: 'En quin quadrant és el punt {punt}?',
+    on: 'On és el punt {punt}?',
+    alQuadrant: 'Escriu un punt que estigui en aquest quadrant.',
+    alEix: 'Escriu un punt que estigui en aquest eix.',
+    origen: "Escriu les coordenades de l'origen.",
 };

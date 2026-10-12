@@ -20,6 +20,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -98,9 +99,11 @@ function mostraRepte() {
     els.resolutionPanel.style.display = 'flex';
 
     if (tipus === 1) {
+        mostraInstruccio(format(TEXTOS.triaSigne, { signes: '< o >' }));
         els.expressionBox.innerHTML = `${num(repte.p)}<span class="token-op auto-selected">?</span>${num(repte.q)}`;
         els.stepSigne.classList.add('active');
     } else if (tipus === 2) {
+        mostraInstruccio(TEXTOS.escriuEntre);
         els.expressionBox.innerHTML =
             `${num(repte.p)}<span class="token-sym">&lt;</span>` +
             `<input type="text" id="value-input" class="inline-input" autocomplete="off" aria-label="Escriu la resposta">` +
@@ -109,6 +112,7 @@ function mostraRepte() {
         if (isTouchDevice()) showCustomKeyboard(input());
         else input().focus();
     } else {
+        mostraInstruccio(format(TEXTOS.toca, { r: formatNum(repte.r) }));
         els.expressionBox.style.display = 'none';
         els.menorsTitle.innerHTML = `<span class="token-sym">▢ &lt;</span> ${num(repte.r, 'resolved-num')}`;
         dibuixaGraella();

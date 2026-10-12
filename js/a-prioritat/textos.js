@@ -5,7 +5,7 @@
  * ROL: Els textos de l'activitat «Prioritat d'operacions» que veu l'alumne, tots
  *      junts. (Els del motor comú són a js/textos.js; el títol és a a-prioritat.html.)
  *      Cada paraula ha de ser al lèxic (js/lexicon/dades.js): ho comprova
- *      tests/check-lexicon.js. L'activitat no té frases: es llegeix amb
+ *      tests/check-lexicon.js. L'única frase és la instrucció de cada pregunta; per a la resta, es llegeix amb
  *      l'expressió, xifres, signes, marques ✔/✖ i la taula de la resolució.
  * ============================================================================
  */
@@ -19,4 +19,8 @@ export const TEXTOS = {
 
     // Botó per pujar de nivell
     nivellSeguent: 'Nivell {n} ›',
+
+    // La instrucció de cada fase (a sota de la capçalera): 1. quina operació es fa primer; 2. el seu resultat
+    escullOperacio: 'Escull quina operació es fa en primer lloc.',
+    escullResultat: 'Escull el resultat.',
 };

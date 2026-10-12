@@ -24,6 +24,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -129,6 +130,7 @@ function buildLevel() {
     els.canviats.innerHTML = '';
     mostraFigura();
     updateHeader();
+    mostraInstruccio(TEXTOS.instruccio);
     focusa(els.areaInput);
 }
 

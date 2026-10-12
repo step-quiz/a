@@ -13,7 +13,8 @@
 export const TEXTOS = {
     // Capçalera i camp de resposta
     operacio: 'Operació {n} de {total}',
-    escriuResultat: 'Escriu el resultat',
+    // La instruccio de cada pregunta (mostraInstruccio) i el nom del camp per als lectors de pantalla
+    escriuResultat: 'Escriu el resultat.',
     ok: 'OK',
     ajuda: '💡 Ajuda',
 

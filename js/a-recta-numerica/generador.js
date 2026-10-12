@@ -202,6 +202,19 @@ export function generaPregunta(cloud, yRange, nivell) {
     return generaLectura(tipus, cloud, yRange, nivell);
 }
 
+/**
+ * Quina de les instruccions toca a una pregunta (el text és a textos.js): la temperatura d'avui, d'ahir, de demà,
+ * d'un dia passat o d'un dia futur (el verb canvia: fa / feia / farà), el recompte de dies o el dia més calent o més fred.
+ */
+export function formaInstruccio(pregunta) {
+    if (pregunta.tipus === 'Q3') return 'recompte';
+    if (pregunta.tipus === 'Q4') return pregunta.extrem === 'calent' ? 'calent' : 'fred';
+    if (pregunta.x === 0) return 'avui';
+    if (pregunta.x === -1) return 'ahir';
+    if (pregunta.x === 1) return 'dema';
+    return pregunta.x < 0 ? 'passat' : 'futur';
+}
+
 /** El text d'una opció d'una pregunta: «3 ºC», «2» (dies) o «ahir» / «+3». */
 export function textOpcio(pregunta, opcio) {
     if (pregunta.tipus === 'Q3') return String(opcio.valor);

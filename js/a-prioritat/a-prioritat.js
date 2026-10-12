@@ -25,6 +25,7 @@ import {
     hideMiniOverlay,
     injectSharedHTML,
     isTouchDevice,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -134,6 +135,7 @@ function renderSteps(marks = {}) {
 /** Fase 1: tocar l'operació que es pot fer ara (👆). */
 function askOp() {
     phase = 'op';
+    mostraInstruccio(TEXTOS.escullOperacio);
     els.stepInstruction.textContent = '👆';
     els.chipPool.innerHTML = '';
 }
@@ -141,6 +143,7 @@ function askOp() {
 /** Fase 2: triar el resultat de l'operació tocada («4 · 5 = ?») entre 4 opcions. */
 function askResult() {
     phase = 'result';
+    mostraInstruccio(TEXTOS.escullResultat);
     const { line, op } = rows[rows.length - 1];
     const values = shuffle([opValue(line, op), ...stepDistractors(line, op)]);
     els.stepInstruction.innerHTML = htmlPregunta(line, op);
@@ -252,6 +255,7 @@ function finishOperation(ok) {
     if (!ok) completeSteps();
     renderSteps();
     els.stepInstruction.textContent = '';
+    mostraInstruccio('');
     els.solutionBox.innerHTML = '';
     els.solutionBox.style.display = 'block';
     showMiniOverlay(levelPoints, { successColor: 'var(--primary-dark)' });

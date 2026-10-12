@@ -16,6 +16,7 @@ import {
     endSession,
     hideMiniOverlay,
     injectSharedHTML,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -26,6 +27,8 @@ import {
 import { TEXTOS_COMUNS, format } from '../textos.js';
 import {
     chooseYRange,
+    etiquetaTemp,
+    formaInstruccio,
     generaPregunta,
     generateCloud,
     llegeixParametres,
@@ -70,6 +73,23 @@ function updateHeader() {
     els.attemptsDisplay.className = 'attempts-counter' + (state.attemptsLeft <= 1 ? ' danger' : '');
 }
 
+// ── LA INSTRUCCIÓ ────────────────────────────────────────────────────────────
+
+/** El text de la instrucció d'una pregunta (formaInstruccio diu quina toca). */
+function textInstruccio(p) {
+    const textos = {
+        avui: TEXTOS.tempAvui,
+        ahir: TEXTOS.tempAhir,
+        dema: TEXTOS.tempDema,
+        passat: TEXTOS.tempPassat,
+        futur: TEXTOS.tempFutur,
+        recompte: p.tipus === 'Q3' ? format(TEXTOS.recompte, { temp: etiquetaTemp(p.y) }) : '',
+        calent: TEXTOS.diaCalor,
+        fred: TEXTOS.diaFred,
+    };
+    return textos[formaInstruccio(p)];
+}
+
 // ── LÒGICA PRINCIPAL ─────────────────────────────────────────────────────────
 
 /** Cridat per game-core.js via startSession(): un gràfic nou i una pregunta nova. */
@@ -85,6 +105,7 @@ function buildLevel() {
     els.body.style.backgroundColor =
         bgColors[(state.currentSession * TOTAL_OPERATIONS + state.currentOperation) % bgColors.length];
     updateHeader();
+    mostraInstruccio(textInstruccio(pregunta));
 
     // Al nivell 1 el dia de la pregunta surt ressaltat al gràfic
     const destaca = NIVELL === 1 && (pregunta.tipus === 'Q1' || pregunta.tipus === 'Q2') ? pregunta.x : null;

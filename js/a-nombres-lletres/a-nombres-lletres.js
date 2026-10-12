@@ -19,6 +19,7 @@ import {
     endSession,
     hideMiniOverlay,
     injectSharedHTML,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -81,6 +82,7 @@ function buildLevel() {
     els.body.style.backgroundColor =
         bgColors[(state.currentSession * TOTAL_OPERATIONS + state.currentOperation) % bgColors.length];
     updateHeader();
+    mostraInstruccio(TEXTOS.instruccio);
     els.prompt.innerHTML = htmlNombre(pregunta.n);
 
     els.options.innerHTML = '';

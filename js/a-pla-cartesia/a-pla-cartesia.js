@@ -26,6 +26,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -44,6 +45,7 @@ import {
     comprovaSitua,
     dinsDelPla,
     exemplePunt,
+    formaInstruccio,
     generaPregunta,
     llegeixParametres,
 } from './generador.js';
@@ -104,6 +106,23 @@ function updateHeader() {
     els.attemptsDisplay.className = 'attempts-counter' + (state.attemptsLeft <= 2 ? ' danger' : '');
 }
 
+// ── LA INSTRUCCIÓ ────────────────────────────────────────────────────────────
+
+/** El text de la instrucció d'una pregunta (formaInstruccio diu quina toca). */
+function textInstruccio(p) {
+    const punt = p.etiqueta;
+    const textos = {
+        'situa': format(TEXTOS.situa, { punt }),
+        'coordenades': format(TEXTOS.coordenades, { punt }),
+        'quadrant': format(TEXTOS.quadrant, { punt }),
+        'on': format(TEXTOS.on, { punt }),
+        'al-quadrant': TEXTOS.alQuadrant,
+        'al-eix': TEXTOS.alEix,
+        'a-lorigen': TEXTOS.origen,
+    };
+    return textos[formaInstruccio(p, NIVELL)];
+}
+
 // ── LÒGICA PRINCIPAL ─────────────────────────────────────────────────────────
 
 /** Cridat per game-core.js via startSession(). */
@@ -153,6 +172,7 @@ function buildLevel() {
         inp.removeAttribute('inputmode');
     }
     updateHeader();
+    mostraInstruccio(textInstruccio(pregunta));
     if (ambCaselles(pregunta)) focusa(els.inputX);
     else hideCustomKeyboard();
 }

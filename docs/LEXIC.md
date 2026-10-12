@@ -74,6 +74,19 @@ quantitat(2, 'pis');                         // «2 pisos»
 
 `format()` falla si falta algun valor, i el lèxic falla si l'`id` no hi és: una errada de lletra no arriba mai a l'alumne.
 
+## La instrucció de cada pregunta
+
+Cada activitat diu què cal fer amb **una frase molt curta** (D13), sota la capçalera i sempre al mateix lloc. Es posa amb `mostraInstruccio(text)` de `js/game-core.js` (el segon paràmetre és una nota més petita, només a Factoritzar). El text és a `textos.js` com qualsevol altre i passa pel mateix control del lèxic:
+
+```js
+// js/a-equacions/textos.js
+instruccio: 'Escriu el valor de {x}.',
+// js/a-equacions/a-equacions.js, a buildLevel()
+mostraInstruccio(format(TEXTOS.instruccio, { x: 'x' }));
+```
+
+Regles: màxim sis paraules, una sola ordre i els verbs de sempre (*Escriu*, *Tria*, *Toca*, *Marca*; *Escull* a «Prioritat d'operacions»). Una lletra o un símbol que canvia (la lletra del punt, `x`, `<`, `>`) es passa com a valor `{entre claus}`, perquè no compta com a paraula. Si la frase depèn del tipus de pregunta, la tria és lògica pura al generador (`formaInstruccio()` a Coordenades i Temperatura) i es prova des de Node. `tests/navegador/instruccions.test.js` comprova la frase de cada activitat, nivell i tipus.
+
 ## Les imatges de les paraules
 
 Cada paraula concreta porta la seva imatge, al camp `imatge` de la mateixa entrada. Decisió D7: **un emoji del sistema** i, a la mínima sospita que no n'hi hagi cap de bo (que es vegi diferent segons el dispositiu, que sigui ambigu o que no existeixi), **un pictograma SVG propi**.

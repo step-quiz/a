@@ -20,6 +20,7 @@ import {
     injectSharedHTML,
     isTouchDevice,
     kbMarkForOverwrite,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -156,6 +157,7 @@ function buildLevel() {
     els.resolutionPanel.style.display = 'none';
 
     updateHeader();
+    mostraInstruccio(TEXTOS.escriuResultat);
     activateOperation();
 }
 

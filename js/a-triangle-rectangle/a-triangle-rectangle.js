@@ -18,6 +18,7 @@ import {
     endSession,
     hideMiniOverlay,
     injectSharedHTML,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -96,6 +97,7 @@ function buildLevel() {
     els.body.style.backgroundColor =
         bgColors[(state.currentSession * TOTAL_OPERATIONS + state.currentOperation) % bgColors.length];
     updateHeader();
+    mostraInstruccio(format(TEXTOS.instruccio, { costat: problema.find }));
 
     els.triangle.innerHTML = htmlTriangle(problema);
     els.helpText.innerHTML = '';

@@ -25,6 +25,7 @@ import {
     hideMiniOverlay,
     injectSharedHTML,
     isTouchDevice,
+    mostraInstruccio,
     puntsPregunta,
     recordAnswerToHistory,
     registraProva,
@@ -118,6 +119,7 @@ function buildLevel() {
     els.body.style.backgroundColor =
         bgColors[(state.currentSession * TOTAL_OPERATIONS + state.currentOperation) % bgColors.length];
     updateHeader();
+    mostraInstruccio(NIVELL === 1 ? TEXTOS.triaParaula : NIVELL === 2 ? TEXTOS.triaImatge : TEXTOS.escriuParaula);
     els.options.innerHTML = '';
     els.partFeedback.innerHTML = '';
     els.input.value = '';

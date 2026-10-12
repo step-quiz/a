@@ -348,7 +348,7 @@ module.exports = async function ({ browser, base }) {
             `capçalera: «${c.sessio}», «${c.operacio}», «${c.nivell}», «${c.punts}», «${c.intents}»`
         );
         ok(
-            c.ok === 'OK' && c.ajuda.trim() === '💡 Ajuda' && c.etiqueta === 'Escriu el resultat',
+            c.ok === 'OK' && c.ajuda.trim() === '💡 Ajuda' && c.etiqueta === 'Escriu el resultat.',
             `botons i etiqueta del camp: «${c.ok}», «${c.ajuda.trim()}», «${c.etiqueta}»`
         );
         await responLliure(page, 'int', false);

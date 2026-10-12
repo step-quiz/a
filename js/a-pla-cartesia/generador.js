@@ -52,6 +52,18 @@ export const LLOCS_DEL_NIVELL = {
     3: ['Q1', 'Q2', 'Q3', 'Q4', 'eixX', 'eixY', 'origen'],
 };
 
+/**
+ * Quina de les instruccions toca a una pregunta (el text és a textos.js):
+ *   'situa', 'coordenades', 'quadrant' (nivells 1 i 2), 'on' (nivell 3: el lloc pot ser un eix o l'origen),
+ *   'al-quadrant', 'al-eix' o 'a-lorigen' (el que es demana a 'al-quadrant', segons el lloc).
+ */
+export function formaInstruccio(pregunta, nivell) {
+    if (pregunta.tipus === 'quadrant') return nivell >= 3 ? 'on' : 'quadrant';
+    if (pregunta.tipus !== 'al-quadrant') return pregunta.tipus;
+    if (pregunta.lloc === 'origen') return 'a-lorigen';
+    return pregunta.lloc === 'eixX' || pregunta.lloc === 'eixY' ? 'al-eix' : 'al-quadrant';
+}
+
 /** Si el punt és dins del pla. */
 export const dinsDelPla = (x, y) =>
     Number.isInteger(x) && Number.isInteger(y) && x >= X_MIN && x <= X_MAX && y >= Y_MIN && y <= Y_MAX;
