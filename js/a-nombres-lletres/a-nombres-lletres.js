@@ -47,6 +47,7 @@ const els = {
     nivellDisplay: $('nivell-display'),
     scoreDisplay: $('score-display'),
     attemptsDisplay: $('attempts-display'),
+    btnPrevLevel: $('btn-prev-level'),
     btnNextLevel: $('btn-next-level'),
     prompt: $('question-prompt'),
     options: $('options-container'),
@@ -154,15 +155,21 @@ function finishOperation(success) {
 // ── BOTÓ PER PUJAR DE NIVELL ─────────────────────────────────────────────────
 
 /** «Nivell 2 ›»: recarrega l'activitat amb el nivell següent (només es puja, mai es baixa; el 4 és el màxim). */
-function iniciaBotoNivellSeguent() {
-    if (NIVELL >= NIVELL_MAXIM) return;
-    els.btnNextLevel.textContent = format(TEXTOS.nivellSeguent, { n: NIVELL + 1 });
-    els.btnNextLevel.classList.add('visible');
-    els.btnNextLevel.addEventListener('click', () => {
+function iniciaBotonsNivell() {
+    const aNivell = n => {
         const params = new URLSearchParams(window.location.search);
-        params.set('nivell', NIVELL + 1);
+        params.set('nivell', n);
         window.location.search = params.toString();
-    });
+    };
+    for (const [boto, text, nou, hiEs] of [
+        [els.btnPrevLevel, TEXTOS.baixaNivell, NIVELL - 1, NIVELL > 1],
+        [els.btnNextLevel, TEXTOS.pujaNivell, NIVELL + 1, NIVELL < NIVELL_MAXIM],
+    ]) {
+        if (!hiEs) continue;
+        boto.textContent = text;
+        boto.classList.add('visible');
+        boto.addEventListener('click', () => aNivell(nou));
+    }
 }
 
 // ── INICI ────────────────────────────────────────────────────────────────────
@@ -172,5 +179,5 @@ registraProva(() => ({ ocupat: isPenalizing, nivell: NIVELL, pregunta, resposta:
 
 injectSharedHTML();
 validateConfig();
-iniciaBotoNivellSeguent();
+iniciaBotonsNivell();
 startGame();

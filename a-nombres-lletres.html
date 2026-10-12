@@ -202,7 +202,12 @@
                     font-size: 1.3em;
                 }
             }
-            /* Botó «Nivell següent» (només puja; el 4 és el màxim) */
+            /* Botons «Baixar de nivell» i «Pujar de nivell» (el 1 no pot baixar i el 4 no pot pujar: només hi surt l'altre) */
+            .nivell-botons {
+                display: flex;
+                gap: 8px;
+            }
+            #btn-prev-level,
             #btn-next-level {
                 display: none;
                 align-items: center;
@@ -218,13 +223,19 @@
                 white-space: nowrap;
                 touch-action: manipulation;
             }
+            #btn-prev-level.visible,
             #btn-next-level.visible {
                 display: inline-flex;
             }
             @media (max-width: 480px) {
-                #btn-next-level {
+                .nivell-botons {
                     width: 100%;
+                }
+                #btn-prev-level,
+                #btn-next-level {
+                    flex: 1;
                     justify-content: center;
+                    white-space: normal;
                 }
             }
         </style>
@@ -250,7 +261,10 @@
                         </div>
                     </div>
                     <div class="score-text" id="score-display"></div>
-                    <button id="btn-next-level"></button>
+                    <div class="nivell-botons">
+                        <button id="btn-prev-level"></button>
+                        <button id="btn-next-level"></button>
+                    </div>
                     <div id="attempts-display" class="attempts-counter"></div>
                 </div>
 

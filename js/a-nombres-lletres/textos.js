@@ -14,8 +14,9 @@ export const TEXTOS = {
     // Capçalera
     nombre: 'Nombre {n} de {total}',
 
-    // Botó per pujar de nivell
-    nivellSeguent: 'Nivell {n} ›',
+    // Botons per canviar de nivell (el 1 no pot baixar i el 4 no pot pujar)
+    baixaNivell: '‹ Baixar de nivell',
+    pujaNivell: 'Pujar de nivell ›',
 
     // La instrucció de la pregunta (a sota de la capçalera)
     instruccio: 'Tria el nom del nombre.',

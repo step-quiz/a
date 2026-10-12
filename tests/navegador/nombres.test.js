@@ -25,6 +25,47 @@ const clica = (page, correcta) =>
     }, correcta);
 
 module.exports = async function ({ browser, base }) {
+    suite('Nombres: «Baixar de nivell» i «Pujar de nivell» (el 1 només puja i el 4 només baixa)');
+    {
+        const botons = page =>
+            page.evaluate(() =>
+                ['btn-prev-level', 'btn-next-level']
+                    .map(id => document.getElementById(id))
+                    .filter(b => getComputedStyle(b).display !== 'none')
+                    .map(b => b.textContent.trim())
+            );
+        const esperats = {
+            1: ['Pujar de nivell ›'],
+            2: ['‹ Baixar de nivell', 'Pujar de nivell ›'],
+            3: ['‹ Baixar de nivell', 'Pujar de nivell ›'],
+            4: ['‹ Baixar de nivell'],
+        };
+        for (const nivell of [1, 2, 3, 4]) {
+            const page = await obre(browser, base, RUTA(nivell), { mobil: true });
+            await esperaLliure(page);
+            const b = await botons(page);
+            const desborda = await page.evaluate(
+                () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+            );
+            ok(
+                JSON.stringify(b) === JSON.stringify(esperats[nivell]) && !desborda,
+                `nivell ${nivell}: ${b.map(x => `«${x}»`).join(' i ')}${desborda ? ' (desborda en mòbil)' : ''}`
+            );
+            await page.context().close();
+        }
+        const page = await obre(browser, base, RUTA(2), { rapid: false });
+        await Promise.all([page.waitForNavigation({ timeout: 4000 }), page.click('#btn-prev-level')]);
+        await esperaLliure(page);
+        ok(
+            (await estat(page)).nivell === 1 && /nivell=1/.test(page.url()) && /fixed=A/.test(page.url()),
+            '«Baixar de nivell» porta al nivell 1 i conserva la resta de paràmetres'
+        );
+        await Promise.all([page.waitForNavigation({ timeout: 4000 }), page.click('#btn-next-level')]);
+        await esperaLliure(page);
+        ok((await estat(page)).nivell === 2, '«Pujar de nivell» torna al nivell 2');
+        await page.context().close();
+    }
+
     suite('Nombres: el nombre en xifres i 5 opcions escrites a cada nivell');
     const rangs = { 1: [0, 20], 2: [21, 69], 3: [70, 100], 4: [0, 100] };
     for (const nivell of [1, 2, 3, 4]) {
