@@ -188,6 +188,38 @@ module.exports = async function ({ browser, base }) {
             ok(r.punts === '30', `${nom}: dos Intros per pregunta → sessionScores = [${r.punts}], «${text(r.resum)}»`);
     }
 
+    suite('Fi de sessió: un Intro a la pantalla «Sessió completada» no registra cap resposta (ni resta intents)');
+    for (const [nom, tipus] of ACTIVITATS) {
+        const page = await obre(browser, base, `${nom}.html?totalsessions=2&totaloperations=1&maxintents=1`);
+        await esperaLliure(page);
+        await respon(page, tipus, false); // l'únic intent: es perd la pregunta i s'acaba la sessió
+        await page.waitForFunction(
+            () => getComputedStyle(document.getElementById('session-end-screen')).display !== 'none',
+            null,
+            { timeout: 8000 }
+        );
+        await page.waitForTimeout(200); // el botó «Següent» surt al cap d'1 s (accelerat)
+        const abans = await estat(page);
+        for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
+        await page.waitForTimeout(300); // una penalització fantasma (700 ms, accelerats) ja s'hauria notat
+        const despres = await estat(page);
+        ok(
+            despres.attemptsLeft === abans.attemptsLeft &&
+                despres.attemptsLeft >= 0 &&
+                despres.sessionHistory.length === abans.sessionHistory.length &&
+                despres.sessionHistory.length === 1,
+            `${nom}: tres Intros a la pantalla de fi de sessió → intents ${abans.attemptsLeft} → ${despres.attemptsLeft}, respostes a la revisió ${despres.sessionHistory.length} (ha de ser 1)`
+        );
+        await page.evaluate(() => window.startNextSession());
+        await page.evaluate(() => window.startNextSession()); // un toc de més no pot passar de l'última sessió
+        const sessio = await estat(page);
+        ok(
+            sessio.currentSession === 1 && page.errors.length === 0,
+            `${nom}: «Següent sessió» dues vegades només n'obre una (sessió ${sessio.currentSession + 1} de ${sessio.sessions})`
+        );
+        await page.context().close();
+    }
+
     suite("Punts d'un encert amb molts errors (R5): sempre ≥ 1 punt i «Molt bé!», no «Intents esgotats»");
     {
         // Text visible del feedback just després d'un encert o d'un esgotament (els temporitzadors accelerats el retiren aviat)

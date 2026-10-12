@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="Activitats interactives de matemàtiques d'ESO per a l'aula d'acollida." />
+        <meta name="author" content="Step Quiz" />
+        <meta name="robots" content="index, follow" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Matemàtiques</title>
+
+        <!--
+    ============================================================
+    FITXER: alumnat.html
+    ROL: La PORTADA D'ICONES per a l'alumnat: una fitxa gran per cada activitat
+         (i per a l'àlbum de paraules), amb la seva imatge i el seu nom. Sense
+         menús ni frases: l'alumne toca la imatge que vol i s'obre l'activitat.
+         És una entrada OPCIONAL: l'alumnat normalment rep l'enllaç directe de
+         l'activitat que ha de fer (el generen els professors al panell del
+         professorat, que és index.html, la pàgina principal del web) i no
+         passa per aquí. El panell és a l'enllaç del peu («Professorat») i
+         aquesta pàgina és a l'enllaç «Portada de l'alumnat» del panell.
+    JAVASCRIPT: js/portada/portada.js (pinta les fitxes), activitats.js (el
+         catàleg d'activitats, compartit amb el panell del professorat),
+         vista.js (l'HTML) i textos.js (els noms).
+    ESTILS: css/portada.css (les fitxes) i css/peu.css (el peu).
+    VOCABULARI: el títol i els noms de les fitxes passen pel control del lèxic
+         (tests/check-lexicon.js). El peu (data-legal: l'autoria i la llicència)
+         és per als adults i queda fora d'aquest control.
+    ============================================================
+    -->
+
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/shared.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+        <link rel="stylesheet" href="css/portada.css" />
+        <link rel="stylesheet" href="css/peu.css" />
+        <link rel="stylesheet" href="css/chromebook.css" />
+    </head>
+    <body>
+        <main class="pagina">
+            <div class="capcalera">
+                <img src="icon-green.png" alt="" />
+                <h1>Matemàtiques</h1>
+            </div>
+            <ul class="fitxes" id="fitxes"></ul>
+        </main>
+
+        <footer class="site-footer" data-legal>
+            <a href="https://step-quiz.net/" class="footer-logo" title="Step Quiz" aria-label="Step Quiz">
+                <img src="icon.png" alt="" onerror="this.style.display = 'none'" />
+            </a>
+            <span>
+                © 2026 <strong>David Arso Civil</strong> · Departament de Matemàtiques, INS Miquel Tarradell.
+                Contingut:
+                <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca">CC BY-NC-SA 4.0</a>
+                · Codi: <a href="https://opensource.org/license/mit">MIT</a> ·
+                <a href="https://github.com/step-quiz/a/blob/main/LLICENCIA.md">Més informació</a>.
+            </span>
+            <a href="index.html" class="peu-professorat">Professorat</a>
+        </footer>
+
+        <script type="module" src="js/portada/portada.js"></script>
+    </body>
+</html>

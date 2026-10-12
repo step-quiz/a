@@ -123,6 +123,9 @@ export function endSession() {
         renderFinalSummary();
         showScreen('final-screen');
     } else {
+        // Mentre es veu «Sessió completada» el joc és amagat: cap resposta (un Intro, per exemple) no el pot tocar.
+        // isTransitioning torna a false a buildLevel() de cada activitat, quan comença la sessió següent.
+        state.isTransitioning = true;
         showScreen('session-end-screen');
         const titleEl = document.getElementById('session-end-title');
         if (titleEl) titleEl.innerText = format(TEXTOS_COMUNS.sessioCompletada, { n: state.currentSession + 1 });
@@ -137,7 +140,6 @@ export function endSession() {
             btnEl.parentNode.insertBefore(waitMsg, btnEl.nextSibling);
             setTimeout(() => {
                 btnEl.style.display = 'inline-block';
-                state.isTransitioning = false;
                 const msg = document.getElementById('session-wait-msg');
                 if (msg) msg.remove();
             }, 1000);
@@ -146,6 +148,8 @@ export function endSession() {
 }
 
 export function startNextSession() {
+    // Només si queda alguna sessió: un toc de més (o un Intro) no pot passar del total de sessions.
+    if (state.currentSession + 1 >= TOTAL_SESSIONS) return;
     state.currentSession++;
     showScreen('game-screen');
     startSession();

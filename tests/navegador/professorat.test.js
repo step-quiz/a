@@ -2,7 +2,7 @@
  * ============================================================================
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: tests/navegador/professorat.test.js
- * ROL: El panell del professorat (professorat.html), el generador d'enllaços per
+ * ROL: El panell del professorat (index.html, la pàgina principal del web), el generador d'enllaços per
  *      a la classe: la llista d'activitats per temes, el selector accessible amb
  *      teclat, el nivell, el tema (només a «Vocabulari») i la sessió fixa (només
  *      a les activitats que els admeten), el botó «Copia», el botó «Tutorial», el
@@ -49,7 +49,7 @@ module.exports = async function ({ browser, base }) {
 
     suite('Panell del professorat: llista per temes, peu i cap recurs de tercers (escriptori 1280×800)');
     {
-        const page = await obre(browser, base, 'professorat.html', { rapid: false });
+        const page = await obre(browser, base, 'index.html', { rapid: false });
         const r = await page.evaluate(() => ({
             opcions: [...document.querySelectorAll('.cd-option')].map(o => o.innerText.trim()),
             grups: [...document.querySelectorAll('.cd-group')].map(g => ({
@@ -80,7 +80,7 @@ module.exports = async function ({ browser, base }) {
         ok((r.triada || '').trim() === 'Nombres enters', `activitat per defecte: ${(r.triada || '').trim()}`);
         ok(
             r.h1 === 'Professorat' &&
-                JSON.stringify(r.recursos) === JSON.stringify(['targetes.html', 'album.html', 'index.html']),
+                JSON.stringify(r.recursos) === JSON.stringify(['targetes.html', 'album.html', 'alumnat.html']),
             `capçalera «${r.h1}» i recursos: ${r.recursos.join(', ')}`
         );
         ok(/CC BY-NC-SA 4\.0/.test(r.peu) && /MIT/.test(r.peu) && !/NC-ND/.test(r.html), `peu: «${text(r.peu)}»`);
@@ -101,7 +101,7 @@ module.exports = async function ({ browser, base }) {
 
     suite("Selector d'activitat: teclat i ARIA (R12a)");
     {
-        const page = await obre(browser, base, 'professorat.html', { rapid: false });
+        const page = await obre(browser, base, 'index.html', { rapid: false });
         await page.keyboard.press('Tab');
         const f0 = await page.evaluate(() => ({
             rol: document.activeElement.getAttribute('role'),
@@ -197,7 +197,7 @@ module.exports = async function ({ browser, base }) {
     suite("«Copia»: porta-retalls, alternativa i missatge d'error (R12b)");
     {
         const amb = async (init, comprova) => {
-            const page = await obre(browser, base, 'professorat.html', { rapid: false, init });
+            const page = await obre(browser, base, 'index.html', { rapid: false, init });
             await page.click('#c-eso');
             await page.waitForTimeout(80);
             await comprova(page);
@@ -286,7 +286,7 @@ module.exports = async function ({ browser, base }) {
 
     suite('Botó «▶ Tutorial»: només a les activitats que en tenen');
     {
-        const page = await obre(browser, base, 'professorat.html', { rapid: false });
+        const page = await obre(browser, base, 'index.html', { rapid: false });
         const visible = () =>
             page.evaluate(() => getComputedStyle(document.getElementById('h-eso')).display !== 'none');
         ok(await visible(), 'visible per a «Nombres enters» (té tutorial), sense esperar res');
@@ -321,7 +321,7 @@ module.exports = async function ({ browser, base }) {
 
     suite('Nivell, tema i sessió fixa: només surten a les activitats que els admeten');
     {
-        const page = await obre(browser, base, 'professorat.html', { rapid: false });
+        const page = await obre(browser, base, 'index.html', { rapid: false });
         const fila = id =>
             page.evaluate(id => {
                 const f = document.getElementById(`row-${id}-eso`) || document.getElementById('row-fixed-eso');
@@ -446,7 +446,7 @@ module.exports = async function ({ browser, base }) {
 
     suite("Cada enllaç generat obre l'activitat amb els paràmetres triats (nivell més alt, sessió fixa B)");
     {
-        const page = await obre(browser, base, 'professorat.html', { rapid: false });
+        const page = await obre(browser, base, 'index.html', { rapid: false });
         await page.selectOption('#s-eso', '2');
         await page.selectOption('#o-eso', '3');
         await page.selectOption('#i-eso', '5');

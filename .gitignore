@@ -1,0 +1,4 @@
+# Eines de desenvolupament instal·lades al Codespace o a l'ordinador (no es publiquen)
+node_modules/
+# Pegats en zip: es descomprimeixen al Codespace, però el .zip no es publica
+*.zip

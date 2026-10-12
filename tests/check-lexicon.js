@@ -62,7 +62,7 @@ function textDeLaPagina(html) {
         )
         .map(f => f.replace('.html', ''));
     // Les pàgines que no són activitats però porten text per a l'alumne (el lèxic també les cobreix): { carpeta de js/: pàgina }
-    const PAGINES_ALUMNE = { album: 'album.html', portada: 'index.html' };
+    const PAGINES_ALUMNE = { album: 'album.html', portada: 'alumnat.html' };
     const paginaDe = nom => PAGINES_ALUMNE[nom] || `${nom}.html`;
     for (const [nom, pagina] of Object.entries(PAGINES_ALUMNE))
         if (exists(pagina) && exists(`js/${nom}/textos.js`)) activitats.push(nom);

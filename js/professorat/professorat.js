@@ -2,7 +2,7 @@
  * ============================================================================
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: js/professorat/professorat.js
- * ROL: El panell del professorat (professorat.html): el generador d'enllaços per
+ * ROL: El panell del professorat (index.html): el generador d'enllaços per
  *      a la classe. S'hi tria l'activitat (una llista per temes que es maneja
  *      amb teclat, com un combobox), el nivell, el tema (només a «Vocabulari»), les
  *      sessions, les preguntes, els errors màxims i la sessió fixa; surt

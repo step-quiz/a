@@ -1,0 +1,13 @@
+# Prettier només formata el codi JavaScript dels fitxers propis (js/ i tests/).
+# No es formaten:
+#  · els HTML i els CSS: porten estils (i en alguns casos JS) a dins i reformatar-los
+#    faria canvis enormes i difícils de revisar;
+#  · les eines (tools/), els documents i els fitxers de configuració.
+*.html
+*.css
+*.md
+*.json
+*.yml
+*.mjs
+tools/
+node_modules/

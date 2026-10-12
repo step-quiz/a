@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ca">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="robots" content="noindex" />
+        <base href="/" />
+        <link rel="icon" href="icon-green.png" />
+        <title>Matemàtiques</title>
+
+        <!--
+    ============================================================
+    FITXER: 404.html
+    ROL: La pàgina que Cloudflare Pages serveix (amb l'estat HTTP 404) quan
+         l'adreça no existeix. Sense aquest fitxer, Cloudflare Pages tracta el
+         web com una aplicació d'una sola pàgina i respon 200 amb la portada a
+         qualsevol adreça mal escrita (i amb HTML, no amb un 404, quan falta
+         un fitxer .js).
+         Sense frases, com la portada: una interrogant i l'enllaç a l'inici
+         (només hi ha el nom del web, que és al lèxic).
+    <base href="/">: aquesta pàgina es serveix en adreces de qualsevol
+         profunditat; amb la base a l'arrel, els estils i la icona es troben
+         sempre.
+    ============================================================
+    -->
+
+        <link rel="stylesheet" href="css/tokens.css" />
+        <link rel="stylesheet" href="css/accessibilitat.css" />
+        <style>
+            html,
+            body {
+                margin: 0;
+                min-height: 100vh;
+                min-height: 100dvh;
+                background: #f4f4e8;
+                color: var(--text-main);
+                font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            }
+            main {
+                min-height: 100vh;
+                min-height: 100dvh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 24px;
+                padding: 24px;
+                box-sizing: border-box;
+                text-align: center;
+            }
+            .interrogant {
+                margin: 0;
+                font-size: clamp(5rem, 28vmin, 11rem);
+                line-height: 1;
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+            }
+            .inici {
+                display: inline-flex;
+                align-items: center;
+                gap: 14px;
+                padding: 14px 28px;
+                border-radius: 18px;
+                border: 3px solid #b8be8a;
+                background: #ffffff;
+                color: var(--text-main);
+                font-size: 1.5rem;
+                font-weight: 800;
+                text-decoration: none;
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+            }
+            .inici img {
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
+            }
+            .inici:hover {
+                background: #eceee0;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <p class="interrogant" aria-hidden="true">❓</p>
+            <a class="inici" href="index.html"><img src="icon.png" alt="" /><span>Matemàtiques</span></a>
+        </main>
+    </body>
+</html>

@@ -1957,7 +1957,7 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
         );
 
         // L'enllaç del professorat: sempre sessions, preguntes i errors; el nivell, el tema i la sessió fixa només si l'activitat els admet
-        const base = 'https://step-quiz2.github.io/a2/';
+        const base = 'https://a.step-quiz.net/';
         const dades = { sessions: 1, preguntes: 6, intents: 4 };
         const sense = `${base}a-enters.html?totalsessions=1&totaloperations=6&maxintents=4`;
         const enters = C.activitatDe('a-enters.html');

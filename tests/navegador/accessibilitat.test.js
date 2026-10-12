@@ -19,8 +19,8 @@ const { ACTIVITATS, obre, esperaLliure, respon, jugaFinsAlFinal, carregaAxe } = 
 
 const ETIQUETES_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const PAGINES = [
-    'index.html', // la portada de l'alumnat
-    'professorat.html', // el panell del professorat (generador d'enllaços)
+    'index.html', // el panell del professorat (generador d'enllaços), la pàgina principal
+    'alumnat.html', // la portada d'icones de l'alumnat
     ...ACTIVITATS.flatMap(([nom]) => [`${nom}.html?totaloperations=3&nivell=1`, `${nom}-tutorial.html`]),
     'a-enters.html?fixed=A&totaloperations=3&nivell=1', // amb el distintiu «Sessió fixa A»
     'album.html', // l'àlbum de paraules (no és cap activitat)
@@ -54,12 +54,12 @@ module.exports = async function ({ browser, base }) {
 
     // ── Portada de l'alumnat ────────────────────────────────────────────────
     {
-        const page = await obre(browser, base, 'index.html', { reduit: true, rapid: false });
+        const page = await obre(browser, base, 'alumnat.html', { reduit: true, rapid: false });
         await page.waitForTimeout(300);
         console.log("  — portada de l'alumnat");
         await revisa("portada de l'alumnat", page);
         await tanca(page);
-        const mobil = await obre(browser, base, 'index.html', { mobil: true, rapid: false });
+        const mobil = await obre(browser, base, 'alumnat.html', { mobil: true, rapid: false });
         await mobil.waitForTimeout(300);
         await revisa("portada de l'alumnat en mòbil", mobil);
         await tanca(mobil);
@@ -67,7 +67,7 @@ module.exports = async function ({ browser, base }) {
 
     // ── Panell del professorat ──────────────────────────────────────────────
     {
-        const page = await obre(browser, base, 'professorat.html', { reduit: true, rapid: false });
+        const page = await obre(browser, base, 'index.html', { reduit: true, rapid: false });
         await page.waitForTimeout(300);
         console.log('  — panell del professorat');
         await revisa('panell del professorat', page);

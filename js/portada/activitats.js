@@ -3,8 +3,8 @@
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: js/portada/activitats.js
  * ROL: El CATÀLEG d'activitats: una sola llista per a les dues portades, la de
- *      l'alumnat (index.html: una fitxa amb imatge i nom per activitat) i el
- *      panell del professorat (professorat.html: el generador d'enllaços).
+ *      l'alumnat (alumnat.html: una fitxa amb imatge i nom per activitat) i el
+ *      panell del professorat (index.html: el generador d'enllaços).
  *      Una activitat nova s'hi afegeix aquí i surt a les dues. Lògica pura,
  *      sense DOM: es prova des de Node (tests/activitats.test.js; la comprovació
  *      que cada fitxer, nivell i tutorial existeix és a tests/check-repo.js).

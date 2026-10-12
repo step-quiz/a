@@ -1,0 +1,26 @@
+# Capçaleres de Cloudflare Pages (https://developers.cloudflare.com/pages/configuration/headers/).
+# S'apliquen a tot el web. Cap d'aquestes regles canvia el que fa el web: només tanquen portes.
+#
+#  · Content-Security-Policy: el web no carrega res de fora (cap script, tipus de lletra, imatge ni petició a tercers)
+#    i aquesta regla ho garanteix: si algun dia s'hi cola un recurs extern, el navegador el bloqueja.
+#    'unsafe-inline' hi és perquè les pàgines porten estils i alguns scripts dins de l'HTML (els tutorials i
+#    window.APP_CONFIG a les activitats).
+#  · No hi ha ni X-Frame-Options ni frame-ancestors: així el professorat pot incrustar les activitats en un Google
+#    Sites o en un Moodle. Si no es vol, afegeix-hi «X-Frame-Options: SAMEORIGIN».
+#  · Cap Cache-Control: Cloudflare Pages ja fa que el navegador comprovi si hi ha una versió nova a cada visita
+#    (els fitxers no porten número de versió: una memòria cau llarga barrejaria fitxers vells i nous en publicar).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+
+# El que no és el web de l'alumnat no s'ha d'indexar als cercadors
+/tests/*
+  X-Robots-Tag: noindex
+/tools/*
+  X-Robots-Tag: noindex
+/docs/*
+  X-Robots-Tag: noindex
+/_uploads/*
+  X-Robots-Tag: noindex

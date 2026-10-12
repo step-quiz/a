@@ -203,6 +203,21 @@ function carrega(fitxer, cerca = '', appConfig = undefined) {
         G.state.sessionScores = [];
     }
 
+    suite("game-core.js: sessions (startNextSession no passa de l'última)");
+    {
+        let construccions = 0;
+        globalThis.buildLevel = () => construccions++;
+        globalThis.document = { getElementById: () => null };
+        G.state.currentSession = 0; // aquí només hi ha una sessió (sense ?totalsessions=)
+        G.startNextSession();
+        ok(
+            G.state.currentSession === 0 && construccions === 0,
+            'amb una sola sessió, startNextSession() no fa res (no es construeix cap pregunta nova)'
+        );
+        delete globalThis.buildLevel;
+        delete globalThis.document;
+    }
+
     suite('textos.js: format() omple els {valors} i falla si en falta algun');
     {
         const { TEXTOS_COMUNS, format } = await carrega('js/textos.js');

@@ -158,7 +158,7 @@ module.exports = async function ({ browser, base }) {
         [320, 640],
         [390, 844],
     ]) {
-        const page = await obre(browser, base, 'index.html', { mobil: true, w, h, rapid: false });
+        const page = await obre(browser, base, 'alumnat.html', { mobil: true, w, h, rapid: false });
         const r = await page.evaluate(() => {
             const fitxes = [...document.querySelectorAll('a.fitxa')].map(a => a.getBoundingClientRect());
             const peu = document.querySelector('.site-footer').getBoundingClientRect();
@@ -213,7 +213,7 @@ module.exports = async function ({ browser, base }) {
         [320, 640],
         [390, 844],
     ]) {
-        const page = await obre(browser, base, 'professorat.html', { mobil: true, w, h, rapid: false });
+        const page = await obre(browser, base, 'index.html', { mobil: true, w, h, rapid: false });
         // El panell amb «Vocabulari» (amb tots els camps: nivell, tema i sessió fixa) és el més alt
         await page.evaluate(() => document.getElementById('cd-eso-opt-0').click());
         const r = await page.evaluate(() => {

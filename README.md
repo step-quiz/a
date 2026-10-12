@@ -1,4 +1,4 @@
-# a2 — Matemàtiques per a l'aula d'acollida
+# a — Matemàtiques per a l'aula d'acollida
 
 Activitats interactives de matemàtiques d'**ESO** adaptades per a l'**aula d'acollida**: alumnat que fa menys de dos anys que és a Catalunya i que sovint no entén el català.
 
@@ -11,7 +11,7 @@ El projecte té una **doble funció**:
 
 > **Estat: en transició.** Aquest repositori va néixer com a còpia de les activitats adaptades per a necessitats educatives especials (`a-*.html`) i s'està convertint, pas a pas, en l'adaptació per a l'aula d'acollida. El pla, les decisions preses i l'estat de cada pas són a [`docs/PLA.md`](docs/PLA.md).
 
-Web: <https://step-quiz2.github.io/a2/> (GitHub Pages).
+Web: <https://a.step-quiz.net/> (Cloudflare Pages, des de la branca `main` d'aquest repositori).
 
 ## Objectiu
 
@@ -27,8 +27,8 @@ Les activitats del moment en què va néixer el repositori (cada bloc és una ac
 
 | Fitxer | Contingut |
 |---|---|
-| `index.html` | **Portada de l'alumnat**: una fitxa amb imatge i nom per activitat i per a l'àlbum (sense menús; vegeu [`docs/PORTADA.md`](docs/PORTADA.md)) |
-| `professorat.html` | **Panell del professorat**: el generador d'enllaços per a la classe (activitat, nivell, tema, sessions, preguntes, errors i sessió fixa) i els recursos del professorat |
+| `index.html` | **Panell del professorat** (la pàgina principal): el generador d'enllaços per a la classe (activitat, nivell, tema, sessions, preguntes, errors i sessió fixa) i els recursos del professorat |
+| `alumnat.html` | **Portada d'icones de l'alumnat** (opcional): una fitxa amb imatge i nom per activitat i per a l'àlbum, sense menús; vegeu [`docs/PORTADA.md`](docs/PORTADA.md) |
 | `a-enters.html` · `a-enters-tutorial.html` | Nombres enters (l'ascensor) |
 | `a-decimals.html` · `a-decimals-tutorial.html` | Diners i canvi (decimals) |
 | `a-enters-ordenar.html` | Ordenar enters (sense tutorial) |
@@ -50,7 +50,7 @@ Totes les paraules que l'alumne pot llegir són a **un registre** (el lèxic, [`
 
 ## Sessions fixes: la mateixa partida per a tota la classe
 
-Al generador d'enllaços (el panell del professorat, `professorat.html`), el camp **Sessió fixa** (A, B o C) fa que **tots els alumnes que obrin l'enllaç facin exactament les mateixes preguntes**, amb els mateixos nombres, passi el que passi (errors, ajudes…). A, B i C són tres conjunts de preguntes diferents. A dalt de la pantalla hi surt «Sessió fixa A» perquè es vegi que és el mode fix, i **Torna a jugar** repeteix la mateixa sessió. Si es deixa en «Aleatòria», cada alumne té preguntes diferents.
+Al generador d'enllaços (el panell del professorat, `index.html`), el camp **Sessió fixa** (A, B o C) fa que **tots els alumnes que obrin l'enllaç facin exactament les mateixes preguntes**, amb els mateixos nombres, passi el que passi (errors, ajudes…). A, B i C són tres conjunts de preguntes diferents. A dalt de la pantalla hi surt «Sessió fixa A» perquè es vegi que és el mode fix, i **Torna a jugar** repeteix la mateixa sessió. Si es deixa en «Aleatòria», cada alumne té preguntes diferents.
 
 De moment està disponible a **Nombres enters**, **Ordenar enters**, **Diners i canvi**, **Proporcionalitat**, el **Rellotge**, la **Temperatura**, el **MCD i MCM**, **Factoritzar**, **Fraccions**, **Àrea i perímetre**, **Triangle rectangle**, **Coordenades**, **Equacions**, **Potències**, **Escriure nombres**, **Prioritat d'operacions** i **Vocabulari**; cada activitat l'estrenarà quan es migri al motor nou (vegeu [`docs/PLA.md`](docs/PLA.md)).
 

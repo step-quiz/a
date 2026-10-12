@@ -1,63 +1,225 @@
 <!doctype html>
 <html lang="ca">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content="Activitats interactives de matemàtiques d'ESO per a l'aula d'acollida." />
-        <meta name="author" content="Step Quiz" />
-        <meta name="robots" content="index, follow" />
-        <link rel="icon" href="icon-green.png" />
-        <title>Matemàtiques</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Activitats interactives de matemàtiques d'ESO per a l'aula d'acollida. Panell del professorat: enllaços per a la classe." />
+  <meta name="author" content="Step Quiz" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="icon-green.png" />
+  <title>Professorat · Step Quiz Matemàtiques</title>
 
-        <!--
+  <!--
     ============================================================
     FITXER: index.html
-    ROL: La PORTADA DE L'ALUMNAT: una fitxa gran per cada activitat (i per a
-         l'àlbum de paraules), amb la seva imatge i el seu nom. Sense menús ni
-         frases: l'alumne toca la imatge que vol i s'obre l'activitat.
-         El generador d'enllaços per a la classe (activitat, nivell, sessió
-         fixa…) és al panell del professorat: professorat.html (hi porta
-         l'enllaç del peu).
-    JAVASCRIPT: js/portada/portada.js (pinta les fitxes), activitats.js (el
-         catàleg d'activitats, compartit amb el panell del professorat),
-         vista.js (l'HTML) i textos.js (els noms).
-    ESTILS: css/portada.css (les fitxes) i css/peu.css (el peu).
-    VOCABULARI: el títol i els noms de les fitxes passen pel control del lèxic
-         (tests/check-lexicon.js). El peu (data-legal: l'autoria i la llicència)
-         és per als adults i queda fora d'aquest control.
+    ROL: El PANELL DEL PROFESSORAT, la pàgina principal del web: el generador
+         d'enllaços per a la classe.
+         S'hi tria l'activitat (una llista per temes, accessible amb teclat),
+         el nivell, el tema (només a «Vocabulari»), les sessions, les preguntes,
+         els errors màxims i la sessió fixa (?fixed=A/B/C: tota la classe fa
+         les mateixes preguntes); surt l'enllaç, que es pot copiar, obrir o
+         provar amb el botó «Tutorial». També porta als recursos del professorat
+         (les targetes de vocabulari per imprimir, l'àlbum i la portada
+         d'icones de l'alumnat, alumnat.html). No és una pantalla de l'alumnat: els seus textos són per al
+         professorat i no passen pel control del lèxic (tests/check-lexicon.js).
+    JAVASCRIPT: js/professorat/professorat.js (pantalla) i el catàleg d'activitats
+         (js/portada/activitats.js), compartit amb la portada de l'alumnat.
     ============================================================
-    -->
+  -->
 
-        <link rel="stylesheet" href="css/tokens.css" />
-        <link rel="stylesheet" href="css/shared.css" />
-        <link rel="stylesheet" href="css/accessibilitat.css" />
-        <link rel="stylesheet" href="css/portada.css" />
-        <link rel="stylesheet" href="css/peu.css" />
-        <link rel="stylesheet" href="css/chromebook.css" />
-    </head>
-    <body>
-        <main class="pagina">
-            <div class="capcalera">
-                <img src="icon-green.png" alt="" />
-                <h1>Matemàtiques</h1>
-            </div>
-            <ul class="fitxes" id="fitxes"></ul>
-        </main>
+  <style>
+    :root {
+      --text-main: #2e2f1e;
+      --text-muted: #6b6e4a;
+      --bg-color: #f5f4ec;
+      --eso-bg: #eceee0;
+      --border-heavy: #b8be8a;
+      --panel-w: 440px;
+      --accent: #5a6a1e;
+      --primary: #5a6a1e;
+    }
 
-        <footer class="site-footer" data-legal>
-            <a href="https://step-quiz.net/" class="footer-logo" title="Step Quiz" aria-label="Step Quiz">
-                <img src="icon.png" alt="" onerror="this.style.display = 'none'" />
-            </a>
-            <span>
-                © 2026 <strong>David Arso Civil</strong> · Departament de Matemàtiques, INS Miquel Tarradell.
-                Contingut:
-                <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca">CC BY-NC-SA 4.0</a>
-                · Codi: <a href="https://opensource.org/license/mit">MIT</a> ·
-                <a href="https://github.com/step-quiz2/a2/blob/main/LLICENCIA.md">Més informació</a>.
-            </span>
-            <a href="professorat.html" class="peu-professorat">Professorat</a>
-        </footer>
+    * { box-sizing: border-box; }
 
-        <script type="module" src="js/portada/portada.js"></script>
-    </body>
+    body {
+      margin: 0;
+      background: var(--bg-color);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* El contingut queda centrat a l'espai que deixa el peu, que va sempre al final (mai fixat sobre el contingut). */
+    .page { margin-block: auto; width: 100%; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+
+    .title-container { text-align: center; margin-bottom: 16px; }
+    .title-row-1 { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; }
+    .title-row-1 h1 { margin: 0; font-size: 36px; font-weight: 800; color: #1c1f0e; }
+    .inline-icon { height: 72px; }
+
+    .main-wrapper { display: flex; justify-content: center; width: 100%; max-width: 1000px; }
+    .quiz-panel { width: var(--panel-w); max-width: 100%; padding: 15px 25px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-heavy); background-color: var(--eso-bg); }
+
+    h2 { margin: 0 0 10px 5px; font-size: 22px; font-weight: 800; color: #1c1f0e; }
+
+    /* Els recursos del professorat, sota del generador d'enllaços */
+    .recursos { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 18px 0 4px; max-width: 700px; }
+    .recursos a {
+      display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px;
+      font-size: 15px; font-weight: 700; color: var(--accent); text-decoration: none;
+      background: var(--eso-bg); border: 1px solid var(--border-heavy); border-radius: 22px;
+    }
+    .recursos a:hover { background: #d4d9a8; }
+
+    .row { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; padding: 4px 8px; }
+    .row label { font-size: 14px; font-weight: 600; text-align: left; }
+
+    select {
+      appearance: none; background-color: #ffffff; height: 32px; padding: 0 10px;
+      font-size: 16px; border: 1px solid var(--border-heavy); border-radius: 6px;   /* 16 px: iOS no fa zoom en tocar-lo */
+      cursor: pointer; text-align: center; width: 100%; transition: background-color 0.2s;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    select:hover { background-color: #d4d9a8; }
+
+    /* ── CUSTOM DROPDOWN ── */
+    .cd-wrap { position: relative; width: 100%; font-size: 16px; user-select: none; }
+
+    .cd-trigger {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      height: 32px; padding: 0 10px; background: #fff;
+      border: 1px solid var(--border-heavy); border-radius: 8px;
+      cursor: pointer; font-size: 16px; font-weight: 500; color: var(--text-main);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .cd-trigger:hover { border-color: #9aa45a; background: #e5e8c8; }
+    .cd-wrap.open .cd-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(90,106,30,0.15); background: #fff; }
+
+    .cd-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cd-chevron {
+      flex-shrink: 0; width: 15px; height: 15px; color: var(--text-muted);
+      transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cd-wrap.open .cd-chevron { transform: rotate(180deg); }
+
+    .cd-list {
+      position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+      background: #fff; border: 1px solid var(--border-heavy); border-radius: 10px;
+      box-shadow: 0 8px 30px -4px rgba(28,31,14,0.12), 0 2px 8px -2px rgba(28,31,14,0.08);
+      z-index: 999; overflow-y: auto; max-height: 260px; padding: 4px;
+      transform-origin: top center;
+      transform: scaleY(0.92) translateY(-4px); opacity: 0; pointer-events: none;
+      transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), opacity 0.18s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cd-wrap.open .cd-list { transform: scaleY(1) translateY(0); opacity: 1; pointer-events: auto; }
+
+    /* Les activitats van per temes: una ratlla fina separa cada tema del següent (el nom del tema el diuen els lectors de pantalla) */
+    .cd-group + .cd-group { margin-top: 4px; padding-top: 4px; border-top: 1px solid #94a3b8; }
+
+    .cd-option {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 16px; color: var(--text-main); transition: background 0.1s;
+    }
+    .cd-option:hover, .cd-option.active { background: #eceee0; }
+    .cd-option.active { box-shadow: inset 0 0 0 2px var(--accent); }
+    .cd-option.selected { font-weight: 600; color: var(--accent); background: #eceee0; }
+    .cd-check { width: 13px; height: 13px; flex-shrink: 0; color: var(--accent); opacity: 0; }
+    .cd-option.selected .cd-check { opacity: 1; }
+
+    /* Link block */
+    .link-block { margin-top: 5px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.08); padding-inline: 5px; }
+    .link-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; margin-bottom: 4px; display: block; }
+    .link-output { width: 100%; min-height: 45px; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; border: 1px solid var(--border-heavy); background: #d4d9a8; word-break: break-all; user-select: all; -webkit-user-select: all; cursor: text; line-height: 1.3; display: flex; align-items: center; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+    .copy-btn, .open-btn, .help-btn { height: 38px; cursor: pointer; border-radius: 6px; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; border: none; gap: 6px; transition: all 0.2s ease; }
+    .copy-btn { flex: 0.8; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
+    .help-btn { flex: 0.9; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-heavy); }
+    .open-btn { flex: 1.25; background: var(--accent); color: white; }
+    .copy-btn:hover, .help-btn:hover { background-color: #d4d9a8; border-color: #9aa45a; }
+    .open-btn:hover { background: #3d4a14; }
+
+    .copy-status { font-size: 13px; color: #5a6a1e; margin-top: 0px; min-height: 0px; font-weight: 700; text-align: center; }
+
+    /* El botó «Tutorial» només surt a les activitats que en tenen (el controlador el mostra) */
+    .help-btn { display: none; }
+
+    /* Focus visible amb teclat (el selector d'activitat, els botons, els enllaços…) */
+    button:focus-visible, select:focus-visible, a:focus-visible,
+    .cd-trigger:focus-visible, .link-output:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    @media (max-width: 480px) {
+      .title-row-1 h1 { font-size: 28px; }
+      .inline-icon { height: 56px; }
+      .quiz-panel { padding: 15px 14px; }
+      .copy-btn, .open-btn, .help-btn { font-size: 12px; }
+    }
+  </style>
+<link rel="stylesheet" href="css/accessibilitat.css">
+<link rel="stylesheet" href="css/peu.css">
+<link rel="stylesheet" href="css/chromebook.css">
+</head>
+<body>
+
+  <main class="page">
+  <div class="title-container">
+    <div class="title-row-1">
+      <img src="icon-green.png" alt="" class="inline-icon">
+      <h1>Professorat</h1>
+    </div>
+  </div>
+
+  <div class="main-wrapper">
+    <div id="panel-eso" class="quiz-panel active">
+      <h2>Enllaç per a la classe</h2>
+      <div class="row">
+        <label>Activitat</label>
+        <div class="cd-wrap" id="cd-eso">
+          <div class="cd-trigger"><span class="cd-label"></span><svg class="cd-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 8 10 13 15 8"/></svg></div>
+          <div class="cd-list" tabindex="-1"></div>
+        </div>
+      </div>
+      <div class="row" id="row-nivell-eso" style="display:none"><label for="nivell-eso">Nivell</label><select id="nivell-eso"></select></div>
+      <div class="row" id="row-tema-eso" style="display:none"><label for="tema-eso">Tema</label><select id="tema-eso"></select></div>
+      <div class="row"><label for="s-eso">Sessions</label><select id="s-eso"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="row"><label for="o-eso">Preguntes</label><select id="o-eso"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
+      <div class="row"><label for="i-eso">Errors màx.</label><select id="i-eso"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      <div class="row" id="row-fixed-eso" style="display:none"><label for="fix-eso">Sessió fixa</label><select id="fix-eso"><option value="">— Aleatòria —</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
+      <div class="link-block">
+        <div class="btn-row">
+          <button id="c-eso" class="copy-btn">Copia</button>
+          <button id="h-eso" class="help-btn"><span aria-hidden="true">▶</span> Tutorial</button>
+          <button id="p-eso" class="open-btn">Obre</button>
+        </div>
+        <div id="st-eso" class="copy-status" role="status" aria-live="polite"></div>
+        <div class="link-label">Enllaç:</div>
+        <div id="l-eso" class="link-output" tabindex="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Els recursos del professorat -->
+  <p class="recursos">
+    <a href="targetes.html"><span aria-hidden="true">🖨️</span> Targetes de vocabulari per imprimir</a>
+    <a href="album.html"><span aria-hidden="true">📒</span> Àlbum de paraules</a>
+    <a href="alumnat.html"><span aria-hidden="true">🏠</span> Portada de l'alumnat</a>
+  </p>
+  </main>
+
+  <footer class="site-footer" data-legal>
+    <a href="https://step-quiz.net/" class="footer-logo" title="Step Quiz" aria-label="Step Quiz">
+      <img src="icon.png" alt="" onerror="this.style.display='none'">
+    </a>
+    <span>
+      © 2026 <strong>David Arso Civil</strong> · Departament de Matemàtiques, INS Miquel Tarradell.
+      Contingut: <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca">CC BY-NC-SA 4.0</a> · Codi: <a href="https://opensource.org/license/mit">MIT</a> · <a href="https://github.com/step-quiz/a/blob/main/LLICENCIA.md">Més informació</a>.
+    </span>
+  </footer>
+
+  <script type="module" src="js/professorat/professorat.js"></script>
+</body>
 </html>

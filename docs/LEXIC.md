@@ -151,7 +151,7 @@ Tota paraula amb imatge feta amb `paraula()` es pot **tocar**: s'obre una **targ
 
 ## Què comprova `tests/check-lexicon.js`
 
-Només a les pàgines de l'alumne que ja van amb el motor nou (les altres hi entraran quan es migrin): les activitats, l'[àlbum de paraules](../album.html) i la [portada de l'alumnat](PORTADA.md) (`index.html` i `js/portada/textos.js`, que té el títol i el nom de cada fitxa). Les pàgines del professorat (`professorat.html`, `targetes.html`) hi són exemptes, i també el **peu legal** d'una pàgina de l'alumne (`<footer data-legal>`: l'autoria i la llicència, que són per als adults). Per això el peu és l'únic text de l'alumne que no passa pel control: no hi poseu res més.
+Només a les pàgines de l'alumne que ja van amb el motor nou (les altres hi entraran quan es migrin): les activitats, l'[àlbum de paraules](../album.html) i la [portada d'icones de l'alumnat](PORTADA.md) (`alumnat.html` i `js/portada/textos.js`, que té el títol i el nom de cada fitxa). Les pàgines del professorat (`index.html`, `targetes.html`) hi són exemptes, i també el **peu legal** d'una pàgina de l'alumne (`<footer data-legal>`: l'autoria i la llicència, que són per als adults). Per això el peu és l'únic text de l'alumne que no passa pel control: no hi poseu res més.
 
 
 1. Cada paraula dels textos, de les frases que genera l'activitat i del text fix de la seva pàgina HTML és al lèxic o a `FUNCIONALS`.

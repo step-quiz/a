@@ -2,10 +2,10 @@
  * ============================================================================
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: js/portada/portada.js
- * ROL: La portada de l'alumnat (index.html): una fitxa amb imatge i nom per
+ * ROL: La portada d'icones de l'alumnat (alumnat.html): una fitxa amb imatge i nom per
  *      cada activitat i per a l'àlbum de paraules. Sense menús ni frases: l'alumne
  *      toca la imatge que vol. (El generador d'enllaços és al panell del
- *      professorat: professorat.html.)
+ *      professorat: index.html.)
  * DEPENDÈNCIES: Mòdul ES (<script type="module">). Importa activitats.js
  *      (el catàleg) i vista.js (l'HTML).
  * ============================================================================

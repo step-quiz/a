@@ -2,7 +2,7 @@
 
 Guia pas a pas per fer canvis al web **sense perdre el fil** de què s'ha canviat. Les ordres dels requadres grisos es poden copiar i enganxar tal qual.
 
-> Aquesta guia és la d'[`operacions`](https://github.com/step-quiz/operacions/blob/main/COM-TREBALLAR.md) adaptada a `step-quiz2/a2`. Les eines que s'hi expliquen (`tools/servidor.js`, `tools/desa.sh` i les comprovacions automàtiques) són de la PR 4a del [pla](docs/PLA.md); ESLint i Prettier, de la PR 5a.
+> Aquesta guia és la d'[`operacions`](https://github.com/step-quiz/operacions/blob/main/COM-TREBALLAR.md) adaptada a `step-quiz/a`. Les eines que s'hi expliquen (`tools/servidor.js`, `tools/desa.sh` i les comprovacions automàtiques) són de la PR 4a del [pla](docs/PLA.md); ESLint i Prettier, de la PR 5a.
 
 ## Per què
 
@@ -15,9 +15,9 @@ La idea és senzilla: **cada canvi amb un missatge que expliqui què fa**. A Git
 
 ## On es publica el web
 
-El web es publica amb **GitHub Pages** des de la branca `main`: <https://step-quiz2.github.io/a2/>. Cada vegada que `main` canvia (una *pull request* fusionada, un canvi des de la web de GitHub o un `git push`), GitHub el torna a publicar al cap d'un minut aproximadament. A la pestanya **Actions** del repositori pots veure'n l'estat: la tasca *pages build and deployment* ha d'acabar en verd ✅.
+El web es publica amb **Cloudflare Pages** des de la branca `main` d'aquest repositori: <https://a.step-quiz.net/>. Cada vegada que `main` canvia (una *pull request* fusionada, un canvi des de la web de GitHub, un zip a `_uploads/` o un `git push`), Cloudflare el torna a publicar al cap d'un minut aproximadament.
 
-Si algun dia s'ha de refer la configuració: **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main`, carpeta `/ (root)` → Save**.
+Si algun dia s'ha de refer la configuració: al tauler de Cloudflare, **Workers & Pages → el projecte → Settings → Builds** (sense ordre de *build*; carpeta de sortida: l'arrel `/`) i **Custom domains → `a.step-quiz.net`**.
 
 > Només es publica `main`: una *pull request* **no té previsualització** pròpia. Més avall veuràs com provar-la abans de fusionar-la.
 
@@ -36,7 +36,7 @@ Si algun dia s'ha de refer la configuració: **Settings → Pages → Build and 
 Quan et faig una *pull request*, et passo l'enllaç. Només n'hi ha **una d'oberta alhora**: fins que no la fusiones, no en preparo cap altra.
 
 1. **Mirar-la** (opcional): a la pestanya **Files changed** hi veus els canvis línia per línia.
-2. **Provar-la abans de fusionar-la** (opcional): com que GitHub Pages només publica `main`, cal fer-ho al Codespace (vegeu [El Codespace](#el-codespace)). Escriu al terminal:
+2. **Provar-la abans de fusionar-la** (opcional): com que només es publica `main`, cal fer-ho al Codespace (vegeu [El Codespace](#el-codespace)). Escriu al terminal:
    ```
    git fetch origin
    git checkout claude/loving-clarke-9ip43l
@@ -47,7 +47,7 @@ Quan et faig una *pull request*, et passo l'enllaç. Només n'hi ha **una d'ober
    ```
    **Abans de fusionar**, mira també que la PR tingui la ✓ verda de les [comprovacions automàtiques](#comprovacions-automàtiques): a la pestanya **Conversation**, a sobre del botó de fusionar, hi surt «All checks have passed».
 3. **Fusionar-la**: pestanya **Conversation**, a baix de tot → **Merge pull request** → **Confirm merge**.
-4. **Comprovar la publicació**: al cap d'un minut, obre <https://step-quiz2.github.io/a2/> (si no veus el canvi, prem `Ctrl+F5`). Si alguna cosa no et convenç, digue-m'ho: ho corregeixo a la pull request següent o ho desfem.
+4. **Comprovar la publicació**: al cap d'un minut, obre <https://a.step-quiz.net/> (si no veus el canvi, prem `Ctrl+F5`). Si alguna cosa no et convenç, digue-m'ho: ho corregeixo a la pull request següent o ho desfem.
 5. **No cal fer res amb la branca** `claude/…`: la reutilitzo per a la pull request següent (si GitHub t'ofereix **Delete branch**, és igual).
 6. Si tens el Codespace obert, porta-hi els canvis:
    ```
@@ -82,7 +82,7 @@ Un Codespace és un ordinador al núvol, amb un editor (VS Code) dins del navega
 
 ### Obrir-lo
 
-1. Ves a <https://github.com/step-quiz2/a2>.
+1. Ves a <https://github.com/step-quiz/a>.
 2. Botó verd **Code** → pestanya **Codespaces**.
 3. La primera vegada: **Create codespace on main**. Les altres vegades: clica el nom del codespace que ja tens.
 
@@ -139,7 +139,7 @@ L'script fa quatre coses i **et demana confirmació** abans de publicar res:
 3. **Ensenya la llista de fitxers que canvien** (`M` = modificat, `??` = nou, `D` = esborrat) i et pregunta si els vols desar amb aquest missatge. Contesta `s` (sí) o `n` (no).
 4. **Els desa i els publica a GitHub.** Si algú altre havia publicat alguna cosa abans, primer la porta i ho ajunta; si no es poden ajuntar (heu canviat les mateixes línies), t'ho diu i **no publica res** (vegeu [Si alguna cosa surt malament](#si-alguna-cosa-surt-malament)).
 
-El missatge ha de tenir almenys 10 lletres i no pot portar cap etiqueta com `[skip ci]` (vegeu més avall). Al cap d'un minut el canvi es veu a <https://step-quiz2.github.io/a2/> (pestanya **Actions**: *pages build and deployment*).
+El missatge ha de tenir almenys 10 lletres i no pot portar cap etiqueta com `[skip ci]` (vegeu més avall). Al cap d'un minut el canvi es veu a <https://a.step-quiz.net/> (l'estat de la publicació és al tauler de Cloudflare, a **Workers & Pages → el projecte → Deployments**).
 
 **Si prefereixes fer-ho a mà**, aquestes són les ordres que fa l'script:
 

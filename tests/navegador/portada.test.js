@@ -2,7 +2,7 @@
  * ============================================================================
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: tests/navegador/portada.test.js
- * ROL: La portada de l'alumnat (index.html): una fitxa amb imatge i nom per
+ * ROL: La portada d'icones de l'alumnat (alumnat.html): una fitxa amb imatge i nom per
  *      activitat i per a l'àlbum, sense menús ni camps, que porta a cada pàgina;
  *      es maneja amb teclat; i el peu amb la llicència i l'enllaç al panell del
  *      professorat (el generador d'enllaços és a professorat.test.js).
@@ -36,7 +36,7 @@ const NOMS = [
 module.exports = async function ({ browser, base }) {
     suite("Portada de l'alumnat: una fitxa amb imatge i nom per activitat, sense menús (escriptori 1280×800)");
     {
-        const page = await obre(browser, base, 'index.html', { rapid: false });
+        const page = await obre(browser, base, 'alumnat.html', { rapid: false });
         const r = await page.evaluate(() => ({
             titol: document.title,
             h1: document.querySelector('h1').textContent,
@@ -56,7 +56,7 @@ module.exports = async function ({ browser, base }) {
             controls: document.querySelectorAll('select, input, textarea, button, [role=combobox]').length,
             flotants: document.querySelectorAll('.bottom-icon').length,
             peu: document.querySelector('.site-footer').innerText,
-            peuAProfessorat: (document.querySelector('.site-footer a[href="professorat.html"]') || {}).textContent,
+            peuAProfessorat: (document.querySelector('.site-footer a[href="index.html"]') || {}).textContent,
             html: document.documentElement.outerHTML,
             sw: document.documentElement.scrollWidth,
             iw: innerWidth,
@@ -109,9 +109,9 @@ module.exports = async function ({ browser, base }) {
         await page.context().close();
     }
 
-    suite("Cada fitxa obre la seva pàgina i l'icona d'inici hi torna");
+    suite("Cada fitxa obre la seva pàgina i l'icona d'inici porta al panell del professorat");
     {
-        const page = await obre(browser, base, 'index.html', { rapid: false });
+        const page = await obre(browser, base, 'alumnat.html', { rapid: false });
         const fitxers = await page.evaluate(() => [...document.querySelectorAll('a.fitxa')].map(a => a.href));
         const dolents = [];
         for (const url of fitxers) {
@@ -127,13 +127,17 @@ module.exports = async function ({ browser, base }) {
         );
         await page.click('.home-icon-link');
         await page.waitForURL(/index\.html$|\/$/);
-        ok((await page.locator('a.fitxa').count()) === NOMS.length, "l'icona d'inici torna a la portada");
+        ok(
+            (await page.locator('h1').textContent()) === 'Professorat' &&
+                (await page.locator('.cd-trigger').count()) === 1,
+            "l'icona d'inici porta a la pàgina principal (index.html), el panell del professorat"
+        );
         await page.context().close();
     }
 
     suite("Teclat: Tab recorre les fitxes en ordre, amb focus visible, i Intro n'obre una");
     {
-        const page = await obre(browser, base, 'index.html', { rapid: false });
+        const page = await obre(browser, base, 'alumnat.html', { rapid: false });
         const recorregut = [];
         let senseContorn = 0;
         for (let i = 0; i < NOMS.length; i++) {

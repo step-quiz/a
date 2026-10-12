@@ -170,7 +170,7 @@ module.exports = async function ({ browser, base }) {
         );
         await p.context().close();
 
-        const panell = await obre(browser, base, 'professorat.html', { rapid: false });
+        const panell = await obre(browser, base, 'index.html', { rapid: false });
         await panell.click('.recursos a[href="targetes.html"]');
         await panell.waitForURL(/targetes\.html$/);
         ok(
@@ -178,7 +178,7 @@ module.exports = async function ({ browser, base }) {
             "el panell del professorat porta a les targetes (l'enllaç «Targetes de vocabulari per imprimir»)"
         );
         await panell.click('.home-icon-link');
-        await panell.waitForURL(/professorat\.html$/);
+        await panell.waitForURL(/index\.html$|\/$/);
         ok(
             (await panell.locator('.cd-trigger').count()) === 1,
             'i la icona de les targetes torna al panell del professorat'

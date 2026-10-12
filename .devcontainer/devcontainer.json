@@ -1,0 +1,27 @@
+// Configuració del Codespace (GitHub → botó verd «Code» → pestanya «Codespaces»).
+// Explicació pas a pas: COM-TREBALLAR.md
+{
+    "name": "a2 · Matemàtiques per a l'aula d'acollida",
+    // La mateixa imatge que fa servir GitHub quan no hi ha configuració (Node, Python, Git…)
+    "image": "mcr.microsoft.com/devcontainers/universal:2",
+    // Només la primera vegada: instal·la ESLint i Prettier (tools/lint)
+    "postCreateCommand": "npm ci --prefix tools/lint",
+    // Cada vegada que s'obre: engega el servidor de prova (http://localhost:8000)
+    "postAttachCommand": {
+        "servidor": "node tools/servidor.js 8000"
+    },
+    "forwardPorts": [8000],
+    "portsAttributes": {
+        "8000": {
+            "label": "a2",
+            "onAutoForward": "notify"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "files.eol": "\n"
+            }
+        }
+    }
+}

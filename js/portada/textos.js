@@ -3,7 +3,7 @@
  * PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
  * FITXER: js/portada/textos.js
  * ROL: Els textos de la portada de l'alumnat que veu l'alumne: el nom de cada
- *      fitxa. (El títol de la pàgina és a index.html.) Cada nom és el mateix
+ *      fitxa. (El títol de la pàgina és a alumnat.html.) Cada nom és el mateix
  *      títol que té la pàgina de l'activitat, perquè l'alumne reconegui el que
  *      ha tocat: tests/activitats.test.js ho comprova. Cada paraula ha de ser
  *      al lèxic (js/lexicon/dades.js): ho comprova tests/check-lexicon.js. La
