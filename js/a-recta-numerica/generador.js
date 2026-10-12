@@ -204,7 +204,8 @@ export function generaPregunta(cloud, yRange, nivell) {
 
 /**
  * Quina de les instruccions toca a una pregunta (el text és a textos.js): la temperatura d'avui, d'ahir, de demà,
- * d'un dia passat o d'un dia futur (el verb canvia: fa / feia / farà), el recompte de dies o el dia més calent o més fred.
+ * d'abans-d'ahir (fa 2 dies), de demà-passat (d'aquí 2 dies), d'un dia passat (fa 3 dies o més) o d'un de futur (d'aquí 3 dies
+ * o més) —el verb canvia: fa / feia / farà—, el recompte de dies o el dia més calent o més fred.
  */
 export function formaInstruccio(pregunta) {
     if (pregunta.tipus === 'Q3') return 'recompte';
@@ -212,6 +213,8 @@ export function formaInstruccio(pregunta) {
     if (pregunta.x === 0) return 'avui';
     if (pregunta.x === -1) return 'ahir';
     if (pregunta.x === 1) return 'dema';
+    if (pregunta.x === -2) return 'abansdahir';
+    if (pregunta.x === 2) return 'demapassat';
     return pregunta.x < 0 ? 'passat' : 'futur';
 }
 

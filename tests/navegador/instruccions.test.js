@@ -41,7 +41,11 @@ const mostra = (page, n, preparar = '') =>
             for (let i = 0; i < n; i++) {
                 if (preparar === 'rota') m.state.currentOperation = i % 3;
                 window.buildLevel();
-                sortida.push({ e: window.__prova(), text: document.getElementById('instruccio').textContent });
+                sortida.push({
+                    e: window.__prova(),
+                    text: document.getElementById('instruccio').textContent,
+                    xipsDia: document.querySelectorAll('.xip-dia').length,
+                });
             }
             return sortida;
         },
@@ -150,7 +154,7 @@ module.exports = async function ({ browser, base }) {
         const veus = await mostra(page, 300);
         const vistes = new Set();
         const dolentes = [];
-        for (const { e, text } of veus) {
+        for (const { e, text, xipsDia } of veus) {
             const p = e.pregunta;
             const temp = p.y < 0 ? `−${Math.abs(p.y)} ºC` : `${p.y} ºC`;
             let esperada;
@@ -159,12 +163,18 @@ module.exports = async function ({ browser, base }) {
             else if (p.x === 0) esperada = 'Quina temperatura fa avui?';
             else if (p.x === -1) esperada = 'Quina temperatura feia ahir?';
             else if (p.x === 1) esperada = 'Quina temperatura farà demà?';
-            else esperada = `Quina temperatura ${p.x < 0 ? 'feia' : 'farà'} aquest dia?`;
-            vistes.add(esperada.replace(/−?\d+ ºC/, 'N ºC'));
+            else if (p.x === -2) esperada = "Fa 2 dies, o sigui abans-d'ahir, quina temperatura feia?";
+            else if (p.x === 2) esperada = "D'aquí 2 dies, o sigui demà-passat, quina temperatura farà?";
+            else if (p.x < 0) esperada = `Fa ${-p.x} dies, quina temperatura feia?`;
+            else esperada = `D'aquí ${p.x} dies, quina temperatura farà?`;
+            vistes.add(esperada.replace(/−?\d+ ºC/, 'N ºC').replace(/(Fa|aquí) [345] dies/, '$1 N dies'));
+            // Quan es demana la temperatura d'un dia no hi ha xip de dia (el calendari): només el termòmetre
+            if ((p.tipus === 'Q1' || p.tipus === 'Q2') && xipsDia !== 0)
+                dolentes.push(`${p.tipus}/${p.x}: encara hi ha el xip del dia`);
             if (text !== esperada) dolentes.push(`${p.tipus}/${p.x}: «${text}» (esperada «${esperada}»)`);
         }
         ok(dolentes.length === 0, '300 preguntes, cada una amb la seva frase', dolentes.slice(0, 3).join('\n'));
-        ok(vistes.size === 8, `han sortit les 8 frases (${vistes.size}: ${[...vistes].join(' | ')})`);
+        ok(vistes.size === 10, `han sortit les 10 frases (${vistes.size}: ${[...vistes].join(' | ')})`);
         await page.context().close();
     }
 

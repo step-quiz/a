@@ -15,12 +15,14 @@ export const TEXTOS = {
     // Capçalera
     repte: 'Repte {n} de {total}',
 
-    // La instrucció de cada pregunta (a sota de la capçalera); el verb va segons el dia: fa (avui), feia (passat), farà (futur)
+    // La instrucció de cada pregunta (a sota de la capçalera); el verb va segons el dia: fa (avui), feia (passat), farà (futur); «Fa 3 dies» i «D'aquí 3 dies» porten el nombre de dies
     tempAvui: 'Quina temperatura fa avui?',
     tempAhir: 'Quina temperatura feia ahir?',
     tempDema: 'Quina temperatura farà demà?',
-    tempPassat: 'Quina temperatura feia aquest dia?',
-    tempFutur: 'Quina temperatura farà aquest dia?',
+    tempAbansDahir: "Fa 2 dies, o sigui abans-d'ahir, quina temperatura feia?",
+    tempDemaPassat: "D'aquí 2 dies, o sigui demà-passat, quina temperatura farà?",
+    tempPassat: 'Fa {n} dies, quina temperatura feia?',
+    tempFutur: "D'aquí {n} dies, quina temperatura farà?",
     recompte: 'Quants dies fa {temp}?',
     diaCalor: 'Quin dia fa més calor?',
     diaFred: 'Quin dia fa més fred?',

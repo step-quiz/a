@@ -15,9 +15,9 @@ export const TEXTOS = {
     nombre: 'Nombre {n} de {total}',
 
     // Botons per canviar de nivell (el 1 no pot baixar i el 4 no pot pujar)
-    baixaNivell: 'Baixar a un nivell inferior',
-    pujaNivell: 'Pujar a un nivell superior',
+    baixaNivell: '‹ Baixar de nivell',
+    pujaNivell: 'Pujar de nivell ›',
 
     // La instrucció de la pregunta (a sota de la capçalera)
-    instruccio: 'Com s\'escriu aquest nombre?',
+    instruccio: 'Tria el nom del nombre.',
 };

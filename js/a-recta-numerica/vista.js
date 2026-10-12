@@ -9,7 +9,7 @@
  * DEPENDÈNCIES: generador.js.
  * ============================================================================
  */
-import { X_MAX, X_MIN, etiquetaDia, etiquetaTemp } from './generador.js';
+import { X_MAX, X_MIN, etiquetaTemp } from './generador.js';
 
 const W = 560;
 const H = 420;
@@ -88,10 +88,10 @@ const xip = (classe, contingut) => `<span class="xip ${classe}">${contingut}</sp
 const fletxa = '<span class="fletxa" aria-hidden="true">→</span>';
 const termometre = (valor = '?') => xip('xip-temp', `<span aria-hidden="true">🌡️</span> ${valor}`);
 
-/** El dia d'una pregunta com un xip: «☀️ avui», «📅 ahir», «📅 −3». */
-export const xipDia = x => xip('xip-dia', `<span aria-hidden="true">${x === 0 ? '☀️' : '📅'}</span> ${etiquetaDia(x)}`);
-
-/** La pregunta, només amb símbols: dia → temperatura, temperatura → dies o dia → més calent / més fred. */
+/**
+ * La pregunta, només amb símbols: temperatura → dies o dia → més calent / més fred. Quan es demana la temperatura d'un dia
+ * només hi ha el termòmetre «? ºC»: el dia (avui, ahir, «Fa 3 dies»…) ja el diu la frase d'instrucció.
+ */
 export function htmlPregunta(pregunta) {
     if (pregunta.tipus === 'Q3')
         return (
@@ -105,5 +105,5 @@ export function htmlPregunta(pregunta) {
             fletxa +
             xip('xip-temp', pregunta.extrem === 'calent' ? '🥵' : '🥶')
         );
-    return xipDia(pregunta.x) + fletxa + termometre('? ºC');
+    return termometre('? ºC');
 }

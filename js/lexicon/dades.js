@@ -226,6 +226,9 @@ export const LEXIC = [
     { id: 'avui', tipus: 'altre', formes: ['avui'], tema: 'hora' },
     { id: 'ahir', tipus: 'altre', formes: ['ahir'], tema: 'hora' },
     { id: 'dema', tipus: 'altre', formes: ['demà'], tema: 'hora' },
+    { id: 'abans', tipus: 'altre', formes: ['abans'], tema: 'hora' },
+    { id: 'passat', tipus: 'altre', formes: ['passat'], tema: 'hora' },
+    { id: 'aqui', tipus: 'altre', formes: ['aquí'], tema: 'hora' },
     {
         id: 'mcd',
         tipus: 'altre',
@@ -2528,7 +2531,7 @@ export const LEXIC = [
     { id: 'escriure', tipus: 'verb', formes: ['escriure', 'escriu'], tema: 'accions' },
     { id: 'veure', tipus: 'verb', formes: ['veure'], tema: 'accions' },
     { id: 'revisar', tipus: 'verb', formes: ['revisar', 'revisa'], tema: 'accions' },
-    { id: 'ser', tipus: 'verb', formes: ['ser', 'és', 'era'], tema: 'accions' },
+    { id: 'ser', tipus: 'verb', formes: ['ser', 'és', 'era', 'sigui'], tema: 'accions' },
     // Les ordres de les instruccions («Tria la paraula.», «Toca el punt.») i els verbs de les preguntes
     { id: 'triar', tipus: 'verb', formes: ['triar', 'tria'], tema: 'accions' },
     { id: 'escollir', tipus: 'verb', formes: ['escollir', 'escull'], tema: 'accions' },
@@ -2599,4 +2602,5 @@ export const FUNCIONALS = [
     'entre',
     'on',
     'es',
+    'o',
 ];

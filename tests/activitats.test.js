@@ -2127,8 +2127,11 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
         const t = (tipus, x, extrem) => T.formaInstruccio({ tipus, x, extrem });
         ok(t('Q1', 0) === 'avui' && t('Q2', -1) === 'ahir' && t('Q2', 1) === 'dema', 'Temperatura: avui, ahir i demà');
         ok(
-            [-5, -4, -3, -2].every(x => t('Q2', x) === 'passat') && [2, 3, 4, 5].every(x => t('Q2', x) === 'futur'),
-            'Temperatura: un dia passat és «feia» i un de futur és «farà»'
+            t('Q2', -2) === 'abansdahir' &&
+                t('Q2', 2) === 'demapassat' &&
+                [-5, -4, -3].every(x => t('Q2', x) === 'passat') &&
+                [3, 4, 5].every(x => t('Q2', x) === 'futur'),
+            "Temperatura: abans-d'ahir, demà-passat, i després «Fa N dies» (feia) i «D'aquí N dies» (farà)"
         );
         ok(
             t('Q3') === 'recompte' && t('Q4', 0, 'calent') === 'calent' && t('Q4', 0, 'fred') === 'fred',
