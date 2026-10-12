@@ -170,14 +170,20 @@ module.exports = async function ({ browser, base }) {
         );
         await p.context().close();
 
-        const portada = await obre(browser, base, 'index.html', { rapid: false });
-        await portada.click('.recursos a');
-        await portada.waitForURL(/targetes\.html$/);
+        const panell = await obre(browser, base, 'professorat.html', { rapid: false });
+        await panell.click('.recursos a[href="targetes.html"]');
+        await panell.waitForURL(/targetes\.html$/);
         ok(
-            (await portada.locator('.targeta').count()) > 0,
-            "la portada porta a les targetes (l'enllaç «Targetes de vocabulari per imprimir»)"
+            (await panell.locator('.targeta').count()) > 0,
+            "el panell del professorat porta a les targetes (l'enllaç «Targetes de vocabulari per imprimir»)"
         );
-        await portada.context().close();
+        await panell.click('.home-icon-link');
+        await panell.waitForURL(/professorat\.html$/);
+        ok(
+            (await panell.locator('.cd-trigger').count()) === 1,
+            'i la icona de les targetes torna al panell del professorat'
+        );
+        await panell.context().close();
     }
 
     suite('Targetes imprimibles: impressió en A4 (cada pàgina del PDF és un full, sense cap pàgina en blanc)');

@@ -4,7 +4,7 @@
  * FITXER: js/a-equacions/a-equacions.js
  * ROL: Controlador de l'activitat «Equacions» (a-equacions.html): l'equació, el
  *      camp de la x, l'ajuda, els intents i els punts. Abans era a dins de
- *      l'HTML i anava amb el motor antic (js/legacy).
+ *      l'HTML i anava amb el motor antic (ja retirat).
  *      La lògica pura és a generador.js i l'HTML de cada peça és a vista.js.
  * DEPENDÈNCIES: Mòdul ES (<script type="module">). Importa config.js, game-core.js,
  *      generador.js, vista.js i textos.js. Vegeu la capçalera d'a-equacions.html

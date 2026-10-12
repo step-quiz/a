@@ -20,10 +20,16 @@
     NIVELLS (via ?nivell=):
       Nivell 1: una imatge → triar la paraula (4 opcions, amb article).  (default)
       Nivell 2: una paraula → triar la imatge (4 opcions).
-      Nivell 3: una imatge → escriure la paraula. Una resposta equivocada surt lletra
-                a lletra: ✔ bona, ´ la lletra bona però amb un altre accent, ✖
-                equivocada o que falta. Una barra amb les lletres amb accent ajuda a
-                escriure-les. S'accepta amb o sense l'article («la poma» o «poma»).
+      Nivell 3: una imatge → escriure la paraula. S'accepta amb o sense l'article («la poma»
+                o «poma») i sense el punt volat («parallelogram»). Una errada petita
+                (un accent, una lletra equivocada, de més o que falta, dues lletres
+                girades, les paraules d'un terme en un altre ordre o una paraula que
+                falta) no costa cap intent: la paraula surt lletra a lletra (✔ bona, ´ la
+                lletra bona però amb un altre accent, ✖ equivocada o que falta, ⇄ dues
+                lletres o dues paraules que van al revés) i es pot corregir; una errada
+                de debò costa un intent. Una barra amb les lletres amb accent ajuda a
+                escriure-les. No es demana escriure cap solució llarga (de més de 14
+                caràcters, com «propietat commutativa»): als nivells 1 i 2 hi surten tots.
 
     PARÀMETRES PROPIS (via URL):
       ?tema=botiga        només les paraules d'un tema del lèxic (escola, animals,
@@ -345,6 +351,11 @@
                 color: #b91c1c;
                 background: #fef2f2;
                 border-color: #fca5a5;
+            }
+            .lletra.creuada {
+                color: #1e40af;
+                background: #eff6ff;
+                border-color: #93c5fd;
             }
 
             /* Botó «Nivell següent» (només puja; el 4 és el màxim) */

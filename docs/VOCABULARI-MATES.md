@@ -236,6 +236,19 @@ A **Vocabulari**, una opció equivocada mai no pot ser també una resposta certa
 
 També per això els distractors d'un terme són, primer, **del seu tema**; després, **de la seva família** (geometria, nombres, àlgebra, mesura i estadística), i només al final de qualsevol altre.
 
+## Què s'escriu al nivell 3 de Vocabulari
+
+Al nivell d'**escriure** (`?nivell=3`) no es demana cap terme que s'hagi d'escriure amb **més de 14 caràcters** (els espais compten): «propietat commutativa» tindria 21. En queden fora **20 de les 208 paraules** del banc, que continuen sortint als nivells de **triar** (1 i 2), a l'àlbum i a les targetes:
+
+- fraccions i proporcionalitat: *constant de proporcionalitat*, *proporcionalitat directa*, *simplificar una fracció*, *fracció irreductible*, *fracció equivalent*;
+- operacions: *propietat distributiva*, *propietat commutativa*, *propietat associativa*;
+- àlgebra: *expressió algebraica*, *resoldre una equació*, *sistema d'equacions*;
+- punts, rectes i angles: *recta perpendicular*, *recta paral·lela*;
+- figures planes: *triangle equilàter*, *triangle isòsceles*, *triangle rectangle*, *triangle escalè*;
+- funcions i estadística: *diagrama de sectors*, *gràfic de barres*, *taula de valors*.
+
+Els altres 188 s'escriuen amb una **tolerància** davant de les errades petites (un accent, una lletra, dues lletres girades, el punt volat de *paral·lelogram*…: vegeu [`LEXIC.md`](LEXIC.md)). Per canviar el límit, vegeu `LLARGADA_MAXIMA_ESCRITA` a `js/a-vocabulari/generador.js`.
+
 ## Les imatges (per al professorat)
 
 - Les de text són petits fragments d'HTML (`<span class="mat">…</span>`); les de geometria, dibuixos SVG propis. Tots els colors són al CSS (`css/shared.css`, classes `.mat*` i `.mat-svg`); no hi ha cap imatge externa.

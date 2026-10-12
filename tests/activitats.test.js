@@ -11,6 +11,7 @@
  * ============================================================================
  */
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { ROOT, suite, ok, finish, sembra, restauraAtzar, exigeixNode22 } = require('./harness');
@@ -1452,6 +1453,131 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
         );
     }
 
+    suite(
+        "a-vocabulari: la paraula escrita té tolerància davant de les errades petites (com a «Vocabulari» d'operacions)"
+    );
+    {
+        const G = await carrega('js/a-vocabulari/generador.js');
+        const V = await carrega('js/a-vocabulari/vista.js');
+        const p = id => G.generaPregunta(3, { ids: [id], totes: [id] });
+        const veredicte = (id, escrit) => G.avaluaEscrita(p(id), escrit).veredicte;
+        const estats = (id, escrit) =>
+            G.avaluaEscrita(p(id), escrit)
+                .marques.map(m => m.estat[0])
+                .join('');
+        const casos = [
+            // [paraula, escrit, veredicte esperat]
+            ['poma', 'poma', 'correcta'],
+            ['poma', ' La  Poma ', 'correcta'],
+            ['arbre', "l'arbre", 'correcta'],
+            ['tomaquet', 'tomàquet', 'correcta'],
+            ['parallelogram', 'parallelogram', 'correcta'], // el punt volat no compta
+            ['parallelogram', 'paral.lelogram', 'correcta'],
+            ['poma', 'pòma', 'propera'], // un accent
+            ['tomaquet', 'tomaquet', 'propera'],
+            ['poma', 'pama', 'propera'], // una lletra equivocada
+            ['poma', 'pom', 'propera'], // una lletra que falta
+            ['tomaquet', 'tomquet', 'propera'],
+            ['tomaquet', 'tomaquett', 'propera'], // una lletra de més
+            ['tomaquet', 'tmoaquet', 'propera'], // dues lletres girades
+            ['poma', 'opma', 'propera'],
+            ['mcd', 'mdc', 'propera'],
+            ['tomaquet', 'tomaqiit', 'propera'], // dues errades en una paraula llarga
+            ['hexagon', 'exagon', 'propera'], // una lletra que falta i un accent
+            ['nombre-enter', 'enter nombre', 'propera'], // les paraules en un altre ordre
+            ['nombre-enter', 'nombre', 'propera'], // una paraula que falta
+            ['nombre-enter', 'enter', 'propera'],
+            ['nombre-enter', 'nombreenter', 'propera'], // un espai que falta
+            ['poma', 'pomes', 'mal'], // dues errades en una paraula curta
+            ['poma', 'pamo', 'mal'],
+            ['tomaquet', 'tomaqiiz', 'mal'], // tres errades
+            ['poma', 'casa', 'mal'],
+            ['quadrat', 'quadrant', 'mal'], // una altra paraula del banc, no pas una errada de teclat
+            ['mcd', 'mcm', 'mal'],
+            ['triangle-rectangle', 'triangle', 'general'], // més general: també és cert
+        ];
+        const dolents = casos.filter(([id, escrit, esperat]) => veredicte(id, escrit) !== esperat);
+        ok(
+            dolents.length === 0,
+            `${casos.length} paraules escrites: correcta, errada petita (cap intent), error de debò o més general`,
+            dolents
+                .map(([id, escrit, esperat]) => `${id} ← «${escrit}»: ${veredicte(id, escrit)} (esperat ${esperat})`)
+                .join('\n')
+        );
+        ok(
+            estats('tomaquet', 'tomquet') === 'ooofoooo' &&
+                estats('arbre', 'arber') === 'ooocc' &&
+                estats('nombre-enter', 'enter nombre') === 'ooooocoooooo' &&
+                estats('nombre-enter', 'nombre') === 'ooooooffffff' &&
+                estats('nombre-enter', 'enter') === 'fffffffooooo' &&
+                estats('poma', 'pomes') === 'oooms' &&
+                estats('tomaquet', 'tomaquet') === 'oooaoooo',
+            'lletra a lletra: una lletra que falta no desplaça les altres, ⇄ marca les lletres (o les paraules) girades, i una paraula que falta surt amb una «_» per lletra'
+        );
+        const html = V.htmlLletres(G.avaluaEscrita(p('mcd'), 'mdc').marques);
+        ok(
+            html.includes('class="lletra creuada"') &&
+                (html.match(/<i aria-hidden="true">⇄<\/i>/g) || []).length === 2 &&
+                G.avaluaEscrita(p('parallelogram'), 'parallelogram').marques.some(m => m.lletra === '·'),
+            'vista: ⇄ a les dues lletres girades, i una resposta correcta surt amb la paraula bona (amb el punt volat)'
+        );
+    }
+
+    suite("a-vocabulari: al nivell d'escriure no es demana cap solució llarga («propietat commutativa»)");
+    {
+        const G = await carrega('js/a-vocabulari/generador.js');
+        const L = await carrega('js/lexicon/lexicon.js');
+        const banc = G.bancDeParaules({});
+        const llarga = id => [...L.solucioBanc(id)].length;
+        let mal = '';
+        const demanades = new Set();
+        for (let i = 0; i < 1500 && !mal; i++) {
+            const q = G.generaPregunta(3, banc);
+            demanades.add(q.id);
+            if (llarga(q.id) > G.LLARGADA_MAXIMA_ESCRITA) mal = `${q.solucio} (${llarga(q.id)})`;
+        }
+        const curtes = banc.ids.filter(G.esEscrivible).length;
+        ok(
+            !mal &&
+                G.LLARGADA_MAXIMA_ESCRITA === 14 &&
+                !G.esEscrivible('propietat-commutativa') &&
+                !G.esEscrivible('triangle-rectangle') &&
+                !G.esEscrivible('constant-proporcionalitat') &&
+                G.esEscrivible('poma') &&
+                G.esEscrivible('circumferencia') &&
+                G.esEscrivible('nombre-natural') &&
+                curtes === 188 &&
+                demanades.size === curtes,
+            `1500 preguntes escrites: cap solució de més de ${G.LLARGADA_MAXIMA_ESCRITA} caràcters (${curtes} de ${banc.ids.length} paraules es poden escriure i surten totes)${mal ? `: ${mal}` : ''}`
+        );
+        // Als nivells de triar, els termes llargs hi continuen sortint; i un banc que només en té de llargs no es queda sense preguntes
+        const llargues = new Set();
+        for (let i = 0; i < 600; i++) {
+            const q = G.generaPregunta(1 + (i % 2), G.bancDeParaules({ tema: 'mat-operacions' }));
+            if (llarga(q.id) > G.LLARGADA_MAXIMA_ESCRITA) llargues.add(q.solucio);
+        }
+        const nomes = G.generaPregunta(3, { ids: ['propietat-commutativa'], totes: ['propietat-commutativa'] });
+        ok(
+            llargues.has('propietat commutativa') &&
+                llargues.has('propietat distributiva') &&
+                nomes.solucio === 'propietat commutativa',
+            'als nivells 1 i 2 surten tots els termes (també «propietat commutativa»); si un banc no té cap paraula curta, es pregunta la llarga'
+        );
+        // Dins d'una sessió, sense repetir mentre en queden: les llargues no es fan servir per omplir
+        const fetes = new Set();
+        const mixt = { ids: ['poma', 'pa', 'propietat-commutativa'], totes: ['poma', 'pa', 'propietat-commutativa'] };
+        const triades = [];
+        for (let i = 0; i < 6; i++) {
+            const q = G.generaPregunta(3, mixt, fetes);
+            fetes.add(q.id);
+            triades.push(q.id);
+        }
+        ok(
+            !triades.includes('propietat-commutativa') && new Set(triades.slice(0, 2)).size === 2,
+            "al nivell 3, quan s'han fet les paraules curtes, es repeteixen en lloc de preguntar la llarga"
+        );
+    }
+
     suite('album: les paraules per temes, el progrés, els enllaços i les cartes');
     {
         const L = await carrega('js/album/logica.js');
@@ -1573,7 +1699,7 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
                 G.esCorrecta(q, 'el nombre enter') &&
                 G.comparaLletres(q, 'nombre entre')
                     .map(m => m.estat[0])
-                    .join('') === 'oooooooooomm' &&
+                    .join('') === 'oooooooooocc' &&
                 G.generaPregunta(1, banc).opcions.length === 4,
             "escriure un terme de més d'una paraula: s'accepta amb o sense article, i surt lletra a lletra"
         );
@@ -1783,6 +1909,110 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
                 !V.htmlTema(temes[0], false).includes('checked') &&
                 V.htmlTema(temes[0], true).includes(`value="${temes[0].tema}"`),
             "resum i peu amb el singular, i el botó d'un tema"
+        );
+    }
+
+    suite("portada de l'alumnat i panell del professorat: el catàleg d'activitats (js/portada/)");
+    {
+        const C = await carrega('js/portada/activitats.js');
+        const V = await carrega('js/portada/vista.js');
+        const { entrada } = await carrega('js/lexicon/lexicon.js');
+        const titol = f => (fs.readFileSync(path.join(ROOT, f), 'utf8').match(/<title>([^<]*)<\/title>/) || [])[1];
+
+        // El nom d'una fitxa és el títol de la pàgina: l'alumne reconeix el que ha tocat
+        const noms = [...C.ACTIVITATS, C.ALBUM].filter(a => a.nom !== titol(a.file));
+        ok(
+            noms.length === 0 && new Set(C.ACTIVITATS.map(a => a.etiqueta)).size === C.ACTIVITATS.length,
+            "el nom de cada fitxa és el títol de la pàgina de l'activitat (i de l'àlbum); les etiquetes del professorat no es repeteixen",
+            noms.map(a => `${a.file}: «${a.nom}» ≠ «${titol(a.file)}»`).join('\n')
+        );
+
+        // Els nivells (i el nivell per defecte) són els que de debò entén cada generador
+        const problemes = [];
+        for (const a of C.ACTIVITATS) {
+            const nom = a.file.replace('.html', '');
+            const G = await carrega(`js/${nom}/generador.js`);
+            const llegeix = q => G.llegeixParametres(new URLSearchParams(q));
+            if (!a.nivells.length) {
+                if (G.llegeixParametres && llegeix('nivell=1').nivell !== undefined)
+                    problemes.push(`${nom}: té nivells i el catàleg no els declara`);
+                continue;
+            }
+            if (llegeix('').nivell !== a.nivellDefecte)
+                problemes.push(`${nom}: el nivell per defecte és el ${llegeix('').nivell}, no el ${a.nivellDefecte}`);
+            for (let n = 1; n <= a.nivells.length; n++)
+                if (llegeix(`nivell=${n}`).nivell !== n) problemes.push(`${nom}: no admet el nivell ${n}`);
+            for (const n of [0, a.nivells.length + 1])
+                if (llegeix(`nivell=${n}`).nivell !== a.nivellDefecte)
+                    problemes.push(`${nom}: admet el nivell ${n} (el catàleg en declara ${a.nivells.length})`);
+        }
+        const GV = await carrega('js/a-vocabulari/generador.js');
+        ok(
+            problemes.length === 0 &&
+                C.ACTIVITATS.filter(a => a.tema).length === 1 &&
+                C.activitatDe('a-vocabulari.html').tema &&
+                GV.llegeixParametres(new URLSearchParams('tema=mat-figures')).tema === 'mat-figures',
+            `els nivells del catàleg són els de cada generador (${C.ACTIVITATS.filter(a => a.nivells.length).length} activitats amb nivells), i només «Vocabulari» admet ?tema=`,
+            problemes.join('\n')
+        );
+
+        // L'enllaç del professorat: sempre sessions, preguntes i errors; el nivell, el tema i la sessió fixa només si l'activitat els admet
+        const base = 'https://step-quiz2.github.io/a2/';
+        const dades = { sessions: 1, preguntes: 6, intents: 4 };
+        const sense = `${base}a-enters.html?totalsessions=1&totaloperations=6&maxintents=4`;
+        const enters = C.activitatDe('a-enters.html');
+        const vocabulari = C.activitatDe('a-vocabulari.html');
+        const ordenar = C.activitatDe('a-enters-ordenar.html');
+        ok(
+            C.enllacProfessorat(base, enters, dades) === sense &&
+                C.enllacProfessorat(base, enters, { ...dades, nivell: '1', fixed: 'B' }) ===
+                    `${sense}&nivell=1&fixed=B` &&
+                C.enllacProfessorat(base, enters, { ...dades, nivell: '', tema: '', fixed: '' }) === sense &&
+                C.enllacProfessorat(base, enters, { ...dades, nivell: '3', fixed: 'D' }) === sense &&
+                C.enllacProfessorat(base, enters, { ...dades, nivell: '0', tema: 'botiga' }) === sense &&
+                C.enllacProfessorat(base, ordenar, { ...dades, nivell: '1' }) ===
+                    `${base}a-enters-ordenar.html?totalsessions=1&totaloperations=6&maxintents=4` &&
+                C.enllacProfessorat(base, vocabulari, {
+                    sessions: 2,
+                    preguntes: 3,
+                    intents: 5,
+                    nivell: '3',
+                    tema: 'botiga',
+                    fixed: 'A',
+                }) ===
+                    `${base}a-vocabulari.html?totalsessions=2&totaloperations=3&maxintents=5&nivell=3&tema=botiga&fixed=A`,
+            "l'enllaç del professorat porta només els paràmetres que l'activitat entén (nivell vàlid, tema, sessió fixa)"
+        );
+
+        // Les fitxes de la portada de l'alumnat
+        const fitxes = C.fitxesAlumne();
+        const htmls = fitxes.map(V.htmlFitxa);
+        const buides = fitxes.filter(f => f.imatge.id && !entrada(f.imatge.id).imatge).map(f => f.file);
+        ok(
+            fitxes.length === C.ACTIVITATS.length + 1 &&
+                fitxes[0].file === 'a-vocabulari.html' &&
+                fitxes[1].file === 'album.html' &&
+                new Set(fitxes.map(f => f.file)).size === fitxes.length &&
+                buides.length === 0 &&
+                htmls.every(
+                    (h, i) =>
+                        h.includes(`<a class="fitxa" href="${fitxes[i].file}">`) &&
+                        h.includes(`<span class="fitxa-nom">${fitxes[i].nom.replace(/&/g, '&amp;')}</span>`) &&
+                        !/class="fitxa-imatge [^"]*" aria-hidden="true"><\/span>/.test(h)
+                ),
+            "la portada de l'alumnat té una fitxa (enllaç, imatge i nom) per activitat i l'àlbum, just després de «Vocabulari»",
+            buides.join(', ')
+        );
+        const menes = f => (V.htmlFitxa(f).match(/fitxa-imatge fitxa-(\w+)/) || [])[1];
+        ok(
+            menes(C.activitatDe('a-vocabulari.html')) === 'emoji' &&
+                menes(C.activitatDe('a-rellotge.html')) === 'emoji' &&
+                menes(C.activitatDe('a-decimals.html')) === 'pictograma' &&
+                menes(C.activitatDe('a-equacions.html')) === 'mates' &&
+                V.htmlFitxa({ file: 'x.html', nom: 'a<b & "c"', imatge: { emoji: '🍎' } }).includes(
+                    'a&lt;b &amp; &quot;c&quot;'
+                ),
+            'la imatge de la fitxa és un emoji, un pictograma o una imatge de matemàtiques (cada una amb la seva mida); el nom va escapat'
         );
     }
 

@@ -6,7 +6,10 @@
  *      del lèxic que es poden dibuixar, treballades en tres nivells (imatge →
  *      triar la paraula; paraula → triar la imatge; imatge → escriure la
  *      paraula). Una resposta equivocada es marca ✖ (i, a l'escrita, lletra a
- *      lletra: ✔, ´ per a un accent, ✖); si s'esgoten els intents, surt la bona.
+ *      lletra: ✔, ´ per a un accent, ✖, ⇄ per a dues lletres girades); si s'esgoten
+ *      els intents, surt la bona. A l'escrita, una errada petita (un accent, una
+ *      lletra, dues lletres girades, les paraules en un altre ordre…) no costa cap
+ *      intent: surt on és i es pot corregir (avaluaEscrita, a generador.js).
  *      Adaptació, amb el lèxic d'a2, de js/vocabulari/ d'operacions.
  *      La lògica pura és a generador.js i l'HTML a vista.js.
  * DEPENDÈNCIES: Mòdul ES (<script type="module">). Importa config.js, game-core.js,
@@ -33,10 +36,8 @@ import { TEXTOS_COMUNS, format } from '../textos.js';
 import { CLAU_VISTES, crearVistes } from '../lexicon/targeta.js';
 import {
     NIVELL_MAXIM,
+    avaluaEscrita,
     bancDeParaules,
-    comparaLletres,
-    esCorrecta,
-    esMesGeneral,
     generaPregunta,
     llegeixParametres,
     textPregunta,
@@ -180,22 +181,31 @@ function checkWritten() {
     const escrit = els.input.value.trim();
     if (escrit === '') return;
     const question = textPregunta(pregunta);
-    if (esCorrecta(pregunta, escrit)) {
+    const { veredicte, marques } = avaluaEscrita(pregunta, escrit);
+    if (veredicte === 'correcta') {
         recordAnswerToHistory(question, escrit, true);
-        els.partFeedback.innerHTML = htmlLletres(comparaLletres(pregunta, escrit));
+        els.partFeedback.innerHTML = htmlLletres(marques);
         els.input.classList.add('reveal');
         finishOperation(true);
         return;
     }
-    if (esMesGeneral(pregunta, escrit)) {
+    if (veredicte === 'general') {
         // Una paraula més general, també certa («triangle» per a un triangle rectangle): no és un error ni costa cap intent
         els.partFeedback.innerHTML = htmlMesConcret(escrit);
         els.input.select();
         els.input.focus();
         return;
     }
+    if (veredicte === 'propera') {
+        // Una errada petita (un accent, una lletra, dues lletres girades, les paraules en un altre ordre, una paraula que
+        // falta): no és un error ni costa cap intent. Surt on és i es pot corregir (com a «Vocabulari» d'operacions).
+        els.partFeedback.innerHTML = htmlLletres(marques);
+        els.input.select();
+        els.input.focus();
+        return;
+    }
     recordAnswerToHistory(question, escrit, false);
-    els.partFeedback.innerHTML = htmlLletres(comparaLletres(pregunta, escrit));
+    els.partFeedback.innerHTML = htmlLletres(marques);
     els.writeArea.classList.add('error-shake');
     setTimeout(() => els.writeArea.classList.remove('error-shake'), 200);
     penalize(() => {

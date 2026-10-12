@@ -6,7 +6,7 @@
  *      (Playwright) i passa tots els blocs de proves, l'un darrere l'altre.
  * ÚS (des de l'arrel del repositori):
  *      node tests/navegador/run.js              → tots els blocs
- *      node tests/navegador/run.js portada      → només un (jocs, targeta, decimals, proporcio, ordenar, rellotge, recta, mcdmcm, factoritzar, fraccions, areaperimetre, triangle, placartesia, equacions, potencies, nombres, prioritat, vocabulari, album, targetes, tutorials, portada, mobil, accessibilitat)
+ *      node tests/navegador/run.js portada      → només un (jocs, targeta, decimals, proporcio, ordenar, rellotge, recta, mcdmcm, factoritzar, fraccions, areaperimetre, triangle, placartesia, equacions, potencies, nombres, prioritat, vocabulari, album, targetes, tutorials, portada, professorat, mobil, accessibilitat)
  * PRIMERA VEGADA (instal·la Playwright i el navegador, uns 150 MB):
  *      npm ci --prefix tools/proves
  *      tools/proves/node_modules/.bin/playwright install chromium
@@ -39,6 +39,7 @@ const BLOCS = [
     'targetes',
     'tutorials',
     'portada',
+    'professorat',
     'mobil',
     'accessibilitat',
 ];

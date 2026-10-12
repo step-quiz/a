@@ -25,9 +25,9 @@ tools/lint/node_modules/.bin/prettier --check .                        # comprov
 
 ## Què es revisa i què no
 
-- **ESLint** revisa `js/` (mòduls ES), `tests/` i `tools/servidor.js`. No revisa `js/legacy/` (el motor antic són scripts clàssics que comparteixen variables globals: ESLint hi veuria centenars de «no definit»; s'esborra a la PR 15) ni el JavaScript que encara va a dins dels HTML.
-- **Prettier** formata només `js/` (sense `js/legacy/`) i `tests/`. No toca els HTML ni els CSS (porten estils i, en alguns casos, JS a dins; reformatar-los faria canvis enormes i difícils de revisar), ni els documents, ni les eines.
-- Als **tests de navegador** hi ha funcions que s'executen dins de la pàgina (`page.evaluate(…)`) i hi llegeixen alguns noms interns (`ACTIVITIES_ESO`, `PRODUCTS`, `svgTwoSteps`…). Estan declarats a `eslint.config.mjs`: si una pàgina els canvia, el test falla i s'ha d'adaptar.
+- **ESLint** revisa `js/` (mòduls ES), `tests/` i `tools/servidor.js`. No revisa el JavaScript que encara va a dins dels HTML (els tutorials).
+- **Prettier** formata només `js/` i `tests/`. No toca els HTML ni els CSS (porten estils i, en alguns casos, JS a dins; reformatar-los faria canvis enormes i difícils de revisar), ni els documents, ni les eines.
+- Als **tests de navegador** hi ha funcions que s'executen dins de la pàgina (`page.evaluate(…)`) i hi llegeixen alguns noms interns (`svgTwoSteps`, del tutorial de decimals). Estan declarats a `eslint.config.mjs`: si una pàgina els canvia, el test falla i s'ha d'adaptar.
 
 ## Des del Codespace
 

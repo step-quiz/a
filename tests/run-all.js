@@ -23,7 +23,6 @@ const TESTS = [
     ['Sessions fixes (js/fixed-sessions.js)', 'tests/fixed-sessions.test.js'],
     ['Lèxic: dades i API (js/lexicon/)', 'tests/lexicon.test.js'],
     ['Vocabulari: les paraules dels textos són al lèxic', 'tests/check-lexicon.js'],
-    ['Funcions del motor antic (js/legacy)', 'tests/legacy.test.js'],
 ];
 
 const resultats = TESTS.map(([nom, fitxer]) => {

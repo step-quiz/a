@@ -4,15 +4,13 @@
  * FITXER: tests/check-lexicon.js
  * ROL: El CONTROL DEL VOCABULARI. L'alumnat és d'aula d'acollida: només pot
  *      llegir paraules que el professorat ha vist i validat. Aquesta prova
- *      comprova que en les activitats que ja van amb el motor nou (js/<activitat>/):
+ *      comprova que a les activitats (js/<activitat>/):
  *        1. cada paraula dels textos (js/textos.js i js/<activitat>/textos.js), de
  *           les frases que genera l'activitat i del text fix de la seva pàgina
  *           HTML és al lèxic (js/lexicon/dades.js) o és una paraula gramatical;
  *        2. cada text que el codi fa servir (TEXTOS.clau) existeix, i cap text no
  *           queda sense fer servir (un text que falta es veuria com «undefined»);
  *        3. els textos es poden posar tal qual a l'HTML (cap «<», «>», «&» ni cometa doble).
- *      Les activitats que encara van amb el motor antic (js/legacy/) no s'hi
- *      comproven: ho faran quan es migrin.
  *      Per veure les paraules noves d'una PR: node tools/paraules-noves.js
  * ÚS: node tests/check-lexicon.js
  * ============================================================================
@@ -40,7 +38,9 @@ function textDeLaPagina(html) {
     const h = html
         .replace(/<!--[\s\S]*?-->/g, '')
         .replace(/<script\b[\s\S]*?<\/script>/gi, '')
-        .replace(/<style\b[\s\S]*?<\/style>/gi, '');
+        .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+        // El peu legal (<footer data-legal>: l'autoria i la llicència) és per als adults, no per a l'alumne: queda fora del control
+        .replace(/<footer\b[^>]*\bdata-legal\b[^>]*>[\s\S]*?<\/footer>/gi, '');
     const trossos = [...h.matchAll(/\b(?:aria-label|title|alt|placeholder)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(
         m => m[1] ?? m[2]
     );
@@ -61,9 +61,11 @@ function textDeLaPagina(html) {
             new RegExp(`<script\\s+type=["']module["']\\s+src=["']js/${f.replace('.html', '')}/`).test(read(f))
         )
         .map(f => f.replace('.html', ''));
-    // Les pàgines que no són activitats però porten text per a l'alumne (el lèxic també les cobreix)
-    for (const pagina of ['album'])
-        if (exists(`${pagina}.html`) && exists(`js/${pagina}/textos.js`)) activitats.push(pagina);
+    // Les pàgines que no són activitats però porten text per a l'alumne (el lèxic també les cobreix): { carpeta de js/: pàgina }
+    const PAGINES_ALUMNE = { album: 'album.html', portada: 'index.html' };
+    const paginaDe = nom => PAGINES_ALUMNE[nom] || `${nom}.html`;
+    for (const [nom, pagina] of Object.entries(PAGINES_ALUMNE))
+        if (exists(pagina) && exists(`js/${nom}/textos.js`)) activitats.push(nom);
 
     // Totes les fonts de text: { origen, text, net }
     const fonts = [];
@@ -85,8 +87,8 @@ function textDeLaPagina(html) {
                 for (const text of G.exemplesDeText())
                     fonts.push({ origen: `frase generada per js/${nom}/generador.js`, text, net: text });
         }
-        const pagina = textDeLaPagina(read(`${nom}.html`));
-        fonts.push({ origen: `${nom}.html (el text fix de la pàgina)`, text: pagina, net: pagina });
+        const pagina = textDeLaPagina(read(paginaDe(nom)));
+        fonts.push({ origen: `${paginaDe(nom)} (el text fix de la pàgina)`, text: pagina, net: pagina });
     }
 
     suite('Vocabulari: cada activitat del motor nou té els seus textos');
@@ -135,9 +137,7 @@ function textDeLaPagina(html) {
         const usatsComuns = new Set();
         const usatsActivitat = Object.fromEntries(activitats.map(nom => [nom, new Set()]));
         const inexistents = [];
-        for (const f of listFiles('js', ['.js']).filter(
-            f => !f.startsWith('js/legacy/') && f !== 'js/textos.js' && !/\/textos\.js$/.test(f)
-        )) {
+        for (const f of listFiles('js', ['.js']).filter(f => f !== 'js/textos.js' && !/\/textos\.js$/.test(f))) {
             const codi = sensePComentaris(read(f));
             const nom = (f.match(/^js\/([^/]+)\//) || [])[1];
             for (const m of codi.matchAll(/\bTEXTOS_COMUNS\.(\w+)/g)) {

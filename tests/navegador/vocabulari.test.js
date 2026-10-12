@@ -4,10 +4,11 @@
  * FITXER: tests/navegador/vocabulari.test.js
  * ROL: «Vocabulari» (a-vocabulari, PR 13a) al navegador, amb el motor nou:
  *      els tres nivells (imatge → paraula, paraula → imatge, imatge →
- *      escriure), les dues oportunitats, la paraula escrita lletra a lletra,
- *      la barra d'accents, ?tema= i ?vistes=1, la partida completa, el mòbil i
- *      les sessions fixes. La lògica pura té els seus tests a
- *      tests/activitats.test.js.
+ *      escriure), les dues oportunitats, la paraula escrita lletra a lletra, la
+ *      tolerància davant de les errades petites (no costen cap intent), que no
+ *      es demani escriure cap solució llarga, la barra d'accents, ?tema= i
+ *      ?vistes=1, la partida completa, el mòbil i les sessions fixes. La lògica
+ *      pura té els seus tests a tests/activitats.test.js.
  * ============================================================================
  */
 'use strict';
@@ -107,7 +108,9 @@ module.exports = async function ({ browser, base }) {
         await esperaLliure(w);
         const { pregunta } = await estat(w);
         const sol = pregunta.solucio;
-        // Una paraula amb una lletra canviada: surt lletra a lletra amb ✔ i ✖
+        const intents = () => w.evaluate(() => document.getElementById('attempts-display').textContent);
+        const abans = await intents();
+        // Una errada petita (una lletra canviada): surt lletra a lletra amb ✔ i ✖, però no costa cap intent i es pot corregir
         const mala = (sol[0] === 'x' ? 'y' : 'x') + sol.slice(1);
         await w.fill('#value-input', mala);
         await w.click('.btn-ok');
@@ -115,12 +118,17 @@ module.exports = async function ({ browser, base }) {
         const m = await w.evaluate(() => ({
             bo: document.querySelectorAll('#part-feedback .lletra.bo').length,
             mal: document.querySelectorAll('#part-feedback .lletra.mal').length,
-            intents: document.getElementById('attempts-display').textContent,
+            valor: document.getElementById('value-input').value,
         }));
         ok(
-            m.mal === 1 && m.bo === [...sol].length - 1 && /1$/.test(m.intents),
-            `una lletra equivocada surt ✖ i la resta ✔ («${mala}» per «${sol}»); un intent menys`
+            m.mal === 1 && m.bo === [...sol].length - 1 && (await intents()) === abans && m.valor === mala,
+            `una lletra equivocada («${mala}» per «${sol}») surt ✖ i la resta ✔, però no costa cap intent («${abans}») i el camp es queda per corregir-lo`
         );
+        // Un error de debò (una paraula que no s'hi assembla): costa un intent
+        await w.fill('#value-input', 'zzzzzzzzzz');
+        await w.click('.btn-ok');
+        await esperaLliure(w);
+        ok(/1$/.test(await intents()), `una paraula que no s'hi assembla costa un intent («${await intents()}»)`);
         await esperaLliure(w);
         await w.fill('#value-input', '');
         await w.click('#accents-bar .btn-accent[data-lletra="à"]');
@@ -256,16 +264,16 @@ module.exports = async function ({ browser, base }) {
         });
         await esperaLliure(w);
         // El motor sorteja la paraula (sense ?fixed=, que repetiria sempre la mateixa): es demanen preguntes noves
-        // fins que surt la imatge d'un triangle rectangle (15 paraules; en 300 sortejos, la probabilitat de no trobar-la és ~10⁻⁹)
+        // fins que surt la imatge d'un quadrat (10 paraules del tema es poden escriure; en 300 sortejos, la probabilitat de no trobar-la és ~10⁻¹⁴)
         const trobada = await w.evaluate(() => {
             for (let i = 0; i < 300; i++) {
-                if (window.__estatProves().pregunta.id === 'triangle-rectangle') return true;
+                if (window.__estatProves().pregunta.id === 'quadrat') return true;
                 window.buildLevel();
             }
             return false;
         });
         const abans = await w.evaluate(() => document.getElementById('attempts-display').textContent);
-        await w.fill('#value-input', 'triangle');
+        await w.fill('#value-input', 'polígon');
         await w.click('.btn-ok');
         await esperaLliure(w);
         const mes = await w.evaluate(() => ({
@@ -276,9 +284,9 @@ module.exports = async function ({ browser, base }) {
         const e = await estat(w);
         ok(
             trobada && mes.marca === '✔ 🔍' && mes.mals === 0 && mes.intents === abans && e.sessionScore === 0,
-            `la imatge d'un triangle rectangle + «triangle»: surt ✔ 🔍, sense ✖, sense perdre cap intent («${mes.intents}») ni punts`
+            `la imatge d'un quadrat + «polígon»: surt ✔ 🔍, sense ✖, sense perdre cap intent («${mes.intents}») ni punts`
         );
-        await w.fill('#value-input', 'el triangle rectangle');
+        await w.fill('#value-input', 'el quadrat');
         await w.press('#value-input', 'Enter');
         await w.waitForFunction(() => window.__estatProves().sessionScore > 0, null, { timeout: 4000 });
         ok(
@@ -287,5 +295,107 @@ module.exports = async function ({ browser, base }) {
         );
         ok(w.errors.length === 0, `sense errors JS (${unics(w.errors) || 'cap'})`);
         await w.context().close();
+    }
+
+    suite('Vocabulari: lletres girades, paraules en un altre ordre i punt volat no costen cap intent');
+    {
+        const w = await obre(browser, base, 'a-vocabulari.html?nivell=3&tema=mat-nombres&totaloperations=4', {
+            congela: 2000,
+        });
+        await esperaLliure(w);
+        const trobada = await w.evaluate(() => {
+            for (let i = 0; i < 400; i++) {
+                if (window.__estatProves().pregunta.id === 'nombre-enter') return true;
+                window.buildLevel();
+            }
+            return false;
+        });
+        const intents = () => w.evaluate(() => document.getElementById('attempts-display').textContent);
+        const abans = await intents();
+        const prova = async escrit => {
+            await w.fill('#value-input', escrit);
+            await w.click('.btn-ok');
+            await esperaLliure(w);
+            return w.evaluate(() => ({
+                creuades: document.querySelectorAll('#part-feedback .lletra.creuada').length,
+                bones: document.querySelectorAll('#part-feedback .lletra.bo').length,
+                mals: document.querySelectorAll('#part-feedback .lletra.mal').length,
+            }));
+        };
+        const ordre = await prova('enter nombre');
+        const girades = await prova('nombre entre');
+        const falta = await prova('nombre');
+        ok(
+            trobada &&
+                ordre.creuades === 1 &&
+                ordre.bones === 11 &&
+                girades.creuades === 2 &&
+                falta.mals === 6 &&
+                falta.bones === 6 &&
+                (await intents()) === abans &&
+                (await estat(w)).sessionScore === 0,
+            `«enter nombre» (⇄ a l'espai), «nombre entre» (⇄ a dues lletres) i «nombre» (6 «_» per a la paraula que falta): marques, cap intent perdut («${abans}»)`
+        );
+        await w.fill('#value-input', 'el nombre enter');
+        await w.press('#value-input', 'Enter');
+        await w.waitForFunction(() => window.__estatProves().sessionScore > 0, null, { timeout: 4000 });
+        ok((await estat(w)).sessionScore === 10, 'i la paraula bona, corregida, encara val 10 punts');
+        ok(w.errors.length === 0, `sense errors JS (${unics(w.errors) || 'cap'})`);
+        await w.context().close();
+
+        const p = await obre(browser, base, 'a-vocabulari.html?nivell=3&tema=mat-figures&totaloperations=4', {
+            congela: 2000,
+        });
+        await esperaLliure(p);
+        const trobat = await p.evaluate(() => {
+            for (let i = 0; i < 400; i++) {
+                if (window.__estatProves().pregunta.id === 'parallelogram') return true;
+                window.buildLevel();
+            }
+            return false;
+        });
+        await p.fill('#value-input', 'parallelogram');
+        await p.press('#value-input', 'Enter');
+        await p.waitForFunction(() => window.__estatProves().sessionScore > 0, null, { timeout: 4000 });
+        const bona = await p.evaluate(() =>
+            [...document.querySelectorAll('#part-feedback .lletra')].map(l => l.firstChild.textContent).join('')
+        );
+        ok(
+            trobat && (await estat(p)).sessionScore === 10 && bona === 'paral·lelogram',
+            '«parallelogram», sense el punt volat, és correcta (10 punts) i la resposta surt amb la paraula bona: «paral·lelogram»'
+        );
+        await p.context().close();
+    }
+
+    suite("Vocabulari: al nivell d'escriure no es demana cap solució llarga, i als de triar sí");
+    {
+        const demana = async (nivell, tema) => {
+            const page = await obre(
+                browser,
+                base,
+                `a-vocabulari.html?nivell=${nivell}&tema=${tema}&totaloperations=4`,
+                {
+                    congela: 2000,
+                }
+            );
+            await esperaLliure(page);
+            const solucions = await page.evaluate(() => {
+                const v = [];
+                for (let i = 0; i < 300; i++) {
+                    window.buildLevel();
+                    v.push(window.__estatProves().pregunta.solucio);
+                }
+                return v;
+            });
+            await page.context().close();
+            return solucions;
+        };
+        const escrites = await demana(3, 'mat-operacions');
+        const triades = await demana(1, 'mat-operacions');
+        const llarga = escrites.find(x => [...x].length > 14);
+        ok(
+            !llarga && triades.includes('propietat commutativa') && new Set(escrites).size >= 10,
+            `mat-operacions, 300 preguntes: escrivint, cap solució de més de 14 caràcters (${new Set(escrites).size} paraules diferents${llarga ? `; «${llarga}»` : ''}); triant, també surt «propietat commutativa»`
+        );
     }
 };

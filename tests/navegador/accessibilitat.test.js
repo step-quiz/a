@@ -19,7 +19,8 @@ const { ACTIVITATS, obre, esperaLliure, respon, jugaFinsAlFinal, carregaAxe } = 
 
 const ETIQUETES_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const PAGINES = [
-    'index.html',
+    'index.html', // la portada de l'alumnat
+    'professorat.html', // el panell del professorat (generador d'enllaços)
     ...ACTIVITATS.flatMap(([nom]) => [`${nom}.html?totaloperations=3&nivell=1`, `${nom}-tutorial.html`]),
     'a-enters.html?fixed=A&totaloperations=3&nivell=1', // amb el distintiu «Sessió fixa A»
     'album.html', // l'àlbum de paraules (no és cap activitat)
@@ -51,15 +52,32 @@ module.exports = async function ({ browser, base }) {
     };
     const tanca = page => page.context().close();
 
-    // ── Portada ─────────────────────────────────────────────────────────────
+    // ── Portada de l'alumnat ────────────────────────────────────────────────
     {
         const page = await obre(browser, base, 'index.html', { reduit: true, rapid: false });
         await page.waitForTimeout(300);
-        console.log('  — portada');
-        await revisa('portada', page);
+        console.log("  — portada de l'alumnat");
+        await revisa("portada de l'alumnat", page);
+        await tanca(page);
+        const mobil = await obre(browser, base, 'index.html', { mobil: true, rapid: false });
+        await mobil.waitForTimeout(300);
+        await revisa("portada de l'alumnat en mòbil", mobil);
+        await tanca(mobil);
+    }
+
+    // ── Panell del professorat ──────────────────────────────────────────────
+    {
+        const page = await obre(browser, base, 'professorat.html', { reduit: true, rapid: false });
+        await page.waitForTimeout(300);
+        console.log('  — panell del professorat');
+        await revisa('panell del professorat', page);
         await page.click('.cd-trigger');
         await page.waitForTimeout(150);
-        await revisa("portada amb el selector d'activitat obert", page);
+        await revisa("panell del professorat amb el selector d'activitat obert", page);
+        await page.keyboard.press('Escape');
+        await page.evaluate(() => document.getElementById('cd-eso-opt-0').click());
+        await page.waitForTimeout(150);
+        await revisa('panell del professorat amb «Vocabulari» (nivell, tema i sessió fixa)', page);
         await tanca(page);
     }
 
@@ -294,13 +312,14 @@ module.exports = async function ({ browser, base }) {
         await tanca(page);
     }
     {
-        // Control: sense la preferència, la portada sí que té animacions (així sabem que la prova detecta alguna cosa)
-        const page = await obre(browser, base, 'index.html', { rapid: false });
-        await page.waitForTimeout(250);
+        // Control: sense la preferència, la icona d'inici s'anima en passar-hi per sobre (així sabem que la prova detecta alguna cosa)
+        const page = await obre(browser, base, 'a-enters.html?totaloperations=3', { rapid: false });
+        await page.hover('.home-icon-link');
+        await page.waitForTimeout(150);
         const llargues = await animacionsLlargues(page);
         ok(
             llargues.length > 0,
-            "control: sense la preferència, la portada sí que s'anima",
+            "control: sense la preferència, la icona d'inici s'anima en passar-hi per sobre",
             'La prova no detectaria res!'
         );
         await tanca(page);

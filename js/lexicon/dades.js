@@ -1097,6 +1097,16 @@ export const LEXIC = [
     },
     { id: 'album', tipus: 'nom', singular: 'àlbum', plural: 'àlbums', genere: 'm', article: "l'", tema: 'joc' },
     { id: 'paraula', tipus: 'nom', singular: 'paraula', plural: 'paraules', genere: 'f', article: 'la', tema: 'joc' },
+    // «Matemàtiques» és el títol de la portada de l'alumnat (la matèria: «les matemàtiques»)
+    {
+        id: 'matematica',
+        tipus: 'nom',
+        singular: 'matemàtica',
+        plural: 'matemàtiques',
+        genere: 'f',
+        article: 'la',
+        tema: 'joc',
+    },
     // ── Vocabulari matemàtic d'ESO («Vocabulari» i «Àlbum de paraules»): cada terme porta com a imatge un mini-exemple (js/lexicon/mates.js) ──
     // Matemàtiques: els nombres
     {

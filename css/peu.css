@@ -1,0 +1,56 @@
+/*
+============================================================================
+PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
+FITXER: css/peu.css
+ROL: El peu de les pàgines d'entrada (la portada de l'alumnat i el panell del
+     professorat): la icona de Step Quiz, l'autoria i la llicència. Va dins del
+     flux de la pàgina, sempre al final (mai fixat sobre el contingut).
+DEPENDÈNCIES: Cap. Les pàgines que el porten defineixen --bg-color (el fons).
+PROVES: tests/navegador/portada.test.js i professorat.test.js
+============================================================================
+*/
+.site-footer {
+    width: 100%;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 15px;
+    text-align: center;
+    font-size: 0.85em;
+    color: var(--text-main);
+    background: var(--bg-color);
+    border-top: 1px solid #b8be8a;
+}
+.site-footer a {
+    color: inherit;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+.footer-logo {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #eceee0;
+    border: 2px solid #b8be8a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition:
+        opacity 0.2s,
+        transform 0.2s;
+}
+.footer-logo:hover,
+.footer-logo:focus-visible {
+    opacity: 1;
+    transform: scale(1.2);
+}
+.site-footer .footer-logo img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}

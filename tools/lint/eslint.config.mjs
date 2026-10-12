@@ -13,16 +13,13 @@ import globals from 'globals';
 export default [
     {
         ignores: [
-            // El motor antic són scripts clàssics que comparteixen variables globals (un fitxer fa servir
-            // el que defineix un altre): ESLint hi veuria centenars de «no definit». S'esborra a la PR 15.
-            'js/legacy/**',
             // La configuració d'ESLint mateixa
             'tools/lint/**',
         ],
     },
     js.configs.recommended,
     {
-        // Tot el JS de js/ (fora de js/legacy/) són mòduls ES: el que un fitxer necessita d'un altre
+        // Tot el JS de js/ són mòduls ES: el que un fitxer necessita d'un altre
         // s'importa (import { randInt } from '../utils.js'), no hi ha globals compartides.
         // Un nom sense declarar ni importar és un error.
         files: ['js/**/*.js'],
@@ -53,11 +50,6 @@ export default [
                 ...globals.browser,
                 // Noms interns que els tests llegeixen dins de la pàgina. Si una pàgina els canvia, el test
                 // falla i s'ha d'adaptar (i aquesta llista, amb ell).
-                ACTIVITIES_ESO: 'readonly', // index.html
-                PRODUCTS: 'readonly', // a-proporciodirecta.html
-                renderProblem: 'readonly',
-                els: 'readonly',
-                updateAskedRow: 'readonly',
                 svgTwoSteps: 'readonly', // a-decimals-tutorial.html
             },
         },

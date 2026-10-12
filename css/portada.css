@@ -1,0 +1,184 @@
+/*
+============================================================================
+PROJECTE: a2 — Matemàtiques per a l'aula d'acollida
+FITXER: css/portada.css
+ROL: Estils de la portada de l'alumnat (index.html): el títol amb la icona i
+     una graella de fitxes grans, cada una amb la imatge d'una activitat i el
+     seu nom. Tota la fitxa és un enllaç (zona de toc gran) i res no depèn
+     només del color.
+ARQUITECTURA:
+- La mida de la imatge d'una fitxa és relativa a l'amplada de la fitxa
+  (unitats cqw d'un contenidor), igual que a les targetes de vocabulari
+  (css/targetes.css) i amb la mateixa proporció que les cartes de l'àlbum
+  (js/album): tot el que hi cap a l'àlbum hi cap a la fitxa. Els estils de les
+  imatges de matemàtiques (.mat*) i dels pictogrames (.pict) són a css/shared.css.
+- Les columnes s'ajusten a l'amplada: dues en un mòbil estret (320 px), fins a
+  sis en una pantalla gran.
+DEPENDÈNCIES: css/tokens.css i css/shared.css (que porta els estils .mat* i .pict);
+  css/peu.css (el peu).
+PROVES: tests/navegador/portada.test.js
+============================================================================
+*/
+:root {
+    --bg-color: #f5f4ec;
+    --primary: #5a6a1e;
+    --primary-light: #e5e8c8;
+    --primary-hover: #3d4a14;
+    --primary-dark: #1c1f0e;
+}
+
+/* La pàgina ocupa tota l'alçada: el contingut queda al mig de l'espai que deixa el peu, que va al final */
+body {
+    align-items: stretch;
+    padding: 0;
+}
+.pagina {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    padding: 14px 12px 18px;
+}
+
+/* ---- EL TÍTOL ---- */
+.capcalera {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 4px 0 16px;
+}
+.capcalera img {
+    flex: none;
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+}
+.capcalera h1 {
+    margin: 0;
+    font-size: 1.9em;
+    color: var(--primary-dark);
+}
+
+/* ---- LES FITXES ---- */
+.fitxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+@media (min-width: 700px) {
+    .fitxes {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 18px;
+    }
+}
+.fitxes li {
+    display: flex;
+}
+/* Una fitxa és un contenidor (container-type): la imatge té la mida en cqw, relativa a la seva amplada */
+.fitxa {
+    container-type: inline-size;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 150px;
+    padding: 10px 8px 12px;
+    color: var(--text-main);
+    text-align: center;
+    text-decoration: none;
+    background: #fff;
+    border: 2px solid #b8be8a;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(28, 31, 14, 0.08);
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+}
+.fitxa:focus-visible {
+    outline: 4px solid var(--primary-dark);
+    outline-offset: 3px;
+}
+@media (hover: hover) {
+    .fitxa:hover {
+        background: var(--primary-light);
+        border-color: var(--primary);
+        box-shadow: 0 8px 18px rgba(28, 31, 14, 0.18);
+        transform: translateY(-3px);
+    }
+}
+.fitxa:active {
+    transform: scale(0.97);
+}
+
+/* La imatge. Cada mena té la seva mida: un emoji o un pictograma és una peça quadrada, i un terme de matemàtiques és un
+   mini-exemple o un dibuix més ample (amb la seva pròpia escala, .mat) */
+.fitxa-imatge {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    line-height: 1;
+}
+.fitxa-emoji {
+    font-size: 46cqw;
+    /* L'emoji de debò (en color), no el dibuix en línies que tenen algunes lletres */
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+}
+.fitxa-pictograma {
+    font-size: 36cqw;
+}
+.fitxa-mates {
+    font-size: 33cqw;
+}
+.fitxa-imatge .pict {
+    width: 1.5em;
+    height: 1.5em;
+}
+
+/* El nom: gran, en negreta i d'un en un o dos renglons (no es talla mai) */
+.fitxa-nom {
+    max-width: 100%;
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--primary-dark);
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+
+/* L'enllaç del peu cap al panell del professorat: una zona de toc de 44 px */
+.site-footer .peu-professorat {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+}
+
+@media (max-width: 480px) {
+    .capcalera img {
+        width: 60px;
+        height: 60px;
+    }
+    .capcalera h1 {
+        font-size: 1.5em;
+    }
+    .fitxa {
+        min-height: 140px;
+    }
+    .fitxa-nom {
+        font-size: 1rem;
+    }
+}

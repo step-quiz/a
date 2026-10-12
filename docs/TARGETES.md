@@ -55,7 +55,7 @@ Les imatges dels termes de matemàtiques tenen l'escala de les cartes de l'[àlb
 - **La paraula.** `targetes.js` mesura, amb un `canvas`, quant fa en «em» el tros més llarg de cada paraula i el posa a `--w`; el CSS en treu `font-size: min(12cqw, 88cqw / --w)`.
 - **Doble cara.** `pagines()` de `generador.js` reparteix les targetes i `emmirallat()` gira les files del darrere; el test comprova, per a totes les targetes i les tres mides, que cada paraula és darrere de la seva imatge.
 
-## Què no hi ha (encara)
+## Què no hi ha
 
-- **PDF ja fets al repositori**, com els de `pi/pdf/` (un per tema, a doble cara, en blanc i negre). Ara el PDF es fa des de la finestra d'impressió. Si es volen, caldria una eina que els generi amb Chromium i una prova que digui que no han quedat vells després de canviar el lèxic.
+- **PDF ja fets al repositori**, com els de `pi/pdf/`: el professorat ha decidit que **no** en vol (D9 de [`PLA.md`](PLA.md), 2026-10-11). Les targetes s'imprimeixen des de la pàgina, i qui vulgui un PDF el desa des de la finestra d'impressió del navegador.
 - **Una lletra manuscrita o de pal** per a l'alumnat que n'aprèn l'escriptura (a `pi` n'hi ha una de pròpia, Caveat). Ara es fa servir una lletra del sistema.

@@ -59,6 +59,13 @@ export function htmlImatge(e) {
 }
 
 /**
+ * De quina mena és la imatge d'una entrada: 'emoji', 'pictograma' o 'mates'. Cada mena es dibuixa amb la seva mida
+ * (els emojis i els pictogrames són peces quadrades; els termes de matemàtiques, mini-exemples més amples): les targetes i
+ * les fitxes de la portada en fan una classe CSS. L'entrada ha de portar imatge.
+ */
+export const menaImatge = e => (e.imatge.emoji ? 'emoji' : e.imatge.pictograma ? 'pictograma' : 'mates');
+
+/**
  * La paraula amb la seva imatge, com a HTML: paraula('pis', { prep: 'a' }) →
  * <span class="paraula" data-paraula="pis" role="button" tabindex="0"><span class="paraula-img" aria-hidden="true">…</span><span class="paraula-text">al pis</span></span>
  * Les opcions són les de textParaula().

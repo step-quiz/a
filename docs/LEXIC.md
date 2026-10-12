@@ -151,7 +151,8 @@ Tota paraula amb imatge feta amb `paraula()` es pot **tocar**: s'obre una **targ
 
 ## Què comprova `tests/check-lexicon.js`
 
-Només a les activitats que ja van amb el motor nou (les altres hi entraran quan es migrin):
+Només a les pàgines de l'alumne que ja van amb el motor nou (les altres hi entraran quan es migrin): les activitats, l'[àlbum de paraules](../album.html) i la [portada de l'alumnat](PORTADA.md) (`index.html` i `js/portada/textos.js`, que té el títol i el nom de cada fitxa). Les pàgines del professorat (`professorat.html`, `targetes.html`) hi són exemptes, i també el **peu legal** d'una pàgina de l'alumne (`<footer data-legal>`: l'autoria i la llicència, que són per als adults). Per això el peu és l'únic text de l'alumne que no passa pel control: no hi poseu res més.
+
 
 1. Cada paraula dels textos, de les frases que genera l'activitat i del text fix de la seva pàgina HTML és al lèxic o a `FUNCIONALS`.
 2. Cada `TEXTOS.clau` que el codi fa servir existeix, i cap text queda sense fer servir.
@@ -190,6 +191,24 @@ L'activitat [`a-vocabulari`](../a-vocabulari.html) treballa **tots els noms conc
 Les [targetes de vocabulari per imprimir](TARGETES.md) (PR 13c-bis) també surten del mateix banc: una paraula nova amb imatge hi surt sola.
 
 L'[àlbum de paraules](../album.html) (PR 13b) mostra el mateix banc, per temes: n'hi ha prou de posar una paraula nova al lèxic perquè hi surti. **Un tema nou amb paraules amb imatge necessita la seva icona** a `ICONES_TEMES` de `js/album/logica.js` (la prova ho comprova). Els textos de l'àlbum són a `js/album/textos.js` i també els vigila `tests/check-lexicon.js`.
+
+### Escriure una paraula (nivell 3): tolerància i solucions curtes (PR 13c-ter)
+
+**Tolerància.** Com a `vocabulari` d'`operacions`, una errada petita no és un error: `avaluaEscrita` (`js/a-vocabulari/generador.js`) diu si el que s'ha escrit és `correcta`, `general` (✔ 🔍), `propera` (cap intent perdut: surt lletra a lletra i es pot corregir) o `mal` (un intent menys).
+
+| Què s'ha escrit | Veredicte | Marques |
+|---|---|---|
+| la paraula, amb o sense l'article, en majúscula o minúscula, amb o sense el punt volat («parallelogram») | correcta | tota ✔ (amb la paraula bona) |
+| un accent equivocat («tomaquet») | propera | ´ a la lletra |
+| una lletra equivocada, de més o que falta («tomquet»), fins a 1 lletra en una paraula de 5 lletres o menys i fins a 2 en una de més llarga | propera | ✖ al lloc (una lletra que falta surt com a «_» i no desplaça les altres) |
+| dues lletres seguides al revés («trinagle») | propera | ⇄ a les dues |
+| les paraules d'un terme en un altre ordre («enter nombre») | propera | ⇄ a l'espai |
+| una paraula que falta («nombre» per a «nombre enter») | propera | una «_» per lletra de la que falta |
+| una paraula més general que també és certa («triangle») | general | ✔ 🔍 |
+| una altra paraula del banc, tot i ser molt semblant («quadrant» per a un quadrat; «MCM» per a «MCD») | mal | com qualsevol error |
+| qualsevol altra cosa | mal | lletra a lletra |
+
+**Solucions curtes.** Al nivell 3 no es pregunta cap paraula que s'hagi d'escriure amb més de `LLARGADA_MAXIMA_ESCRITA` (14) caràcters: «propietat commutativa» (21) o «simplificar una fracció» (23) són massa llargues per escriure-les sense tenir-les davant. En queden fora 20 de les 208 paraules del banc ([`VOCABULARI-MATES.md`](VOCABULARI-MATES.md)); als nivells de triar, hi surten totes. Si en un banc no queda cap paraula curta (un tema amb només termes llargs), es pregunta una de llarga en lloc de quedar-se sense preguntes. Per canviar el límit n'hi ha prou de canviar aquest número (les proves el diuen: `tests/activitats.test.js`).
 
 ## El vocabulari matemàtic (PR 13c)
 

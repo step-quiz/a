@@ -4,7 +4,8 @@
  * FITXER: tests/navegador/mobil.test.js
  * ROL: Mòbils estrets (320, 360 i 390 px de zona útil, tàctils): cap pàgina
  *      desborda en horitzontal, les files de «proporció directa» no es tallen,
- *      i la portada no tapa res amb el peu (R12c, R14).
+ *      i la portada de l'alumnat (fitxes) i el panell del professorat (generador
+ *      d'enllaços) no tapen res amb el peu (R12c, R14).
  * ============================================================================
  */
 'use strict';
@@ -151,14 +152,70 @@ module.exports = async function ({ browser, base }) {
         await page.context().close();
     }
 
-    suite("Portada en mòbil: el peu no tapa el panell i s'hi pot arribar fent scroll");
+    suite("Portada de l'alumnat en mòbil: dues columnes de fitxes grans, sense desbordar, i el peu s'hi pot arribar");
     for (const [w, h] of [
         [360, 700],
         [320, 640],
         [390, 844],
     ]) {
         const page = await obre(browser, base, 'index.html', { mobil: true, w, h, rapid: false });
-        await page.waitForTimeout(2700);
+        const r = await page.evaluate(() => {
+            const fitxes = [...document.querySelectorAll('a.fitxa')].map(a => a.getBoundingClientRect());
+            const peu = document.querySelector('.site-footer').getBoundingClientRect();
+            const logo = document.querySelector('.footer-logo').getBoundingClientRect();
+            const professorat = document.querySelector('.peu-professorat').getBoundingClientRect();
+            return {
+                sw: document.documentElement.scrollWidth,
+                iw: innerWidth,
+                n: fitxes.length,
+                columnes: new Set(fitxes.map(f => Math.round(f.left))).size,
+                dins: fitxes.every(f => f.left >= 0 && f.right <= innerWidth),
+                tocables: fitxes.every(f => f.width >= 44 && f.height >= 44),
+                petita: Math.round(Math.min(...fitxes.map(f => f.width))),
+                peuDalt: peu.top + scrollY,
+                fitxesBaix: Math.max(...fitxes.map(f => f.bottom)) + scrollY,
+                logoDinsPeu: logo.left >= peu.left - 1 && logo.right <= peu.right + 1 && logo.top >= peu.top - 1,
+                professorat: Math.round(professorat.height),
+            };
+        });
+        ok(
+            r.sw <= r.iw && r.dins,
+            `${w}×${h}: sense desbordament horitzontal (${r.sw}/${r.iw}) i totes les fitxes dins`
+        );
+        ok(
+            r.n === 18 && r.columnes === 2 && r.tocables,
+            `${w}×${h}: 18 fitxes en ${r.columnes} columnes, la més estreta de ${r.petita} px (zones de toc de sobra)`
+        );
+        ok(
+            r.peuDalt >= r.fitxesBaix,
+            `${w}×${h}: el peu (${Math.round(r.peuDalt)}) no tapa les fitxes (${Math.round(r.fitxesBaix)})`
+        );
+        ok(
+            r.logoDinsPeu && r.professorat >= 44,
+            `${w}×${h}: la icona de Step Quiz és dins del peu i l'enllaç al professorat fa ${r.professorat} px d'alt`
+        );
+        // De cop (sense el desplaçament suau dels dispositius tàctils): el que es prova és que s'hi pot arribar, no la durada
+        await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+        await page.waitForTimeout(150);
+        ok(
+            await page.evaluate(
+                () => document.querySelector('.site-footer').getBoundingClientRect().bottom <= innerHeight + 1
+            ),
+            `${w}×${h}: es pot arribar al final del peu`
+        );
+        ok(page.errors.length === 0, `${w}×${h}: sense errors JS (${unics(page.errors) || 'cap'})`);
+        await page.context().close();
+    }
+
+    suite("Panell del professorat en mòbil: el peu no tapa el panell i s'hi pot arribar fent scroll");
+    for (const [w, h] of [
+        [360, 700],
+        [320, 640],
+        [390, 844],
+    ]) {
+        const page = await obre(browser, base, 'professorat.html', { mobil: true, w, h, rapid: false });
+        // El panell amb «Vocabulari» (amb tots els camps: nivell, tema i sessió fixa) és el més alt
+        await page.evaluate(() => document.getElementById('cd-eso-opt-0').click());
         const r = await page.evaluate(() => {
             const peu = document.querySelector('.site-footer').getBoundingClientRect();
             const panell = document.getElementById('panel-eso').getBoundingClientRect();
@@ -177,6 +234,9 @@ module.exports = async function ({ browser, base }) {
                     .filter(b => getComputedStyle(b).display !== 'none')
                     .map(b => b.getBoundingClientRect().right),
                 panellDreta: panell.right,
+                selectors: [...document.querySelectorAll('#panel-eso select')]
+                    .filter(s => getComputedStyle(s.closest('.row')).display !== 'none')
+                    .map(s => s.getBoundingClientRect().right),
             };
         });
         ok(r.sw <= r.iw, `${w}×${h}: sense desbordament horitzontal (${r.sw}/${r.iw})`);
@@ -186,10 +246,9 @@ module.exports = async function ({ browser, base }) {
         );
         ok(r.logoDinsPeu, `${w}×${h}: la icona de Step Quiz és dins del peu`);
         ok(
-            r.botons.every(b => b <= r.panellDreta),
-            `${w}×${h}: els botons caben al panell`
+            r.botons.every(b => b <= r.panellDreta) && r.selectors.every(b => b <= r.panellDreta),
+            `${w}×${h}: els botons i els selectors caben al panell`
         );
-        // De cop (sense el desplaçament suau dels dispositius tàctils): el que es prova és que s'hi pot arribar, no la durada
         await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
         await page.waitForTimeout(150);
         ok(

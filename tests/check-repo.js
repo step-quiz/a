@@ -31,11 +31,29 @@ const jsFiles = listFiles('.', ['.js']);
 const cssFiles = listFiles('.', ['.css']);
 const mdFiles = listFiles('.', ['.md']);
 const activitats = htmlFiles.filter(f => /^a-[^/]*\.html$/.test(f) && !f.endsWith('-tutorial.html'));
-const tutorials = htmlFiles.filter(f => f.endsWith('-tutorial.html'));
 
 /** Treu els comentaris HTML i els blocs <style> (un «<script>» dins d'un comentari no és cap script). */
 const stripNoise = h => h.replace(/<!--[\s\S]*?-->/g, '').replace(/<style[\s\S]*?<\/style>/gi, '');
 const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
+
+/**
+ * El catàleg d'activitats (js/portada/activitats.js), que fan servir la portada de l'alumnat i el panell del professorat.
+ * És un mòdul ES i aquest fitxer no ho és: es llegeix amb un altre Node. Torna { ACTIVITATS, ALBUM, GRUPS, defecte }.
+ */
+function carregaCataleg() {
+    const r = spawnSync(
+        process.execPath,
+        [
+            '--input-type=module',
+            '-e',
+            "import * as C from './js/portada/activitats.js'; console.log(JSON.stringify({ ACTIVITATS: C.ACTIVITATS, ALBUM: C.ALBUM, GRUPS: C.GRUPS, defecte: C.ACTIVITAT_PER_DEFECTE }));",
+        ],
+        { cwd: ROOT, encoding: 'utf8' }
+    );
+    if (r.status !== 0) throw new Error(`No es pot llegir js/portada/activitats.js: ${r.stderr}`);
+    return JSON.parse(r.stdout);
+}
+const CATALEG = carregaCataleg();
 // ── 1. Sintaxi ───────────────────────────────────────────────────────────────
 suite('1. Sintaxi de tots els fitxers JS i dels <script> en línia');
 
@@ -58,8 +76,8 @@ function errorDeSintaxi(codi, fitxer, esModul) {
     let moduls = 0;
     for (const f of jsFiles) {
         const codi = read(f);
-        // Els mòduls ES (js/, fora de js/legacy/) porten import/export; la resta són scripts clàssics o de Node
-        const esModul = f.startsWith('js/') && !f.startsWith('js/legacy/') && /^\s*(import|export)\s/m.test(codi);
+        // Els mòduls ES (js/) porten import/export; la resta són scripts clàssics o de Node
+        const esModul = f.startsWith('js/') && /^\s*(import|export)\s/m.test(codi);
         if (esModul) moduls++;
         const e = errorDeSintaxi(codi, f, esModul);
         if (e) dolents.push(`${f}: ${e}`);
@@ -133,10 +151,10 @@ const ES_EXTERN = u => /^(https?:|\/\/|mailto:|tel:|data:|#|javascript:)/i.test(
     ok(dolents.length === 0, `${n} redireccions amb location.href`, dolents.join('\n'));
 }
 {
-    // Mòduls ES (js/, fora de js/legacy/): cada import ha de dur a un fitxer que existeix i que exporta el que se li demana.
+    // Mòduls ES (js/): cada import ha de dur a un fitxer que existeix i que exporta el que se li demana.
     // Els controladors necessiten la pàgina i no es poden carregar des de Node: aquesta comprovació en detecta els errors
     // (un nom mal escrit, un fitxer canviat de lloc…) abans que el navegador es trobi un «SyntaxError» en obrir l'activitat.
-    const moduls = jsFiles.filter(f => f.startsWith('js/') && !f.startsWith('js/legacy/'));
+    const moduls = jsFiles.filter(f => f.startsWith('js/'));
     const exportats = f => {
         const t = sensePComentaris(read(f));
         const noms = new Set();
@@ -188,21 +206,28 @@ const ES_EXTERN = u => /^(https?:|\/\/|mailto:|tel:|data:|#|javascript:)/i.test(
     ok(dolents.length === 0, `${n} import de ${moduls.length} mòduls ES: fitxers i noms existents`, dolents.join('\n'));
 }
 {
-    // La llista d'activitats de la portada (ACTIVITIES_ESO): cada pàgina i cada tutorial han d'existir
-    const idx = read('index.html');
-    const llista = idx.slice(idx.indexOf('ACTIVITIES_ESO'), idx.indexOf('DEFAULT_ESO'));
-    const fitxers = [...llista.matchAll(/file:\s*'([^']+)'/g)].map(m => m[1]);
-    const yts = [...llista.matchAll(/yt:\s*'([^']+)'/g)].map(m => m[1]);
-    const dolents = [...fitxers, ...yts].filter(f => !/^https?:/.test(f) && !exists(f));
+    // El catàleg d'activitats (js/portada/activitats.js): cada pàgina i cada tutorial han d'existir
+    const { ACTIVITATS, ALBUM, GRUPS, defecte } = CATALEG;
+    const fitxers = ACTIVITATS.map(a => a.file);
+    const elsTutorials = ACTIVITATS.map(a => a.tutorial).filter(Boolean);
+    const dolents = [...fitxers, ...elsTutorials, ALBUM.file].filter(f => !exists(f));
     ok(
         fitxers.length >= 5 && dolents.length === 0,
-        `la portada ofereix ${fitxers.length} activitats i ${yts.length} tutorials`,
+        `el catàleg ofereix ${fitxers.length} activitats i ${elsTutorials.length} tutorials (i l'àlbum)`,
         dolents.join('\n')
     );
     const sensePortada = activitats.filter(a => !fitxers.includes(a));
-    ok(sensePortada.length === 0, 'totes les activitats (a-*.html) són a la portada', sensePortada.join(', '));
-    const defecte = (idx.match(/DEFAULT_ESO\s*=\s*'([^']+)'/) || [])[1];
-    ok(fitxers.includes(defecte), `l'activitat per defecte de la portada és a la llista (${defecte})`);
+    ok(sensePortada.length === 0, 'totes les activitats (a-*.html) són al catàleg', sensePortada.join(', '));
+    const repetides = fitxers.filter((f, i) => fitxers.indexOf(f) !== i);
+    ok(repetides.length === 0, 'cap activitat repetida al catàleg', repetides.join(', '));
+    ok(fitxers.includes(defecte), `l'activitat per defecte del panell és al catàleg (${defecte})`);
+    // La llista del professorat va per temes: els de cada grup van junts i en l'ordre de GRUPS
+    const ordre = ACTIVITATS.map(a => a.grup).filter((g, i, v) => v.indexOf(g) === i);
+    ok(
+        ACTIVITATS.every(a => GRUPS.some(g => g.id === a.grup)) &&
+            JSON.stringify(ordre) === JSON.stringify(GRUPS.map(g => g.id)),
+        `les activitats van agrupades per temes, en l'ordre de GRUPS (${ordre.join(', ')})`
+    );
 }
 {
     const dolents = [];
@@ -423,45 +448,30 @@ suite('6. Infraestructura del repositori');
             senseAccess.join(', ')
         );
     }
-    // Cada activitat va amb el motor antic (scripts clàssics de js/legacy/, en ordre) o amb el nou
-    // (un únic <script type="module" src="js/<activitat>/<activitat>.js"> i cap altre JS a la pàgina).
+    // Cada activitat va amb el motor (mòduls ES): un únic <script type="module" src="js/<activitat>/<activitat>.js"> i
+    // cap altre JS a la pàgina.
     const ordre = [];
-    const motors = { antic: 0, nou: 0 };
-    const activitatsNoves = [];
     for (const f of activitats) {
         const h = stripNoise(read(f));
         const srcs = [...h.matchAll(/<script\s+src=["']([^"']+)["']/g)].map(m => m[1]);
         const moduls = [...h.matchAll(/<script\s+type=["']module["']\s+src=["']([^"']+)["']/g)].map(m => m[1]);
         const nom = f.replace('.html', '');
-        const i = n => srcs.indexOf(n);
-        if (srcs.includes('js/legacy/game-core.js')) {
-            motors.antic++;
-            if (!(
-                i('js/legacy/utils.js') >= 0 &&
-                i('js/legacy/utils.js') < i('js/legacy/config.js') &&
-                i('js/legacy/config.js') < i('js/legacy/game-core.js')
-            ))
-                ordre.push(`${f} (motor antic en desordre)`);
-        } else {
-            motors.nou++;
-            activitatsNoves.push(f);
-            const enLinia = [...h.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].filter(
-                m => m[1].trim() && !/window\.APP_CONFIG/.test(m[1])
-            );
-            if (moduls.length !== 1 || moduls[0] !== `js/${nom}/${nom}.js` || srcs.length)
-                ordre.push(`${f} (motor nou: cal un sol <script type="module" src="js/${nom}/${nom}.js">)`);
-            if (enLinia.length) ordre.push(`${f} (motor nou: no pot tenir JS dins de l'HTML)`);
-        }
+        const enLinia = [...h.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].filter(
+            m => m[1].trim() && !/window\.APP_CONFIG/.test(m[1])
+        );
+        if (moduls.length !== 1 || moduls[0] !== `js/${nom}/${nom}.js` || srcs.length)
+            ordre.push(`${f} (cal un sol <script type="module" src="js/${nom}/${nom}.js">)`);
+        if (enLinia.length) ordre.push(`${f} (no pot tenir JS dins de l'HTML)`);
     }
     ok(
         ordre.length === 0,
-        `${activitats.length} activitats: ${motors.antic} amb el motor antic (js/legacy) i ${motors.nou} amb el nou (mòduls ES)`,
+        `${activitats.length} activitats, totes amb el motor (un sol mòdul ES i cap JS dins de l'HTML)`,
         ordre.join('\n')
     );
     {
-        // Sessions fixes (?fixed=A/B/C, js/fixed-sessions.js): només funcionen amb el motor nou. L'ordre dels import de
-        // config.js és crític (fixed-sessions.js ha d'afegir els paràmetres a la URL ABANS que config.js els llegeixi), i
-        // la portada només ha d'oferir el camp «Sessió fixa» a les activitats que l'admeten.
+        // Sessions fixes (?fixed=A/B/C, js/fixed-sessions.js). L'ordre dels import de config.js és crític
+        // (fixed-sessions.js ha d'afegir els paràmetres a la URL ABANS que config.js els llegeixi), i el panell del
+        // professorat ha d'oferir el camp «Sessió fixa» a totes les activitats.
         const config = sensePComentaris(read('js/config.js'));
         const primerImport = (config.match(/^import\s+(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/m) || [])[1];
         ok(
@@ -472,7 +482,7 @@ suite('6. Infraestructura del repositori');
             /FixedSessions\.wrap\(\s*'buildLevel'/.test(sensePComentaris(read('js/game-core.js'))),
             'game-core.js embolcalla buildLevel amb FixedSessions.wrap'
         );
-        const directes = activitatsNoves.flatMap(f => {
+        const directes = activitats.flatMap(f => {
             const nom = f.replace('.html', '');
             const codi = sensePComentaris(read(`js/${nom}/${nom}.js`));
             // buildLevel() sense «window.» davant (i que no sigui la declaració) no passaria per les sessions fixes
@@ -487,7 +497,7 @@ suite('6. Infraestructura del repositori');
             directes.join('\n')
         );
         // Targeta «Aprèn la paraula» (js/targeta-paraula.js): la posa en marxa injectSharedHTML() de game-core.js, i així
-        // totes les activitats del motor nou tenen les paraules amb imatge tocables. Els seus estils són a css/shared.css.
+        // totes les activitats tenen les paraules amb imatge tocables. Els seus estils són a css/shared.css.
         const nucli = sensePComentaris(read('js/game-core.js'));
         const injecta = nucli.slice(
             nucli.indexOf('export function injectSharedHTML'),
@@ -498,42 +508,19 @@ suite('6. Infraestructura del repositori');
                 /\binitTargetaParaula\(\)/.test(injecta),
             'game-core.js posa en marxa la targeta «Aprèn la paraula» a injectSharedHTML()'
         );
-        const senseEstils = activitatsNoves.filter(f => !/href=["']css\/shared\.css["']/.test(read(f)));
+        const senseEstils = activitats.filter(f => !/href=["']css\/shared\.css["']/.test(read(f)));
         ok(
             senseEstils.length === 0,
-            'les activitats del motor nou carreguen css/shared.css (hi ha els estils de la targeta de la paraula)',
+            'les activitats carreguen css/shared.css (hi ha els estils de la targeta de la paraula)',
             senseEstils.join(', ')
         );
-        const idx = read('index.html');
-        const llista = idx.slice(idx.indexOf('ACTIVITIES_ESO'), idx.indexOf('DEFAULT_ESO'));
-        const ambFixa = [...llista.matchAll(/\{\s*file:\s*'([^']+)'([^}]*)\}/g)]
-            .filter(m => /\bfixed:\s*true\b/.test(m[2]))
-            .map(m => m[1]);
+        const ambFixa = CATALEG.ACTIVITATS.filter(a => a.fixed).map(a => a.file);
         ok(
-            JSON.stringify([...ambFixa].sort()) === JSON.stringify([...activitatsNoves].sort()),
-            `la portada ofereix «Sessió fixa» just a les activitats del motor nou (${ambFixa.join(', ') || 'cap'})`,
-            `portada: ${ambFixa.join(', ')}; motor nou: ${activitatsNoves.join(', ')}`
+            JSON.stringify([...ambFixa].sort()) === JSON.stringify([...activitats].sort()),
+            `el panell del professorat ofereix «Sessió fixa» a totes les activitats (${ambFixa.length})`,
+            `catàleg: ${ambFixa.join(', ')}; activitats: ${activitats.join(', ')}`
         );
     }
-    // Activitats noves que encara no tenen tutorial (es faran, visuals i sense frases, amb els dels altres; PR 10)
-    const SENSE_TUTORIAL_ENCARA = [
-        'a-enters-ordenar.html',
-        'a-recta-numerica.html',
-        'a-mcd-mcm.html',
-        'a-factoritzar.html',
-        'a-fraccions.html',
-        'a-area-perimetre.html',
-        'a-triangle-rectangle.html',
-        'a-pla-cartesia.html',
-        'a-potencies.html',
-        'a-nombres-lletres.html',
-        'a-prioritat.html',
-        'a-vocabulari.html',
-    ];
-    const sensesTutorial = activitats.filter(
-        a => !SENSE_TUTORIAL_ENCARA.includes(a) && !tutorials.includes(a.replace('.html', '-tutorial.html'))
-    );
-    ok(sensesTutorial.length === 0, 'cada activitat té el seu tutorial', sensesTutorial.join(', '));
 }
 
 // ── 7. Document viu ──────────────────────────────────────────────────────────

@@ -6,9 +6,8 @@
  *      servidor local, obrir pàgines recollint errors, temporitzadors
  *      accelerats i «jugar» una activitat fins al final.
  *      TOT el que els tests saben del funcionament intern de les activitats és
- *      aquí: com es llegeix l'estat (script ESTAT: window.__prova() del motor nou
- *      o les variables globals del motor antic, js/legacy) i com es respon.
- *      Quan s'esborri el motor antic (PR 15) només quedarà la branca nova.
+ *      aquí: com es llegeix l'estat (script ESTAT: window.__prova(), que cada
+ *      activitat publica amb registraProva a js/game-core.js) i com es respon.
  * ============================================================================
  */
 'use strict';
@@ -77,35 +76,13 @@ const CONGELA = llindar => {
 
 /**
  * Script que s'executa abans de cada pàgina i hi defineix window.__estatProves(): l'estat intern de l'activitat en
- * aquell moment, amb les mateixes claus als dos motors. El motor nou (mòduls ES) el publica ell mateix a window.__prova()
- * (vegeu registraProva a js/game-core.js); el motor antic (js/legacy) té variables globals, que es llegeixen aquí.
+ * aquell moment. L'activitat el publica ella mateixa a window.__prova() (vegeu registraProva a js/game-core.js).
  * Claus: sessions, preguntes, intents (la configuració); sessionScore, sessionScores, sessionHistory, currentSession,
  * currentOperation, attemptsLeft, isTransitioning (el motor); ocupat (no admet resposta ara), resposta (la correcta, en
  * activitats d'un sol valor), hores/minuts (a-rellotge), nivell.
  */
 const ESTAT = () => {
-    window.__estatProves = () => {
-        if (window.__prova) return window.__prova();
-        /* eslint-disable no-undef -- variables globals dels scripts clàssics del motor antic */
-        return {
-            sessions: TOTAL_SESSIONS,
-            preguntes: TOTAL_OPERATIONS,
-            intents: MAX_INTENTS,
-            sessionScore,
-            sessionScores,
-            sessionHistory,
-            currentSession,
-            currentOperation,
-            attemptsLeft,
-            isTransitioning,
-            ocupat: isTransitioning || isPenalizing,
-            resposta: typeof expectedAnswer !== 'undefined' ? expectedAnswer : undefined,
-            hores: typeof currentHours !== 'undefined' ? currentHours : undefined,
-            minuts: typeof currentMinutes !== 'undefined' ? currentMinutes : undefined,
-            nivell: typeof NIVELL !== 'undefined' ? NIVELL : null,
-        };
-        /* eslint-enable no-undef */
-    };
+    window.__estatProves = () => window.__prova();
 };
 
 /**

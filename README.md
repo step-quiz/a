@@ -27,18 +27,19 @@ Les activitats del moment en què va néixer el repositori (cada bloc és una ac
 
 | Fitxer | Contingut |
 |---|---|
-| `index.html` | Generador d'enllaços per al professorat |
+| `index.html` | **Portada de l'alumnat**: una fitxa amb imatge i nom per activitat i per a l'àlbum (sense menús; vegeu [`docs/PORTADA.md`](docs/PORTADA.md)) |
+| `professorat.html` | **Panell del professorat**: el generador d'enllaços per a la classe (activitat, nivell, tema, sessions, preguntes, errors i sessió fixa) i els recursos del professorat |
 | `a-enters.html` · `a-enters-tutorial.html` | Nombres enters (l'ascensor) |
 | `a-decimals.html` · `a-decimals-tutorial.html` | Diners i canvi (decimals) |
-| `a-enters-ordenar.html` | Ordenar enters (sense tutorial encara) |
+| `a-enters-ordenar.html` | Ordenar enters (sense tutorial) |
 | `a-equacions.html` · `a-equacions-tutorial.html` | Equacions de 1r grau |
 | `a-proporciodirecta.html` · `a-proporciodirecta-tutorial.html` | Proporcionalitat directa |
 | `a-rellotge.html` · `a-rellotge-tutorial.html` | Llegir el rellotge |
-| `a-recta-numerica.html` | Temperatura (gràfica; sense tutorial encara) |
-| `a-mcd-mcm.html` | MCD i MCM (sense tutorial encara) |
-| `a-factoritzar.html` | Factoritzar en primers (sense tutorial encara) |
-| `a-fraccions.html` | Operacions amb fraccions (sense tutorial encara) |
-| `a-area-perimetre.html` | Àrea i perímetre de figures de quadrats (sense tutorial encara) |
+| `a-recta-numerica.html` | Temperatura (gràfica; sense tutorial) |
+| `a-mcd-mcm.html` | MCD i MCM (sense tutorial) |
+| `a-factoritzar.html` | Factoritzar en primers (sense tutorial) |
+| `a-fraccions.html` | Operacions amb fraccions (sense tutorial) |
+| `a-area-perimetre.html` | Àrea i perímetre de figures de quadrats (sense tutorial) |
 | `a-triangle-rectangle.html` | Teorema de Pitàgores en un triangle rectangle |
 | `a-pla-cartesia.html` | Coordenades al pla cartesià |
 | `targetes.html` | Targetes de vocabulari per imprimir (eina del professorat; vegeu [`docs/TARGETES.md`](docs/TARGETES.md)) |
@@ -49,7 +50,7 @@ Totes les paraules que l'alumne pot llegir són a **un registre** (el lèxic, [`
 
 ## Sessions fixes: la mateixa partida per a tota la classe
 
-Al generador d'enllaços (la portada), el camp **Sessió fixa** (A, B o C) fa que **tots els alumnes que obrin l'enllaç facin exactament les mateixes preguntes**, amb els mateixos nombres, passi el que passi (errors, ajudes…). A, B i C són tres conjunts de preguntes diferents. A dalt de la pantalla hi surt «Sessió fixa A» perquè es vegi que és el mode fix, i **Torna a jugar** repeteix la mateixa sessió. Si es deixa en «Aleatòria», cada alumne té preguntes diferents.
+Al generador d'enllaços (el panell del professorat, `professorat.html`), el camp **Sessió fixa** (A, B o C) fa que **tots els alumnes que obrin l'enllaç facin exactament les mateixes preguntes**, amb els mateixos nombres, passi el que passi (errors, ajudes…). A, B i C són tres conjunts de preguntes diferents. A dalt de la pantalla hi surt «Sessió fixa A» perquè es vegi que és el mode fix, i **Torna a jugar** repeteix la mateixa sessió. Si es deixa en «Aleatòria», cada alumne té preguntes diferents.
 
 De moment està disponible a **Nombres enters**, **Ordenar enters**, **Diners i canvi**, **Proporcionalitat**, el **Rellotge**, la **Temperatura**, el **MCD i MCM**, **Factoritzar**, **Fraccions**, **Àrea i perímetre**, **Triangle rectangle**, **Coordenades**, **Equacions**, **Potències**, **Escriure nombres**, **Prioritat d'operacions** i **Vocabulari**; cada activitat l'estrenarà quan es migri al motor nou (vegeu [`docs/PLA.md`](docs/PLA.md)).
 
@@ -57,9 +58,8 @@ De moment està disponible a **Nombres enters**, **Ordenar enters**, **Diners i 
 
 ```
 js/                 motor de les activitats (mòduls ES: utils, config, game-core, fixed-sessions, textos), el lèxic
-                    (js/lexicon/), una carpeta per activitat migrada (js/a-enters/, js/a-enters-ordenar/, js/a-decimals/, js/a-proporciodirecta/, js/a-rellotge/, js/a-recta-numerica/, js/a-mcd-mcm/, js/a-factoritzar/, js/a-fraccions/, js/a-area-perimetre/, js/a-triangle-rectangle/, js/a-pla-cartesia/, js/a-equacions/, js/a-potencies/, js/a-nombres-lletres/, js/a-prioritat/, js/a-vocabulari/, js/album/, js/targetes/) i el motor antic (js/legacy/)
-                    de les que encara no ho són
-css/                tokens.css (colors), shared.css, accessibilitat.css, chromebook.css i targetes.css (la pàgina de targetes imprimibles)
+                    (js/lexicon/), una carpeta per activitat o pàgina (js/a-enters/, js/a-enters-ordenar/, js/a-decimals/, js/a-proporciodirecta/, js/a-rellotge/, js/a-recta-numerica/, js/a-mcd-mcm/, js/a-factoritzar/, js/a-fraccions/, js/a-area-perimetre/, js/a-triangle-rectangle/, js/a-pla-cartesia/, js/a-equacions/, js/a-potencies/, js/a-nombres-lletres/, js/a-prioritat/, js/a-vocabulari/, js/album/, js/targetes/, js/portada/ i js/professorat/)
+css/                tokens.css (colors), shared.css, accessibilitat.css, chromebook.css, portada.css i peu.css (la portada de l'alumnat i el peu) i targetes.css (la pàgina de targetes imprimibles)
 docs/               pla de treball i revisió inicial
 tools/              servidor de prova (servidor.js), desa.sh, ESLint i Prettier (lint/) i Playwright (proves/)
 tests/              comprovacions automàtiques (Node) i tests de navegador (navegador/)

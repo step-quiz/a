@@ -11,7 +11,7 @@
  * ============================================================================
  */
 import { entrada } from '../lexicon/lexicon.js';
-import { htmlImatge } from '../lexicon/paraula.js';
+import { htmlImatge, menaImatge } from '../lexicon/paraula.js';
 import { QUADRICULES } from './generador.js';
 
 const escapa = t =>
@@ -19,9 +19,6 @@ const escapa = t =>
 
 /** El títol que surt al peu de cada pàgina (per a qui les ordena: no és per a l'alumnat). */
 export const TITOL = 'Targetes de vocabulari';
-
-/** De quina mena és la imatge d'una paraula: 'emoji', 'pictograma' o 'mates' (cada una té la seva mida a css/targetes.css). */
-const menaImatge = e => (e.imatge.emoji ? 'emoji' : e.imatge.pictograma ? 'pictograma' : 'mates');
 
 /**
  * Una targeta (la imatge, decorativa, i la paraula amb article), segons el `contingut`: 'tot' (imatge i paraula),
