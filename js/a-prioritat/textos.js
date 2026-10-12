@@ -22,5 +22,5 @@ export const TEXTOS = {
 
     // La instrucció de cada fase (a sota de la capçalera): 1. quina operació es fa primer; 2. el seu resultat
     escullOperacio: 'Escull quina operació es fa en primer lloc.',
-    escullResultat: 'Escull el resultat.',
+    escullResultat: 'Quin és el resultat?',
 };
