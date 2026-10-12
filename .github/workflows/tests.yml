@@ -1,0 +1,83 @@
+# Revisió automàtica: cada cop que es puja alguna cosa a main (o s'obre una
+# pull request), GitHub comprova el projecte.
+#   ✓ verd     → tot correcte
+#   ✗ vermell  → alguna cosa s'ha trencat (el detall és a la pestanya "Actions")
+#
+# Dos treballs independents:
+#   1. Comprovacions (uns segons):
+#      · els tests que només necessiten Node (node tests/run-all.js);
+#      · ESLint: busca errors al JavaScript (variables no definides, codi que no
+#        s'executa mai…). Els avisos no fan fallar la revisió;
+#      · NOMÉS a les pull requests: Prettier (format del codi de js/ i tests/;
+#        si es puja un fitxer a mà a main, un problema de format no ha de fer
+#        sortir una creu vermella) i que ni el títol, ni la descripció ni els
+#        missatges portin l'etiqueta que fa que GitHub no publiqui el web.
+#   2. Navegador: obre les activitats en un Chromium de debò i hi juga
+#      (node tests/navegador/run.js; uns 3 minuts).
+name: Tests
+
+on:
+  push:
+    branches: [main]      # el que es puja directament a main (p. ex. un canvi fet des de la web de GitHub)
+  pull_request:           # les pull requests, abans de fusionar-les
+  workflow_dispatch:      # botó "Run workflow" per executar-ho a mà
+
+permissions:
+  contents: read
+
+jobs:
+  comprovacions:
+    name: Comprovacions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # per poder llegir els missatges dels commits d'una pull request
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/lint/package-lock.json
+      - name: Executa els tests (només Node)
+        run: node tests/run-all.js
+      - name: Instal·la ESLint i Prettier
+        run: npm ci --prefix tools/lint --no-audit --no-fund
+      - name: Revisió del codi (ESLint)
+        run: tools/lint/node_modules/.bin/eslint -c tools/lint/eslint.config.mjs .
+      - name: Format del codi (Prettier, només pull requests)
+        if: github.event_name == 'pull_request'
+        run: tools/lint/node_modules/.bin/prettier --check .
+      - name: Cap etiqueta que impedeixi publicar (només pull requests)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITOL: ${{ github.event.pull_request.title }}
+          PR_COS: ${{ github.event.pull_request.body }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_CAP: ${{ github.event.pull_request.head.sha }}
+        run: |
+          ETIQUETES='\[(skip ci|ci skip|cf-pages-skip|no ci|skip actions|actions skip)\]'
+          if printf '%s\n%s\n' "$PR_TITOL" "$PR_COS" | grep -Eiq "$ETIQUETES" \
+             || git log --format=%B "$PR_BASE..$PR_CAP" | grep -Eiq "$ETIQUETES"; then
+            echo "::error::Hi ha una etiqueta que fa que GitHub no publiqui el web (al títol o a la descripció de la PR, o en un commit). Treu-la."
+            exit 1
+          fi
+          echo "Cap etiqueta que impedeixi publicar."
+
+  navegador:
+    name: Navegador (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/proves/package-lock.json
+      - name: Instal·la Playwright
+        run: npm ci --prefix tools/proves --no-audit --no-fund
+      - name: Instal·la Chromium
+        run: tools/proves/node_modules/.bin/playwright install --with-deps chromium
+      - name: Executa els tests de navegador
+        run: node tests/navegador/run.js
