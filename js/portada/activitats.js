@@ -258,5 +258,6 @@ export function enllacProfessorat(base, a, { sessions, preguntes, intents, nivel
     if (Number.isInteger(n) && n >= 1 && n <= a.nivells.length) qs.set('nivell', n);
     if (a.tema && tema) qs.set('tema', tema);
     if (a.fixed && SESSIONS_FIXES.includes(fixed)) qs.set('fixed', fixed);
-    return `${base}${a.file}?${qs}`;
+    // Les comes de ?tema=mat-figures,mat-algebra es queden com a comes (el navegador les llegeix igual i l'enllaç es veu net)
+    return `${base}${a.file}?${String(qs).replace(/%2C/gi, ',')}`;
 }

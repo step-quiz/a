@@ -29,17 +29,92 @@ export const NIVELL_MAXIM = 3;
 /** Les opcions de les preguntes de triar. */
 export const N_OPCIONS = 4;
 
+// ── Els temes: matemàtiques, no matemàtiques i els subtemes de matemàtiques ──
+
+/**
+ * Els subtemes de matemàtiques, dels més senzills als més complexos (és l'ordre del menú del professorat). Cada tema
+ * `mat-…` del lèxic hi ha de ser: ho comprova tests/activitats.test.js.
+ */
+export const SUBTEMES_MATES = [
+    'mat-nombres',
+    'mat-operacions',
+    'mat-mesura',
+    'mat-linies',
+    'mat-figures',
+    'mat-elements',
+    'mat-cossos',
+    'mat-fraccions',
+    'mat-estadistica',
+    'mat-funcions',
+    'mat-algebra',
+];
+
+/** Els temes que no són de matemàtiques (la botiga, l'escola, els animals…). */
+export const TEMES_NO_MATES = Object.keys(TEMES).filter(t => !t.startsWith('mat-'));
+
+/** Els grups del menú «Tema» del professorat: matemàtiques (per defecte), no matemàtiques i tot. */
+export const GRUPS_DE_TEMES = ['mates', 'no-mates', 'tot'];
+
+/**
+ * El valor de ?tema= com a llista de temes del lèxic (buida = tots). Admet: `mates` (tots els de matemàtiques),
+ * `no-mates` (els que no ho són), un tema («botiga») o diversos separats per comes («mat-figures,mat-algebra»).
+ * Un tema que no existeix s'ignora; si no en queda cap, són tots.
+ */
+export function llegeixTemes(valor) {
+    const triats = new Set();
+    for (const part of String(valor ?? '').split(',')) {
+        if (part === 'mates') SUBTEMES_MATES.forEach(t => triats.add(t));
+        else if (part === 'no-mates') TEMES_NO_MATES.forEach(t => triats.add(t));
+        else if (part in TEMES) triats.add(part);
+    }
+    return [...triats];
+}
+
+/**
+ * El valor de ?tema= que correspon a la tria del professorat ({ grup, subtemes }), o '' si no cal cap (tot). Torna null si
+ * no és una tria vàlida (matemàtiques sense cap subtema). Amb tots els subtemes surt `mates` (així un subtema nou del lèxic
+ * entra sol a les classes que ja tenen l'enllaç fet); amb alguns, la llista en l'ordre del menú.
+ */
+export function paramTema({ grup, subtemes = [] }) {
+    if (grup === 'tot') return '';
+    if (grup === 'no-mates') return 'no-mates';
+    const triats = SUBTEMES_MATES.filter(t => subtemes.includes(t));
+    if (triats.length === 0) return null;
+    return triats.length === SUBTEMES_MATES.length ? 'mates' : triats.join(',');
+}
+
+/** La tria per defecte del professorat: matemàtiques, amb tots els subtemes. */
+export const SELECCIO_PER_DEFECTE = Object.freeze({ grup: 'mates', subtemes: SUBTEMES_MATES });
+
+/**
+ * Llegeix la tria que el navegador havia desat (un text JSON) i la valida: un grup que no existeix o un subtema que no
+ * és de la llista s'ignoren; si no hi ha res o és il·legible, la tria per defecte.
+ */
+export function llegeixSeleccio(text) {
+    try {
+        const d = JSON.parse(text);
+        const grup = GRUPS_DE_TEMES.includes(d?.grup) ? d.grup : SELECCIO_PER_DEFECTE.grup;
+        const subtemes = Array.isArray(d?.subtemes)
+            ? SUBTEMES_MATES.filter(t => d.subtemes.includes(t))
+            : [...SELECCIO_PER_DEFECTE.subtemes];
+        return { grup, subtemes };
+    } catch {
+        return { grup: SELECCIO_PER_DEFECTE.grup, subtemes: [...SELECCIO_PER_DEFECTE.subtemes] };
+    }
+}
+
 /**
  * Llegeix els paràmetres propis de l'activitat:
  *   ?nivell=1|2|3   1 = imatge → paraula (per defecte); 2 = paraula → imatge; 3 = imatge → escriure la paraula
- *   ?tema=botiga    només les paraules d'un tema (vegeu TEMES del lèxic); un tema que no existeix s'ignora
+ *   ?tema=…         només les paraules d'aquests temes: `mates`, `no-mates`, un tema del lèxic («botiga») o diversos separats
+ *                   per comes («mat-figures,mat-algebra»); vegeu llegeixTemes. Per defecte, totes
  *   ?vistes=1       només les paraules que l'alumne ja ha obert amb «Aprèn la paraula»
+ * Torna { nivell, temes (llista de temes; buida = tots), vistes }.
  */
 export function llegeixParametres(params) {
-    const tema = params.get('tema');
     return {
         nivell: getIntParam(params, 'nivell', 1, 1, NIVELL_MAXIM),
-        tema: tema && tema in TEMES ? tema : '',
+        temes: llegeixTemes(params.get('tema')),
         vistes: params.get('vistes') === '1',
     };
 }
@@ -50,13 +125,16 @@ export function llegeixParametres(params) {
 export const totesLesParaules = paraulesDelBanc;
 
 /**
- * El banc d'una sessió: { ids, totes }. `ids` són les paraules que es poden preguntar (les del tema i, si es demana, només
+ * El banc d'una sessió: { ids, totes }. `ids` són les paraules que es poden preguntar (les dels temes —`temes`, o `tema` si és un de sol— i, si es demana, només
  * les vistes); `totes`, totes les del lèxic (per als distractors). Si el filtre no deixa cap paraula, es pregunten totes.
  * `vistes` és un Set d'ids (o null per no filtrar).
  */
-export function bancDeParaules({ tema = '', vistes = null } = {}) {
+export function bancDeParaules({ tema = '', temes = [], vistes = null } = {}) {
     const totes = totesLesParaules();
-    let ids = totes.filter(e => (!tema || e.tema === tema) && (!vistes || vistes.has(e.id))).map(e => e.id);
+    const triats = temes.length ? temes : tema ? [tema] : [];
+    let ids = totes
+        .filter(e => (!triats.length || triats.includes(e.tema)) && (!vistes || vistes.has(e.id)))
+        .map(e => e.id);
     if (ids.length === 0) ids = totes.map(e => e.id);
     return { ids, totes: totes.map(e => e.id) };
 }

@@ -15,6 +15,8 @@
  * ============================================================================
  */
 import { ACTIVITATS, ACTIVITAT_PER_DEFECTE, GRUPS, activitatDe, enllacProfessorat } from '../portada/activitats.js';
+import { TEMES } from '../lexicon/lexicon.js';
+import { SUBTEMES_MATES, llegeixSeleccio, paramTema } from '../a-vocabulari/generador.js';
 import { temesDelBanc } from '../targetes/generador.js';
 
 // Adreça base: la carpeta d'aquesta mateixa pàgina. Així els enllaços apunten a la web on s'ha obert el panell
@@ -178,8 +180,13 @@ function iniciaPanell() {
         rowFix: $('row-fixed-eso'),
         nivell: $('nivell-eso'),
         rowNivell: $('row-nivell-eso'),
-        tema: $('tema-eso'),
+        grups: [...document.querySelectorAll('input[name="tema-eso"]')],
         rowTema: $('row-tema-eso'),
+        subtemes: $('subtema-eso'),
+        rowSubtema: $('row-subtema-eso'),
+        subtemaTots: $('subtema-tots-eso'),
+        subtemaCap: $('subtema-cap-eso'),
+        subtemaAv: $('subtema-av-eso'),
         link: $('l-eso'),
         copy: $('c-eso'),
         open: $('p-eso'),
@@ -187,12 +194,47 @@ function iniciaPanell() {
         status: $('st-eso'),
     };
 
-    // Els temes del vocabulari: només els tria «Vocabulari» (?tema=)
-    els.tema.innerHTML =
-        '<option value="">— Tots —</option>' +
-        temesDelBanc()
-            .map(t => `<option value="${t.tema}">${t.icona} ${t.nom}</option>`)
-            .join('');
+    // Els temes del vocabulari: només els tria «Vocabulari» (?tema=). «Tema» és de tria única (matemàtiques, no matemàtiques
+    // o tot); amb matemàtiques surt «Subtema», una llista de caselles dels més senzills als més complexos. L'última tria
+    // es recorda en aquest navegador (localStorage); si no es pot desar res, el panell funciona igual.
+    const CLAU_TEMA = 'a2-professorat-tema-vocabulari';
+    const magatzem = () => {
+        try {
+            return window.localStorage;
+        } catch {
+            return null;
+        }
+    };
+    // «Matemàtiques: els nombres» → «Els nombres» (el grup ja és «Matemàtiques»)
+    const nomSubtema = t => TEMES[t].replace('Matemàtiques: ', '').replace(/^./, c => c.toUpperCase());
+    const iconaDe = Object.fromEntries(temesDelBanc().map(t => [t.tema, t.icona]));
+    els.subtemes.innerHTML = SUBTEMES_MATES.map(
+        t =>
+            `<label class="opcio"><input type="checkbox" value="${t}"> <span aria-hidden="true">${iconaDe[t] ?? ''}</span> ${nomSubtema(t)}</label>`
+    ).join('');
+    const caselles = () => [...els.subtemes.querySelectorAll('input')];
+    const seleccio = () => ({
+        grup: els.grups.find(r => r.checked)?.value ?? 'mates',
+        subtemes: caselles()
+            .filter(c => c.checked)
+            .map(c => c.value),
+    });
+    const aplicaSeleccio = ({ grup, subtemes }) => {
+        for (const r of els.grups) r.checked = r.value === grup;
+        for (const c of caselles()) c.checked = subtemes.includes(c.value);
+    };
+    try {
+        aplicaSeleccio(llegeixSeleccio(magatzem()?.getItem(CLAU_TEMA)));
+    } catch {
+        aplicaSeleccio(llegeixSeleccio(null));
+    }
+    const desaSeleccio = () => {
+        try {
+            magatzem()?.setItem(CLAU_TEMA, JSON.stringify(seleccio()));
+        } catch {
+            // sense emmagatzematge (mode privat, ple…): no es recorda, però no passa res
+        }
+    };
 
     const activitat = () => activitatDe(selector.valor());
 
@@ -203,7 +245,7 @@ function iniciaPanell() {
         els.rowFix.style.display = a.fixed ? '' : 'none';
         if (!a.fixed) els.fix.value = '';
         els.rowTema.style.display = a.tema ? '' : 'none';
-        if (!a.tema) els.tema.value = '';
+        els.rowSubtema.style.display = a.tema && seleccio().grup === 'mates' ? '' : 'none';
         // El nivell és propi de cada activitat (el 2 de l'una no és el 2 de l'altra): en canviar d'activitat torna al per defecte
         els.rowNivell.style.display = a.nivells.length ? '' : 'none';
         els.nivell.innerHTML = a.nivells.length
@@ -213,14 +255,23 @@ function iniciaPanell() {
     }
 
     function construeix() {
-        els.link.textContent = enllacProfessorat(BASE_URL, activitat(), {
-            sessions: els.s.value,
-            preguntes: els.o.value,
-            intents: els.i.value,
-            nivell: els.nivell.value,
-            tema: els.tema.value,
-            fixed: els.fix.value,
-        });
+        const a = activitat();
+        const tema = a.tema ? paramTema(seleccio()) : '';
+        // Matemàtiques sense cap subtema no és una tria vàlida: no hi ha enllaç fins que se'n marca algun
+        const invalid = tema === null;
+        els.rowSubtema.style.display = a.tema && seleccio().grup === 'mates' ? '' : 'none';
+        els.subtemaAv.textContent = invalid && a.tema ? 'Marca almenys un subtema.' : '';
+        els.copy.disabled = els.open.disabled = invalid;
+        els.link.textContent = invalid
+            ? ''
+            : enllacProfessorat(BASE_URL, a, {
+                  sessions: els.s.value,
+                  preguntes: els.o.value,
+                  intents: els.i.value,
+                  nivell: els.nivell.value,
+                  tema,
+                  fixed: els.fix.value,
+              });
     }
 
     // El botó «Tutorial» només surt a les activitats que en tenen
@@ -238,7 +289,23 @@ function iniciaPanell() {
     construeix();
     ajustaTutorial();
 
-    [els.s, els.o, els.i, els.nivell, els.tema, els.fix].forEach(el => el.addEventListener('change', construeix));
+    [els.s, els.o, els.i, els.nivell, els.fix].forEach(el => el.addEventListener('change', construeix));
+    for (const el of [...els.grups, els.subtemes]) {
+        el.addEventListener('change', () => {
+            desaSeleccio();
+            construeix();
+        });
+    }
+    for (const [boto, marcat] of [
+        [els.subtemaTots, true],
+        [els.subtemaCap, false],
+    ]) {
+        boto.addEventListener('click', () => {
+            for (const c of caselles()) c.checked = marcat;
+            desaSeleccio();
+            construeix();
+        });
+    }
 
     els.copy.addEventListener('click', async () => {
         // Si el navegador no deixa usar el porta-retalls (HTTP, navegador antic, permís denegat…) se selecciona l'enllaç

@@ -335,8 +335,39 @@ module.exports = async function ({ browser, base }) {
                     mida: parseFloat(getComputedStyle(s).fontSize),
                 };
             }, id);
+        // «Tema» (tria única) i «Subtema» (diverses) de Vocabulari: no són selectors sinó botons de ràdio i caselles
+        const temaUI = () =>
+            page.evaluate(() => {
+                const vis = id => getComputedStyle(document.getElementById(id)).display !== 'none';
+                const text = e => e.parentElement.textContent.replace(/\s+/g, ' ').trim();
+                return {
+                    visibleTema: vis('row-tema-eso'),
+                    visibleSubtema: vis('row-subtema-eso'),
+                    etiqueta: document.getElementById('lbl-tema-eso').textContent.trim(),
+                    etiquetaSub: document.getElementById('lbl-subtema-eso').textContent.trim(),
+                    grups: [...document.querySelectorAll('input[name="tema-eso"]')].map(r => [
+                        r.value,
+                        text(r),
+                        r.checked,
+                    ]),
+                    subtemes: [...document.querySelectorAll('#subtema-eso input')].map(c => [
+                        c.value,
+                        text(c),
+                        c.checked,
+                    ]),
+                    avis: document.getElementById('subtema-av-eso').textContent.trim(),
+                    copiaOff: document.getElementById('c-eso').disabled && document.getElementById('p-eso').disabled,
+                };
+            });
+        /** Deixa marcats només aquests subtemes (amb clics, com ho faria el professor). */
+        const marcaNomes = async ids => {
+            for (const c of await page.$$('#subtema-eso input')) {
+                const v = await c.getAttribute('value');
+                if ((await c.isChecked()) !== ids.includes(v)) await c.click();
+            }
+        };
         let nivell = await fila('nivell');
-        let tema = await fila('tema');
+        let tema = await temaUI();
         let fixa = await fila('fix');
         ok(
             nivell.visible &&
@@ -345,7 +376,8 @@ module.exports = async function ({ browser, base }) {
                 nivell.associada &&
                 JSON.stringify(nivell.opcions) ===
                     JSON.stringify(['— Per defecte (2) —', '1 · només sumes', '2 · sumes i restes']) &&
-                !tema.visible &&
+                !tema.visibleTema &&
+                !tema.visibleSubtema &&
                 fixa.visible &&
                 fixa.valor === '' &&
                 fixa.etiqueta === 'Sessió fixa' &&
@@ -382,31 +414,86 @@ module.exports = async function ({ browser, base }) {
             `a-decimals: 3 nivells, torna a «${nivell.opcions[0]}», i la sessió fixa B es conserva: ${await enllac(page)}`
         );
         await triaPerFitxer(page, 'a-vocabulari.html');
-        tema = await fila('tema');
+        tema = await temaUI();
         nivell = await fila('nivell');
+        const noms = tema.subtemes.map(s => s[0]);
         ok(
-            tema.visible &&
+            tema.visibleTema &&
+                tema.visibleSubtema &&
                 tema.etiqueta === 'Tema' &&
-                tema.associada &&
-                tema.opcions.length === 21 &&
-                tema.opcions[0] === '— Tots —' &&
+                tema.etiquetaSub === 'Subtema' &&
+                JSON.stringify(tema.grups) ===
+                    JSON.stringify([
+                        ['mates', 'Matemàtiques', true],
+                        ['no-mates', 'No matemàtiques', false],
+                        ['tot', 'Tot', false],
+                    ]) &&
                 nivell.opcions.length === 4,
-            `a-vocabulari: «Tema» surt amb ${tema.opcions.length - 1} temes (i «— Tots —») i «Nivell» amb ${nivell.opcions.length - 1} nivells`
+            `a-vocabulari: «Tema» té Matemàtiques (per defecte), No matemàtiques i Tot; «Nivell» té ${nivell.opcions.length - 1} nivells`
         );
-        await page.selectOption('#tema-eso', 'mat-figures');
+        ok(
+            tema.subtemes.length === 11 &&
+                tema.subtemes.every(s => s[2]) &&
+                noms[0] === 'mat-nombres' &&
+                noms[1] === 'mat-operacions' &&
+                noms[noms.length - 1] === 'mat-algebra' &&
+                tema.subtemes[0][1].endsWith('Els nombres') &&
+                !tema.subtemes.some(s => s[1].includes('Matemàtiques:')),
+            `amb Matemàtiques surt «Subtema»: ${tema.subtemes.length} caselles marcades, dels més senzills (${tema.subtemes[0][1]}) als més complexos (${tema.subtemes[tema.subtemes.length - 1][1]})`
+        );
+        ok(
+            /a-vocabulari\.html\?totalsessions=1&totaloperations=3&maxintents=5&tema=mates&fixed=B$/.test(
+                await enllac(page)
+            ),
+            `per defecte (tots els subtemes): ${await enllac(page)}`
+        );
+        await marcaNomes(['mat-figures']);
         await page.selectOption('#nivell-eso', '3');
         ok(
             /a-vocabulari\.html\?totalsessions=1&totaloperations=3&maxintents=5&nivell=3&tema=mat-figures&fixed=B$/.test(
                 await enllac(page)
             ),
-            `el nivell 3 i el tema de figures planes: ${await enllac(page)}`
+            `el nivell 3 i el subtema de figures planes: ${await enllac(page)}`
         );
+        await marcaNomes(['mat-algebra', 'mat-nombres']);
+        ok(
+            /&tema=mat-nombres,mat-algebra&/.test(await enllac(page)),
+            `diversos subtemes, en l'ordre del menú i amb comes: ${await enllac(page)}`
+        );
+        await marcaNomes([]);
+        tema = await temaUI();
+        ok(
+            tema.avis === 'Marca almenys un subtema.' && tema.copiaOff && (await enllac(page)) === '',
+            "sense cap subtema no hi ha enllaç: s'avisa i «Copia» i «Obre» queden desactivats"
+        );
+        await page.click('#subtema-tots-eso');
+        ok(
+            /&tema=mates&/.test(await enllac(page)) && (await temaUI()).copiaOff === false,
+            '«Marca-ho tot» torna a «mates» i reactiva els botons'
+        );
+        await page.click('#subtema-cap-eso');
+        await page.click('#subtema-tots-eso');
+        await page.check('input[name="tema-eso"][value="no-mates"]');
+        tema = await temaUI();
+        ok(
+            !tema.visibleSubtema && /&tema=no-mates&/.test(await enllac(page)) && !tema.copiaOff,
+            "No matemàtiques: «Subtema» s'amaga i l'enllaç porta tema=no-mates"
+        );
+        await page.check('input[name="tema-eso"][value="tot"]');
+        ok(
+            !(await temaUI()).visibleSubtema && !/tema=/.test(await enllac(page)),
+            "Tot: sense «Subtema» i l'enllaç no porta ?tema="
+        );
+        await page.check('input[name="tema-eso"][value="mates"]');
+        await marcaNomes(['mat-figures']);
+        await page.selectOption('#nivell-eso', '3');
         await triaPerFitxer(page, 'a-enters-ordenar.html');
         nivell = await fila('nivell');
-        tema = await fila('tema');
+        tema = await temaUI();
         ok(
             !nivell.visible &&
-                !tema.visible &&
+                !tema.visibleTema &&
+                !tema.visibleSubtema &&
                 (await fila('fix')).visible &&
                 /a-enters-ordenar\.html\?totalsessions=1&totaloperations=3&maxintents=5&fixed=B$/.test(
                     await enllac(page)
@@ -414,14 +501,17 @@ module.exports = async function ({ browser, base }) {
             "a-enters-ordenar no té nivells ni temes: els camps s'amaguen i l'enllaç no en porta; la sessió fixa continua"
         );
         await triaPerFitxer(page, 'a-vocabulari.html');
+        tema = await temaUI();
         ok(
-            (await fila('tema')).valor === '' &&
-                /fixed=B$/.test(await enllac(page)) &&
-                !/tema=/.test(await enllac(page)),
-            "en tornar a «Vocabulari» el tema i el nivell han tornat a ser buits (no hi queda res de l'altra vegada)"
+            (await fila('nivell')).valor === '' &&
+                tema.subtemes
+                    .filter(s => s[2])
+                    .map(s => s[0])
+                    .join() === 'mat-figures' &&
+                /&tema=mat-figures&fixed=B$/.test(await enllac(page)),
+            'en tornar a «Vocabulari» el nivell torna a ser buit (és de cada activitat), però la tria de temes es recorda (figures planes)'
         );
         // L'enllaç de «Vocabulari» obre l'activitat amb el nivell, el tema i la sessió triats
-        await page.selectOption('#tema-eso', 'mat-figures');
         await page.selectOption('#nivell-eso', '3');
         const p2 = await page.context().newPage();
         const errors = [];
@@ -441,6 +531,98 @@ module.exports = async function ({ browser, base }) {
             e.nivell === 3 && e.fixed === 'B' && e.banc === 14 && errors.length === 0,
             `l'enllaç obre «Vocabulari» al nivell ${e.nivell}, amb les ${e.banc} paraules de figures planes i la sessió fixa ${e.fixed}`
         );
+        await page.context().close();
+    }
+
+    suite("Tema i subtemes de Vocabulari: el navegador recorda l'última tria del professor");
+    {
+        const page = await obre(browser, base, 'index.html', { rapid: false });
+        const seleccio = () =>
+            page.evaluate(() => ({
+                grup: document.querySelector('input[name="tema-eso"]:checked').value,
+                marcats: [...document.querySelectorAll('#subtema-eso input:checked')].map(c => c.value),
+                desat: window.localStorage.getItem('a2-professorat-tema-vocabulari'),
+            }));
+        const triaVocabulari = () => triaPerFitxer(page, 'a-vocabulari.html');
+        await triaVocabulari();
+        let s = await seleccio();
+        ok(
+            s.grup === 'mates' && s.marcats.length === 11 && s.desat === null,
+            'primera vegada: Matemàtiques amb tots els subtemes i res de desat'
+        );
+        await page.click('#subtema-eso input[value="mat-cossos"]');
+        await page.click('#subtema-eso input[value="mat-funcions"]');
+        s = await seleccio();
+        ok(
+            s.marcats.length === 9 && JSON.parse(s.desat).subtemes.length === 9 && JSON.parse(s.desat).grup === 'mates',
+            'en desmarcar dos subtemes, la tria es desa'
+        );
+        await page.reload({ waitUntil: 'load' });
+        await triaVocabulari();
+        s = await seleccio();
+        ok(
+            s.grup === 'mates' &&
+                s.marcats.length === 9 &&
+                !s.marcats.includes('mat-cossos') &&
+                !s.marcats.includes('mat-funcions'),
+            'en tornar a obrir el panell (F5), la tria és la mateixa: 9 subtemes sense «cossos» ni «funcions»'
+        );
+        await page.check('input[name="tema-eso"][value="no-mates"]');
+        await page.reload({ waitUntil: 'load' });
+        await triaVocabulari();
+        s = await seleccio();
+        ok(
+            s.grup === 'no-mates' && /tema=no-mates/.test(await page.textContent('#l-eso')) && s.marcats.length === 9,
+            'també es recorda «No matemàtiques» (i els subtemes de matemàtiques que hi havia, per si hi torna)'
+        );
+        // Una altra finestra del mateix navegador comparteix la tria; un navegador nou (context nou) comença de zero
+        const nou = await obre(browser, base, 'index.html', { rapid: false });
+        await triaPerFitxer(nou, 'a-vocabulari.html');
+        ok(
+            (await nou.evaluate(() => document.querySelector('input[name="tema-eso"]:checked').value)) === 'mates' &&
+                (await nou.$$('#subtema-eso input:checked')).length === 11,
+            'un navegador sense tria desada (context nou) comença amb Matemàtiques i tots els subtemes'
+        );
+        await nou.context().close();
+        // Una tria desada fora del que es coneix (un grup o un subtema inventats) s'ignora, sense errors
+        await page.evaluate(() =>
+            window.localStorage.setItem(
+                'a2-professorat-tema-vocabulari',
+                '{"grup":"inventat","subtemes":["mat-figures","xx"]}'
+            )
+        );
+        await page.reload({ waitUntil: 'load' });
+        await triaVocabulari();
+        s = await seleccio();
+        ok(
+            s.grup === 'mates' && s.marcats.join() === 'mat-figures' && page.errors.length === 0,
+            `una tria desada amb dades inventades es neteja (queda: ${s.marcats.join()}) i no dona cap error`
+        );
+        await page.evaluate(() => window.localStorage.setItem('a2-professorat-tema-vocabulari', '{això no és json'));
+        await page.reload({ waitUntil: 'load' });
+        await triaVocabulari();
+        s = await seleccio();
+        ok(
+            s.grup === 'mates' && s.marcats.length === 11 && page.errors.length === 0,
+            'una tria il·legible torna al per defecte, sense errors'
+        );
+        // Sense localStorage (mode privat, galetes bloquejades): el panell funciona igual
+        const sense = await obre(browser, base, 'index.html', {
+            rapid: false,
+            init: () =>
+                Object.defineProperty(window, 'localStorage', {
+                    get() {
+                        throw new DOMException('denied', 'SecurityError');
+                    },
+                }),
+        });
+        await triaPerFitxer(sense, 'a-vocabulari.html');
+        await sense.click('#subtema-eso input[value="mat-cossos"]');
+        ok(
+            sense.errors.length === 0 && /tema=mat-nombres/.test(await sense.textContent('#l-eso')),
+            `sense localStorage el panell funciona i genera l'enllaç (errors: ${sense.errors.join(' | ') || 'cap'})`
+        );
+        await sense.context().close();
         await page.context().close();
     }
 

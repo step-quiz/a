@@ -51,7 +51,7 @@ Object.assign(window, { buildLevel, checkWritten, checkCurrentCell });
 
 const {
     nivell: NIVELL,
-    tema: TEMA,
+    temes: TEMES_TRIATS,
     vistes: NOMES_VISTES,
 } = llegeixParametres(new URLSearchParams(window.location.search));
 
@@ -91,7 +91,7 @@ function emmagatzematge() {
 
 /** El banc d'aquesta sessió (amb les paraules vistes si es demana ?vistes=1). */
 const banc = bancDeParaules({
-    tema: TEMA,
+    temes: TEMES_TRIATS,
     vistes: NOMES_VISTES ? new Set(crearVistes(emmagatzematge()).llista()) : null,
 });
 

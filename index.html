@@ -76,6 +76,18 @@
 
     .row { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 10px; padding: 4px 8px; }
     .row label { font-size: 14px; font-weight: 600; text-align: left; }
+    /* Tema (una sola opció) i Subtema (diverses): llistes de botons de ràdio i de caselles, de dalt a baix */
+    .row-llista { align-items: start; }
+    .row-llista .etiqueta { font-size: 14px; font-weight: 600; padding-top: 4px; }
+    .opcions { display: flex; flex-direction: column; gap: 2px; }
+    .row .opcio { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; padding: 4px 6px; min-height: 32px; border-radius: 6px; cursor: pointer; }
+    .row .opcio:hover { background: #eceee0; }
+    .opcio input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex-shrink: 0; }
+    .subtema-eines { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .mini-btn { font-size: 13px; font-weight: 600; padding: 5px 10px; min-height: 32px; border: 1px solid var(--border-heavy); border-radius: 6px; background: #fff; color: var(--text-main); cursor: pointer; }
+    .mini-btn:hover { background: #eceee0; }
+    .subtema-av { font-size: 13px; font-weight: 600; color: #b91c1c; min-height: 1em; margin-top: 4px; }
+    @media (max-width: 480px) { .row-llista { grid-template-columns: 1fr; gap: 2px; } }
 
     select {
       appearance: none; background-color: #ffffff; height: 32px; padding: 0 10px;
@@ -184,7 +196,25 @@
         </div>
       </div>
       <div class="row" id="row-nivell-eso" style="display:none"><label for="nivell-eso">Nivell</label><select id="nivell-eso"></select></div>
-      <div class="row" id="row-tema-eso" style="display:none"><label for="tema-eso">Tema</label><select id="tema-eso"></select></div>
+      <div class="row row-llista" id="row-tema-eso" style="display:none">
+        <span class="etiqueta" id="lbl-tema-eso">Tema</span>
+        <div class="opcions" role="radiogroup" aria-labelledby="lbl-tema-eso">
+          <label class="opcio"><input type="radio" name="tema-eso" value="mates" checked> Matemàtiques</label>
+          <label class="opcio"><input type="radio" name="tema-eso" value="no-mates"> No matemàtiques</label>
+          <label class="opcio"><input type="radio" name="tema-eso" value="tot"> Tot</label>
+        </div>
+      </div>
+      <div class="row row-llista" id="row-subtema-eso" style="display:none">
+        <span class="etiqueta" id="lbl-subtema-eso">Subtema</span>
+        <div>
+          <div class="opcions" id="subtema-eso" role="group" aria-labelledby="lbl-subtema-eso"></div>
+          <div class="subtema-eines">
+            <button type="button" id="subtema-tots-eso" class="mini-btn">Marca-ho tot</button>
+            <button type="button" id="subtema-cap-eso" class="mini-btn">Desmarca-ho tot</button>
+          </div>
+          <div id="subtema-av-eso" class="subtema-av" role="status" aria-live="polite"></div>
+        </div>
+      </div>
       <div class="row"><label for="s-eso">Sessions</label><select id="s-eso"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
       <div class="row"><label for="o-eso">Preguntes</label><select id="o-eso"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
       <div class="row"><label for="i-eso">Errors màx.</label><select id="i-eso"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>

@@ -26,7 +26,7 @@
 |---|---|---|
 | **Activitat** | sempre; una llista per temes que es maneja amb teclat (com un *combobox*) | la pàgina |
 | **Nivell** | si l'activitat en té (16 de 17; no «Ordenar enters») | `nivell=` (cada nivell diu què és: «1 · només sumes») |
-| **Tema** | només a «Vocabulari» | `tema=` (un dels 20 temes del banc) |
+| **Tema** i **Subtema** | només a «Vocabulari» | `tema=`: `mates`, `no-mates`, un dels 20 temes del banc o diversos amb comes (`mat-nombres,mat-algebra`). «Tema» és de tria única (Matemàtiques, No matemàtiques, Tot) i amb Matemàtiques surt «Subtema», una llista de caselles dels més senzills als més complexos; el navegador en recorda l'última tria |
 | **Sessions**, **Preguntes**, **Errors màx.** | sempre | `totalsessions=`, `totaloperations=`, `maxintents=` |
 | **Sessió fixa** | si l'activitat n'admet (totes les del motor nou) | `fixed=A/B/C` |
 

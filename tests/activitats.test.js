@@ -1358,8 +1358,9 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
             l('').nivell === 1 &&
                 l('?nivell=3').nivell === 3 &&
                 l('?nivell=4').nivell === 1 &&
-                l('?tema=botiga').tema === 'botiga' &&
-                l('?tema=inventat').tema === '' &&
+                l('?tema=botiga').temes.join() === 'botiga' &&
+                l('?tema=inventat').temes.length === 0 &&
+                l('').temes.length === 0 &&
                 l('?vistes=1').vistes === true &&
                 l('').vistes === false,
             "paràmetres: nivell 1–3 (per defecte 1), ?tema= (un tema que no existeix s'ignora) i ?vistes=1"
@@ -1951,7 +1952,7 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
             problemes.length === 0 &&
                 C.ACTIVITATS.filter(a => a.tema).length === 1 &&
                 C.activitatDe('a-vocabulari.html').tema &&
-                GV.llegeixParametres(new URLSearchParams('tema=mat-figures')).tema === 'mat-figures',
+                GV.llegeixParametres(new URLSearchParams('tema=mat-figures')).temes.join() === 'mat-figures',
             `els nivells del catàleg són els de cada generador (${C.ACTIVITATS.filter(a => a.nivells.length).length} activitats amb nivells), i només «Vocabulari» admet ?tema=`,
             problemes.join('\n')
         );
@@ -2013,6 +2014,91 @@ const mostra = (E, opcions, n = 20000) => Array.from({ length: n }, () => E.gene
                     'a&lt;b &amp; &quot;c&quot;'
                 ),
             'la imatge de la fitxa és un emoji, un pictograma o una imatge de matemàtiques (cada una amb la seva mida); el nom va escapat'
+        );
+    }
+
+    suite('a-vocabulari: temes i subtemes (?tema=mates, no-mates o una llista) i la tria que recorda el panell');
+    {
+        const G = await carrega('js/a-vocabulari/generador.js');
+        const L = await carrega('js/lexicon/lexicon.js');
+        const C = await carrega('js/portada/activitats.js');
+        const matsDelLexic = Object.keys(L.TEMES).filter(t => t.startsWith('mat-'));
+        ok(
+            matsDelLexic.length === G.SUBTEMES_MATES.length &&
+                matsDelLexic.every(t => G.SUBTEMES_MATES.includes(t)) &&
+                new Set(G.SUBTEMES_MATES).size === G.SUBTEMES_MATES.length,
+            `els ${matsDelLexic.length} temes de matemàtiques del lèxic són als subtemes, una sola vegada (un tema nou s'ha d'afegir a SUBTEMES_MATES)`
+        );
+        const pos = t => G.SUBTEMES_MATES.indexOf(t);
+        ok(
+            pos('mat-nombres') < pos('mat-operacions') &&
+                pos('mat-operacions') < pos('mat-fraccions') &&
+                pos('mat-fraccions') < pos('mat-algebra') &&
+                pos('mat-linies') < pos('mat-figures') &&
+                pos('mat-figures') < pos('mat-cossos'),
+            'els subtemes van dels més senzills als més complexos (nombres, operacions… fraccions, àlgebra)'
+        );
+        const lt = G.llegeixTemes;
+        ok(
+            lt('mates').join() === G.SUBTEMES_MATES.join() &&
+                lt('no-mates').join() === G.TEMES_NO_MATES.join() &&
+                G.TEMES_NO_MATES.includes('botiga') &&
+                !G.TEMES_NO_MATES.some(t => t.startsWith('mat-')) &&
+                lt('mat-figures,mat-algebra').join() === 'mat-figures,mat-algebra' &&
+                lt('botiga').join() === 'botiga' &&
+                lt('mat-figures,inventat,mat-figures').join() === 'mat-figures' &&
+                lt('inventat').length === 0 &&
+                lt('').length === 0 &&
+                lt(null).length === 0,
+            'llegeixTemes: «mates», «no-mates», un tema, una llista (sense repetits ni temes inventats) i res = tots'
+        );
+        const p = G.paramTema;
+        ok(
+            p({ grup: 'tot' }) === '' &&
+                p({ grup: 'no-mates', subtemes: ['mat-figures'] }) === 'no-mates' &&
+                p({ grup: 'mates', subtemes: G.SUBTEMES_MATES }) === 'mates' &&
+                p({ grup: 'mates', subtemes: ['mat-algebra', 'mat-nombres'] }) === 'mat-nombres,mat-algebra' &&
+                p({ grup: 'mates', subtemes: [] }) === null &&
+                p({ grup: 'mates', subtemes: ['inventat'] }) === null,
+            "paramTema: tot no porta paràmetre, tots els subtemes són «mates», alguns van en l'ordre del menú, i cap subtema no és vàlid (null)"
+        );
+        const s = G.llegeixSeleccio;
+        ok(
+            s(null).grup === 'mates' &&
+                s(null).subtemes.length === G.SUBTEMES_MATES.length &&
+                s('{no és json').grup === 'mates' &&
+                s('{"grup":"no-mates","subtemes":["mat-figures","inventat"]}').grup === 'no-mates' &&
+                s('{"grup":"no-mates","subtemes":["mat-figures","inventat"]}').subtemes.join() === 'mat-figures' &&
+                s('{"grup":"inventat"}').grup === 'mates' &&
+                s('{"grup":"tot"}').subtemes.length === G.SUBTEMES_MATES.length &&
+                s('{"grup":"mates","subtemes":[]}').subtemes.length === 0,
+            "llegeixSeleccio: la tria desada es valida (grup o subtemes inventats s'ignoren; il·legible = per defecte; zero subtemes es respecta)"
+        );
+        // El banc amb diversos temes
+        const banc = G.bancDeParaules({ temes: ['mat-figures', 'mat-algebra'] });
+        const temesDelBanc = new Set(banc.ids.map(id => L.entrada(id).tema));
+        const totesIds = G.totesLesParaules().length;
+        ok(
+            temesDelBanc.size === 2 &&
+                temesDelBanc.has('mat-figures') &&
+                temesDelBanc.has('mat-algebra') &&
+                banc.totes.length === totesIds &&
+                G.bancDeParaules({ temes: G.llegeixTemes('no-mates') }).ids.every(
+                    id => !L.entrada(id).tema.startsWith('mat-')
+                ) &&
+                G.bancDeParaules({ temes: G.llegeixTemes('mates') }).ids.every(id =>
+                    L.entrada(id).tema.startsWith('mat-')
+                ),
+            'el banc amb diversos temes només pregunta aquestes paraules (els distractors són de tot el banc); «mates» i «no-mates» no es barregen'
+        );
+        const base = 'https://a.step-quiz.net/';
+        const voc = C.activitatDe('a-vocabulari.html');
+        const dades = { sessions: '1', preguntes: '6', intents: '4', nivell: '', fixed: '' };
+        ok(
+            C.enllacProfessorat(base, voc, { ...dades, tema: 'mat-figures,mat-algebra' }) ===
+                `${base}a-vocabulari.html?totalsessions=1&totaloperations=6&maxintents=4&tema=mat-figures,mat-algebra` &&
+                C.enllacProfessorat(base, voc, { ...dades, tema: 'mates' }).endsWith('&tema=mates'),
+            "l'enllaç del professorat porta ?tema= amb les comes sense codificar"
         );
     }
 
