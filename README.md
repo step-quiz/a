@@ -42,6 +42,11 @@ Les activitats del moment en què va néixer el repositori (cada bloc és una ac
 | `a-area-perimetre.html` | Àrea i perímetre de figures de quadrats (sense tutorial) |
 | `a-triangle-rectangle.html` | Teorema de Pitàgores en un triangle rectangle |
 | `a-pla-cartesia.html` | Coordenades al pla cartesià |
+| `a-potencies.html` | Potències |
+| `a-nombres-lletres.html` | Escriure nombres amb lletres |
+| `a-prioritat.html` | Prioritat d'operacions |
+| `a-vocabulari.html` | Vocabulari de matemàtiques |
+| `album.html` | Àlbum de paraules de l'alumne (les paraules que ha anat obrint) |
 | `targetes.html` | Targetes de vocabulari per imprimir (eina del professorat; vegeu [`docs/TARGETES.md`](docs/TARGETES.md)) |
 
 ## Vocabulari controlat
@@ -60,8 +65,9 @@ De moment està disponible a **Nombres enters**, **Ordenar enters**, **Diners i 
 js/                 motor de les activitats (mòduls ES: utils, config, game-core, fixed-sessions, textos), el lèxic
                     (js/lexicon/), una carpeta per activitat o pàgina (js/a-enters/, js/a-enters-ordenar/, js/a-decimals/, js/a-proporciodirecta/, js/a-rellotge/, js/a-recta-numerica/, js/a-mcd-mcm/, js/a-factoritzar/, js/a-fraccions/, js/a-area-perimetre/, js/a-triangle-rectangle/, js/a-pla-cartesia/, js/a-equacions/, js/a-potencies/, js/a-nombres-lletres/, js/a-prioritat/, js/a-vocabulari/, js/album/, js/targetes/, js/portada/ i js/professorat/)
 css/                tokens.css (colors), shared.css, accessibilitat.css, chromebook.css, portada.css i peu.css (la portada de l'alumnat i el peu) i targetes.css (la pàgina de targetes imprimibles)
-docs/               pla de treball i revisió inicial
-tools/              servidor de prova (servidor.js), desa.sh, ESLint i Prettier (lint/) i Playwright (proves/)
+docs/               pla de treball, lèxic, vocabulari de matemàtiques, portada, targetes i revisió inicial
+tools/              servidor de prova (servidor.js), desa.sh, paraules-noves.js (llista les paraules noves del lèxic per a
+                    la descripció d'una PR), ESLint i Prettier (lint/) i Playwright (proves/)
 tests/              comprovacions automàtiques (Node) i tests de navegador (navegador/)
 .github/workflows/  les comprovacions que GitHub executa sol a cada canvi
 .devcontainer/      configuració del Codespace
@@ -75,6 +81,8 @@ tests/              comprovacions automàtiques (Node) i tests de navegador (nav
 | [`docs/LEXIC.md`](docs/LEXIC.md) | El lèxic: el registre de totes les paraules que l'alumne pot llegir, com s'hi afegeix una paraula i com es validen les noves. |
 | [`docs/REVISIO-INICIAL.md`](docs/REVISIO-INICIAL.md) | Revisió del codi heretat (errors i millores detectats) i com es resol cada cosa. |
 | [`UPSTREAM.md`](UPSTREAM.md) | De quina versió d'`operacions` deriva cada part i què no es porta. |
+| [`docs/VOCABULARI-MATES.md`](docs/VOCABULARI-MATES.md) | Els termes de matemàtiques de l'activitat Vocabulari. |
+| [`docs/PORTADA.md`](docs/PORTADA.md), [`docs/TARGETES.md`](docs/TARGETES.md) | La portada d'icones de l'alumnat i les targetes de vocabulari per imprimir. |
 | [`COM-TREBALLAR.md`](COM-TREBALLAR.md) | Com fer i publicar canvis (pull requests, web de GitHub, Codespace) i què són les comprovacions automàtiques, amb ordres per copiar i enganxar. |
 
 ## Llicència
