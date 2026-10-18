@@ -45,7 +45,7 @@ Les pàgines `a-*.html` són originals d'`a2` (conceptualment derivades de `ente
 ## Què NO es porta (decisió deliberada)
 
 - **Codis de retorn al professorat:** `js/exercise-codes.js`, el generador del codi de verificació (`copiarResultats`), el control antifrau, `analitzador-stepquiz.html` i tot el que en depèn (nota sobre 10, «Criteri»).
-- **Batxillerat** (11 activitats) i la resta de projectes que viuen dins `operacions`: `cb`, `gem4eso`, `app`, `meteo*`, `informe-cb*`, `decaleg-pau`, PAU…
+- **Batxillerat** (11 activitats) i la resta del que no són activitats d'`operacions`: PAU… (les còpies d'altres projectes i les pàgines soltes que hi havia, `cb`, `gem4eso`, `app`, `meteo*`, `informe-cb*` i `decaleg-pau`, `operacions` les va retirar el 18/10/2026).
 - **Cap infraestructura multillengua:** `a2` és només en català (vegeu `docs/PLA.md`, principi 2).
 - **KaTeX** (`vendor/katex`, 1,5 MB) fins que una activitat el necessiti (`llenguatge-algebraic`, `sistemes-equacions` i `probabilitat`).
 
